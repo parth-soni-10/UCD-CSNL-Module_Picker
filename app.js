@@ -848,6 +848,32 @@ function renderTimetable() {
 }
 
 // ---------------------------------------------------------------------------
+// URL state: reflect the view (?q=search & ?t=timetable) so a link can be
+// deep-linked and shared. replaceState keeps the back button free of noise.
+// ---------------------------------------------------------------------------
+
+function syncUrl() {
+  const params = new URLSearchParams();
+  const q = els.search.value.trim();
+  if (q) params.set("q", q);
+  if (activeTimetable !== "Default Timetable") params.set("t", activeTimetable);
+  const qs = params.toString();
+  history.replaceState(null, "", qs ? `${location.pathname}?${qs}` : location.pathname);
+}
+
+// Apply ?q= / ?t= from a shared link before the first render.
+function readUrlParams() {
+  const params = new URLSearchParams(location.search);
+  const q = (params.get("q") || "").trim();
+  if (q) els.search.value = q;
+  const t = (params.get("t") || "").trim();
+  if (t) {
+    activeTimetable = t;
+    if (!selection[t]) selection[t] = [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // timetable manager
 // ---------------------------------------------------------------------------
 
@@ -1043,7 +1069,10 @@ els.planResults.addEventListener("click", (e) => {
 // events
 // ---------------------------------------------------------------------------
 
-els.search.addEventListener("input", render);
+els.search.addEventListener("input", () => {
+  render();
+  syncUrl();
+});
 
 els.courseList.addEventListener("change", (e) => {
   if (e.target.type === "checkbox" && e.target.dataset.code) {
@@ -1084,6 +1113,7 @@ els.addTimetableBtn.addEventListener("click", () => {
     els.newTimetableName.value = "";
     saveState();
     refreshUI();
+    syncUrl();
   }
 });
 
@@ -1091,6 +1121,7 @@ els.timetableSwitcher.addEventListener("change", (e) => {
   activeTimetable = e.target.value;
   saveState();
   refreshUI();
+  syncUrl();
 });
 
 els.deleteTimetableBtn.addEventListener("click", () => {
@@ -1100,6 +1131,7 @@ els.deleteTimetableBtn.addEventListener("click", () => {
   activeTimetable = Object.keys(selection)[0];
   saveState();
   refreshUI();
+  syncUrl();
 });
 
 els.clearBtn.addEventListener("click", () => {
@@ -1230,6 +1262,7 @@ function startAutoRefresh() {
 
 (async function init() {
   loadState();
+  readUrlParams();
   initTheme();
   setAppInert(true);
   try {
