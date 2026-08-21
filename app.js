@@ -71,6 +71,7 @@ const els = {
   timetableEvents: document.getElementById("timetable-events"),
   timetableWrap: document.querySelector(".timetable-wrap"),
   clashWarning: document.getElementById("clash-warning"),
+  policyWarning: document.getElementById("policy-warning"),
   printBtn: document.getElementById("print-btn"),
   printHeader: document.getElementById("print-header"),
   printModules: document.getElementById("print-modules"),
@@ -475,6 +476,7 @@ function refreshUI() {
   renderSummary();
   renderSwitcher();
   renderTimetable();
+  renderPolicyWarning();
   renderPrintInfo();
 }
 
@@ -867,6 +869,75 @@ function readUrlParams() {
     activeTimetable = t;
     if (!selection[t]) selection[t] = [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// CSNL programme credit rules
+// ---------------------------------------------------------------------------
+// CSNL students may take at most 20 credits at Level 3 or below, and at most
+// 15 credits from modules that aren't COMP coded. Shown alongside the clash
+// warning, listing the exact modules that push past each limit.
+
+const POLICY_MAX_LEVEL3 = 20; // credits at Level 3 or below
+const POLICY_MAX_NON_COMP = 15; // credits from non-COMP modules
+
+// The first digit of a code's number is UCD's module level (COMP30960 -> 3).
+function moduleLevel(code) {
+  const d = (String(code).match(/\d+/) || [""])[0];
+  return d ? parseInt(d[0], 10) : 9;
+}
+
+function renderPolicyWarning() {
+  const el = els.policyWarning;
+  const seen = new Map(); // code -> info (each module once, not per offering)
+  for (const s of currentSelection()) {
+    if (!seen.has(s.code)) seen.set(s.code, moduleInfo(s.code));
+  }
+  const level3 = [];
+  const nonComp = [];
+  let l3Total = 0;
+  let ncTotal = 0;
+  for (const [code, info] of seen) {
+    if (!info || !info.credits) continue;
+    const lvl = moduleLevel(code);
+    if (lvl <= 3) {
+      l3Total += info.credits;
+      level3.push({ code, credits: info.credits, level: lvl, title: info.title });
+    }
+    if (!code.startsWith("COMP")) {
+      ncTotal += info.credits;
+      nonComp.push({ code, credits: info.credits, title: info.title });
+    }
+  }
+  const chip = (m) =>
+    `<span class="policy-mod" title="${esc(m.title)}">${esc(m.code)}${m.level ? " · L" + m.level : ""} · ${m.credits} cr</span>`;
+  const rules = [];
+  if (l3Total > POLICY_MAX_LEVEL3) {
+    rules.push(
+      `<div class="policy-rule">` +
+        `<strong>Level 3 or below: ${l3Total} / ${POLICY_MAX_LEVEL3} credits</strong> — ${l3Total - POLICY_MAX_LEVEL3} over the limit` +
+        `<div class="policy-mods">${level3.map(chip).join("")}</div>` +
+        `</div>`
+    );
+  }
+  if (ncTotal > POLICY_MAX_NON_COMP) {
+    rules.push(
+      `<div class="policy-rule">` +
+        `<strong>Non-COMP modules: ${ncTotal} / ${POLICY_MAX_NON_COMP} credits</strong> — ${ncTotal - POLICY_MAX_NON_COMP} over the limit` +
+        `<div class="policy-mods">${nonComp.map(chip).join("")}</div>` +
+        `</div>`
+    );
+  }
+  if (!rules.length) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  el.classList.remove("hidden");
+  el.innerHTML =
+    `<div class="policy-head">Your selection is over the CSNL programme credit limits:</div>` +
+    `<div class="policy-note">Students may take no more than 20 credits at Level 3 or below, and no more than 15 credits from non-COMP modules.</div>` +
+    rules.join("");
 }
 
 // ---------------------------------------------------------------------------
