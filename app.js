@@ -382,6 +382,8 @@ function liveTitle(code) {
   return (data && data.title) || code;
 }
 
+const UCD_MODULE_BASE = "https://www.ucd.ie/modules/";
+
 function renderCourseCard(c) {
   const data = live.get(c.code);
   const card = document.createElement("div");
@@ -403,7 +405,7 @@ function renderCourseCard(c) {
   card.innerHTML = `
     <div class="card-top">
       <div>
-        <h3>${esc(liveTitle(c.code))}</h3>
+        <h3><a class="module-link" href="${UCD_MODULE_BASE}${esc(c.code)}" target="_blank" rel="noopener" title="View ${esc(c.code)} on ucd.ie">${esc(liveTitle(c.code))}</a></h3>
         <div class="badges">
           ${badges.map((b) => `<span class="badge${data && data.found ? " live" : ""}">${esc(b)}</span>`).join("")}
         </div>
