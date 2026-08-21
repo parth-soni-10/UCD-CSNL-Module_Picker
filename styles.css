@@ -362,9 +362,7 @@ body {
   font-weight: 500;
   color: var(--text-2);
   font-family: var(--font-mono);
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 380px;
 }
 
@@ -374,6 +372,47 @@ body {
   border-radius: 50%;
   background: var(--ok);
   flex-shrink: 0;
+}
+
+/* Ticker: the status text stays inside the pill and scrolls left when it
+   overflows. The ghost copy makes the -50% translate loop seamlessly. */
+.status-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+}
+
+.status-text-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.status-text-copy {
+  padding-right: 48px;
+}
+
+.status-text-ghost {
+  display: none;
+}
+
+.status-text.scroll .status-text-ghost {
+  display: inline-block;
+}
+
+.status-text.scroll .status-text-track {
+  animation: status-ticker var(--ticker-duration, 18s) linear infinite;
+}
+
+.status-pill:hover .status-text-track {
+  animation-play-state: paused;
+}
+
+@keyframes status-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 .status-pill.loading .dot {
@@ -498,11 +537,12 @@ body {
   padding: 20px;
 }
 
-/* Modules + sticky sidebar share one grid row; the timetable sits below as a
-   separate block so the sticky sidebar can never overlap it. */
+/* Modules + timetable share the left column; sidebar spans both rows
+   so it stays sticky as you scroll through both. */
 .layout-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
+  grid-template-rows: auto auto;
   gap: 20px;
   align-items: start;
 }
@@ -518,6 +558,7 @@ body {
 }
 
 .col-side {
+  grid-row: span 2;
   position: sticky;
   top: 78px;
   display: flex;
@@ -533,12 +574,12 @@ body {
 }
 
 .col-timetable {
-  margin-top: 20px;
   min-width: 0;
 }
 
 @media (max-width: 960px) {
   .col-side {
+    grid-row: auto;
     position: static;
     max-height: none;
     overflow-y: visible;
@@ -1678,14 +1719,33 @@ body {
 
 /* --------------------------------------------------------------- footnote */
 .footnote {
-  font-size: 11.5px;
-  color: var(--text-3);
-  margin: 0 4px;
-  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 4px 0;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.fn-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex-shrink: 0;
+  margin-top: 5px;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .footnote a {
   color: var(--accent);
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -1873,7 +1933,6 @@ body {
   .status-pill #status-text {
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* on the smallest screens the pill gets the room and the refresh button
@@ -2021,6 +2080,10 @@ body {
     display: block;
     max-width: none;
     padding: 0;
+  }
+
+  .layout-top {
+    display: block;
   }
 
   .col-timetable {

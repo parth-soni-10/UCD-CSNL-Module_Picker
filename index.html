@@ -38,7 +38,12 @@
         <div class="topbar-actions">
           <div id="status-pill" class="status-pill">
             <span id="status-dot" class="dot"></span>
-            <span id="status-text" aria-live="polite">Loading timetables</span>
+            <span id="status-text" class="status-text" aria-live="polite">
+              <span class="status-text-track">
+                <span class="status-text-copy">Loading timetables</span>
+                <span class="status-text-copy status-text-ghost" aria-hidden="true">Loading timetables</span>
+              </span>
+            </span>
           </div>
           <button
             id="theme-toggle"
@@ -242,9 +247,8 @@
           </form>
         </div>
       </aside>
-      </div>
 
-      <!-- Weekly timetable (full width) -->
+      <!-- Weekly timetable -->
       <section class="col-timetable">
         <div class="panel">
           <div class="panel-head">
@@ -278,14 +282,17 @@
           <div id="print-modules" class="print-only pi-modules"></div>
         </div>
 
-        <p class="footnote">
-          Timings fetched live from
-          <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
-          on every page load. Not an official UCD service.
-          Built by
-          <a href="https://parth-portfolio-wb.netlify.app/" target="_blank" rel="noopener">Parth</a>.
-        </p>
+        <div class="footnote">
+          <span class="fn-dot" aria-hidden="true"></span>
+          <span>
+            Timings fetched live from
+            <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
+            on every page load · Not an official UCD service · Built by
+            <a href="https://parth-portfolio-wb.netlify.app/" target="_blank" rel="noopener">Parth</a>.
+          </span>
+        </div>
       </section>
+      </div>
     </main>
 
     <script src="app.js"></script>

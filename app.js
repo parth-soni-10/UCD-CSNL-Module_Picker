@@ -455,6 +455,26 @@ async function fetchAllTimings(fresh, refreshAll) {
   saveTimingsCache();
 }
 
+// Update the status pill text and re-enable its ticker only when the text
+// overflows the pill. Two identical copies stay in the DOM so the CSS
+// translateX(-50%) loop is seamless.
+function setStatusText(text) {
+  const copies = els.statusText.querySelectorAll(".status-text-copy");
+  copies.forEach((el) => (el.textContent = text));
+  const track = els.statusText.querySelector(".status-text-track");
+  const overflow = copies[0].offsetWidth > els.statusText.clientWidth;
+  els.statusText.classList.toggle("scroll", overflow);
+  if (overflow) {
+    // Constant, readable scroll speed regardless of text length.
+    const speed = 40; // px/s
+    const gap = 48; // .status-text-copy padding-right
+    track.style.setProperty(
+      "--ticker-duration",
+      `${Math.max((copies[0].offsetWidth + gap) / speed, 8)}s`
+    );
+  }
+}
+
 function updateStatus() {
   const liveCount = [...live.entries()]
     .filter(([code, d]) => d.found && d.classes && d.classes.length)
@@ -473,19 +493,19 @@ function updateStatus() {
   if (noTtCount) status += ` · ${noTtCount} no timetable yet`;
   if (pending > 0) status += ` · ${pending} pending`;
   status += ` · updated ${time}`;
-  els.statusText.textContent = status;
+  setStatusText(status);
 }
 
 function setLoadingStatus(text) {
   els.statusPill.classList.add("loading");
   els.statusPill.classList.remove("error");
-  els.statusText.textContent = text;
+  setStatusText(text);
 }
 
 function setErrorStatus(text) {
   els.statusPill.classList.add("error");
   els.statusPill.classList.remove("loading");
-  els.statusText.textContent = text;
+  setStatusText(text);
 }
 
 // ---------------------------------------------------------------------------
@@ -1597,15 +1617,21 @@ els.suggestForm.addEventListener("submit", async (e) => {
   els.suggestSubmit.disabled = true;
   els.suggestSubmit.textContent = "Sending…";
   try {
-    // URL-encoded (not multipart) — this is the AJAX shape Netlify Forms accepts
+    // URL-encoded (not multipart) — this is the AJAX shape Netlify Forms accepts.
+    // Netlify matches the POST by Content-Type + form-name, so send both explicitly.
     const res = await fetch("/", {
       method: "POST",
-      body: new URLSearchParams(new FormData(els.suggestForm)),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(new FormData(els.suggestForm)).toString(),
     });
+    // A 200 means Netlify accepted it. 405 (or 404) usually means the form
+    // wasn't detected yet — Netlify only scans for forms on deploy, so the
+    // site has to be redeployed after form detection is enabled.
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     els.suggestForm.reset();
     els.suggestDone.classList.remove("hidden");
   } catch (err) {
+    console.error("Suggestion submit failed:", err);
     els.suggestError.textContent = "Couldn't send your suggestion — check your connection and try again.";
     els.suggestError.hidden = false;
   } finally {
