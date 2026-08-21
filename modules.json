@@ -6,62 +6,72 @@
         "name": "Text Analytics (COMP41730)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This course aims is to cover how text analytics is currently used to find important regularities and discover meaning in big data. As such, the course will cover the fundamental techniques and some sample application areas where text analytics is deployed. Initially, the course w..."
       },
       {
         "name": "Artificial / Human Intelligence (COMP41760)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "With the advent of Generative Artificial Intelligence (GenAI) and, especially, Large Language Models (LLMs) there is a vigorous debate in academia, industry and society about the extent to which Artificial Intelligence may equal or surpass Human Intelligence (as manifested by us)..."
       },
       {
         "name": "Human-Centred Artificial Intelligence (COMP41740)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This is an advanced course in Human-Computer Interaction, with a focus on intelligent user interfaces and interaction with machine-learning and artificial intelligence technologies. Human-Centered AI (HCAI) is an emerging discipline focused on creating AI systems that amplify ..."
       },
       {
         "name": "Multi-Agent Systems (COMP41400)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module aims to introduce students to the concept of multi-agent systems. The course commences with a eview of the fundamental concepts that underpin agent-based systems,.Thereafter a number of topics will be covered including inter alia: agent reasoning technologies, agent ..."
       },
       {
         "name": "Generative AI: Language Models (COMP47980)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "The module aims to deliver a practical understanding of the theory, development and use of large language models for generation of novel content in AI. Students will learn about: languages, formal and natural; conventional NLP vs. the \"new\" NLP; statistical language models (n-..."
       },
       {
         "name": "Speech and Audio (COMP47700)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module provides an introduction to speech and hearing and how digital representations of speech and audio can be processed. The area of speech and audio processing has evolved rapidly with applications like Voice over IP (e.g. Skype), media streaming (e.g. Spotify, YouTube) ..."
       },
       {
         "name": "Human Computer Interaction (COMP30960)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "Human-Computer Interaction (HCI) is a distinctive branch of computer science dedicated to understanding the relationship between people and computers. It provides a set of techniques that enable software engineers to develop computing applications that better respond to the needs..."
       },
       {
         "name": "Artificial Intelligence & Ethics (IS40970)",
         "credits": 5,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "Artificial Intelligence systems are becoming increasingly influential in society. The purpose of this module is to equip students with a comprehensive understanding of AI without the requirement of a technical background. The goal of the module is that students will be able to cr..."
       },
       {
         "name": "AI and Society (SOC41130)",
         "credits": 10,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "Generative artificial intelligence is spearheading a major digital revolution that some believe could completely reshape the way we live. In 'AI & Society', we will collaboratively address this belief, seeking to separate the real from the fictional, the discursive from the descr..."
       },
       {
         "name": "Decision Analytics (MIS30010)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "Much of business decision-making has a common base, for example dealing with risk or identifying optimal levels of service to provide. Decision Analytics helps to develop an appreciation of these common structures. This becomes most helpful later in one's career as one moves i..."
       },
       {
         "name": "Foundations of Cognitive Psychology (COMP41990)",
@@ -79,191 +89,220 @@
         "name": "Machine Learning w/ Python (COMP47750)",
         "credits": 5,
         "kind": "core",
-        "semester": "1, 2"
+        "semester": "1, 2",
+        "description": "The objective of this module is to familiarise students with the fundamental theoretical concepts in machine learning, as well as to instruct students in the practical aspects of applying machine learning algorithms. Key techniques in supervised machine learning will be covered, ..."
       },
       {
         "name": "Machine Learning (blended delivery) (COMP47460)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "The objective of this module is to familiarise students with the fundamental theoretical concepts in machine learning, as well as instructing students in the practical aspects of applying machine learning algorithms. Key techniques in supervised machine learning will be covered, ..."
       },
       {
         "name": "Data Science in Python (mixed delivery) (COMP47670)",
         "credits": 5,
         "kind": "core",
-        "semester": "1, 2"
+        "semester": "1, 2",
+        "description": "The key objectives of this module are 1) to provide students with an initial crash course in Python programming; 2) to familiarise students with a range of key topics in the emerging field of Data Science through the medium of Python. Students will start by exploring method..."
       },
       {
         "name": "Big Data Programming (COMP47470)",
         "credits": 5,
         "kind": "core",
-        "semester": "1, 2"
+        "semester": "1, 2",
+        "description": "Big data refers to high-volume, high-velocity and/or high-variety data that is too complex to handle by traditional (relational) data management and data processing systems. The data-intensive nature of big data applications has pushed research and industry practitioners to build..."
       },
       {
         "name": "Optimisation (COMP47790)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module covers various optimisation techniques, including convex optimisation (including gradient-based approaches), linear programming, mixed integer linear programming, meta-heuristics and combinatorial optimisation...."
       },
       {
         "name": "Machine Learning w/ Python (online) (COMP47990)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "The objective of this module is to familiarise students with the fundamental theoretical concepts in machine learning, as well as to instruct students in the practical aspects of applying machine learning algorithms. Key techniques in supervised machine learning will be covered, ..."
       },
       {
         "name": "Advanced Machine Learning (COMP47590)",
         "credits": 5,
         "kind": "core",
         "semester": "2",
-        "comments": "Module has programming prerequisites"
+        "comments": "Module has programming prerequisites",
+        "description": "COMP47590 is an advanced module on Machine Learning that builds on the core concepts covered in COMP47490 or COMP47460. Either COMP47490 or COMP47460 is a prerequisite for this module. This module covers advanced, state of the art topics in machine learning in areas such as deep..."
       },
       {
         "name": "Deep Learning (COMP47650)",
         "credits": 5,
         "kind": "core",
         "semester": "2",
-        "comments": "Prerequisites: statistics & calculus"
+        "comments": "Prerequisites: statistics & calculus",
+        "description": "Recent advances in machine learning have been dominated by neural network approaches broadly described as deep learning. This module builds on core neural network concepts to explore modern deep learning architectures and their applications. After a brief review of essential neur..."
       },
       {
         "name": "Intro. to Quantum Computing (EEEN40680)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)"
+        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)",
+        "description": "This module provides an accessible introduction to the principles of quantum information theory and their applications in quantum information science, computation and emerging quantum technologies. Designed for students with no or minimal prior experience in quantum computing, th..."
       },
       {
         "name": "Information Visualisation (COMP40610)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module is suitable for students interested in the fundamental and practical underpinnings of Information Visualisation. Information Visualisation is a research area that focuses on the use of graphical techniques to present data in an explicit form. Such static or dynamic pr..."
       },
       {
         "name": "Data Mining (COMP40370)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "The course is structured in such a way as to present important concepts of data mining and how these concepts are implemented and used in real-world applications. The key idea behind this course is to integrate the theory and practice of data mining with many references to real-w..."
       },
       {
         "name": "Connectionist Computing (COMP41390)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "There are two distinct parts to this unit. In the first few lectures I will provide the students with a general overview of connectionism: its origins as an attempt to model the functioning of the brain, and the various classes of algorithms created starting from these foundation..."
       },
       {
         "name": "GIS Principles and Applications (GEOG40820)",
         "credits": 10,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "Geographic Information Systems (GIS) allow the acquisition, storage, analysis and visualisation of location-based data. GIS are increasingly applied in research and practice across a wide range of disciplines and sectors (e.g. planning, demographics, health, social and environmen..."
       },
       {
         "name": "Monte Carlo Inference (STAT40400)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module will discuss several computational methods that rely on repeated random sampling to approximate numerical quantities of interest. In particular, the methods here explored will concern strategies to simulate from probability distributions in order to numerically comput..."
       },
       {
         "name": "Time Series Analysis (STAT40700)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This course provides an opportunity for students to learn some basic techniques in Time Series Analysis. A Time Series is a set of measurements taken at regular intervals over a period of time. Time series pervade the worlds of economics and finance e.g. equity prices, (CPI) infl..."
       },
       {
         "name": "Data Programming with R (STAT30340)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Level 3 module; Approval required"
+        "comments": "Level 3 module; Approval required",
+        "description": "R is a free, open-source programming language and software environment designed for data analysis, graphics, and statistical computing. It is continually updated by contributors from all over the world who add new packages that implement a range of statistical and machine learnin..."
       },
       {
         "name": "Introduction to Data Analytics (online) (STAT40720)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module covers introductory probability and statistical inference, focusing on understanding concepts and methodologies. Topics include: descriptive statistics, probability, sampling distributions, confidence interval estimation, hypothesis testing and regression...."
       },
       {
         "name": "Data Programming with R (online) (STAT40730)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module introduces students with no previous programming experience to the open-source statistical programming language R. Topics include: manipulating vectors, matrices, arrays and lists; basic programming constructs and programme flow; graphical methods; dealing with large ..."
       },
       {
         "name": "Data Programming with Python (online) (STAT40800)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "In this module students will learn how to manipulate data and perform statistical analysis using Python. This module covers a range of topics, including (but not limited to): - structure of the Python language - data manipulation - data visualisation - statistical analys..."
       },
       {
         "name": "Quantitative Methods for Engineers (STAT40690)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module is aimed at all students in Engineering who are studying for Masters programmes. The module will introduce students to research methods in Engineering. We will explore fundamental principles of importance in all quantitative research including Bias, Representativen..."
       },
       {
         "name": "Spatial Information Systems (COMP30110)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "Spatial Information Systems are becoming increasingly important. While traditionally spatial datasets were used only by experts in specific professional fields (e.g., Cartography, Geography, etc.), nowadays they are employed in the more varied application contexts (e.g., trip pla..."
       },
       {
         "name": "Quantum Machine Learning (COMP47950)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Prerequisite: EEEN40680 (Intro. to Quantum Computing)"
+        "comments": "Prerequisite: EEEN40680 (Intro. to Quantum Computing)",
+        "description": "Quantum Machine Learning is a subject in the making that has to navigate the huge expectations of its parent disciplines. These expectations mean that there often is a large disparity between reality and fanciful hype. Today, quantum machine learning models cannot out-perform the..."
       },
       {
         "name": "Information Visualisation (blended delivery) (COMP47970)",
         "credits": 5,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module is suitable for students interested in the fundamental and practical underpinnings of Information Visualisation. Information Visualisation is a research area that focuses on the use of graphical techniques to present data in an explicit form. Such static or dynamic pr..."
       },
       {
         "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
         "credits": 10,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "Collection, organisation and storage of data are major tasks in many human activities and in every modern computing system. Computer-based information systems ensure that this data is permanently maintained, quickly updated and made accessible to users. Databases are essential co..."
       },
       {
         "name": "Bioinformatics (COMP40400)",
         "credits": 5,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "-Proteins. DNA. RNA. Public molecular biology repositories. -Dynamic programming algorithms for sequence comparison: global sequence alignment (Needleman-Wunsch); local sequence alignment (Smith-Waterman); semiglobal comparison. Variations to the basic alignment algorithms: varia..."
       },
       {
         "name": "Multivariate Analysis (STAT40150)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "Multivariate analysis considers many response variables simultaneously. This module will cover many of the common techniques used to analyze multivariate data: clustering techniques, classification techniques, ordination techniques such as principal components analysis and graphi..."
       },
       {
         "name": "Multivariate Analysis (online) (STAT40740)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module will cover many common statistical techniques used to analyse high dimensional data. Topics include: clustering techniques; classification techniques; ordination techniques such as principal components analysis; and graphical techniques such as multidimensional scalin..."
       },
       {
         "name": "Statistical Machine Learning (STAT30270)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Level 3 module; Approval required"
+        "comments": "Level 3 module; Approval required",
+        "description": "Statistical machine learning encompasses a collection of techniques for discovering patterns in data and making predictions, involving models and methods at the intersection of machine learning and statistics. Geared towards introducing students to a diverse set of techniques for..."
       },
       {
         "name": "Statistical Machine Learning (online) (STAT40750)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "Statistical machine learning encompasses a collection of techniques for discovering patterns in data and making predictions, involving models and methods at the intersection of machine learning and statistics. Geared towards introducing students to a diverse set of techniques for..."
       }
     ]
   },
@@ -274,95 +313,110 @@
         "name": "Blockchain & Decentralisation (COMP41770)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module introduces decentralised systems, distributed ledger technologies, and blockchain-based applications. Students will explore key concepts such as cryptocurrencies, distributed consensus protocols, smart contracts, decentralised applications (dApps), decentralised finan..."
       },
       {
         "name": "Cloud Computing (COMP47780)",
         "credits": 10,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "Cloud Computing (CC) is one of the key evolution steps of Information and Communication Technology (ICT). It provides computing as a utility, which has emerged as a commercial reality. It typically involves over-the-Internet provision of dynamically scalable resources. In other w..."
       },
       {
         "name": "Distributed Systems (COMP41720)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module teaches students to design robust, scalable and maintainable distributed architectures by understanding key principles and trade-offs - and to do so in a world where generative AI is both a tool for building systems and a class of systems to be built. Modern AI infras..."
       },
       {
         "name": "Performance of Computer Systems (COMP40010)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module provides students with an introduction to performance engineering applied to large-scale software systems. Topics may include Measurement Techniques and Tools, Probability and Queueing Models, Test Design and Analysis, and Simulation. The practical work will test skil..."
       },
       {
         "name": "Advances in Wireless Networking (COMP40660)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "Overview of current and future wireless technologies, with an emphasis on networking and application aspects; overview of mobile/cellular systems; discussion of relevant IEEE standards (e.g. 802.11 and 802.16); introduction to mobile/wireless applications...."
       },
       {
         "name": "Big Data Programming (COMP47470)",
         "credits": 5,
         "kind": "core",
-        "semester": "1, 2"
+        "semester": "1, 2",
+        "description": "Big data refers to high-volume, high-velocity and/or high-variety data that is too complex to handle by traditional (relational) data management and data processing systems. The data-intensive nature of big data applications has pushed research and industry practitioners to build..."
       },
       {
         "name": "Networks and Internet Systems (COMP30040)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "This module introduces the OSI stack to students, and goes through the various layers in detail. The topics covered include: Network Types, functions, topologies, transmissions, switching, routing, management, reference models, architectures, protocols and standards; network user..."
       },
       {
         "name": "Multi-Agent Systems (COMP41400)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module aims to introduce students to the concept of multi-agent systems. The course commences with a eview of the fundamental concepts that underpin agent-based systems,.Thereafter a number of topics will be covered including inter alia: agent reasoning technologies, agent ..."
       },
       {
         "name": "High Performance Computing (COMP40730)",
         "credits": 10,
         "kind": "optional",
         "semester": "1",
-        "comments": "Approval required"
+        "comments": "Approval required",
+        "description": "This module is suitable for students who are experienced programmers, with knowledge of the C/C++ programming languages. The aim of this module is to introduce students to design and development of parallel programs for different parallel architectures. There is a particular emph..."
       },
       {
         "name": "Parallel Computing (COMP30250)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "Nowadays, parallel architectures are not only used for high performance computing. The advent of multicore processors, which can be found in all modern desktops, laptops, mobile and embedded devices, has turned parallel architectures into the mainstream architecture for commodit..."
       },
       {
         "name": "Numerical Algorithms (ACM40290)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "MATLAB programming: Data types and structures, arithmetic operations, functions, input and output, interface programming, graphics; implementation of numerical methods. Introduction: Finite floating point arithmetic, catastrophic cancellation, chopping and rounding errors. ..."
       },
       {
         "name": "Intro. to Quantum Computing (EEEN40680)",
         "credits": 5,
         "kind": "optional",
         "semester": "1",
-        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)"
+        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)",
+        "description": "This module provides an accessible introduction to the principles of quantum information theory and their applications in quantum information science, computation and emerging quantum technologies. Designed for students with no or minimal prior experience in quantum computing, th..."
       },
       {
         "name": "Wireless Systems (EEEN40050)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module deals with the analysis and design of wireless systems, mainly wireless communication systems. The emphasis is on the design of transmitters (from modulated signal to antenna) and receivers (from antenna to demodulator), but the radio path and link budget will also b..."
       },
       {
         "name": "Digital Communications (EEEN40060)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module deals mainly with the theoretical underpinning of modern digital communication systems. It will give a firm understanding of the principles behind modern physical-layer line and wireless communications. Digital modulation techniques and decision theory are described..."
       },
       {
         "name": "Social Networks Online and Off (IS41510)",
         "credits": 10,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "Purpose: Social Networks Online and Offline: Spatializing Social Media introduces students to concepts, theories, and methods from social network analysis and their application to online and offline social networks. The module covers the rationale of social network analysis whic..."
       }
     ]
   },
@@ -374,63 +428,73 @@
         "credits": 5,
         "kind": "core",
         "semester": "1",
-        "comments": "Prerequisite: object-oriented programming knowledge"
+        "comments": "Prerequisite: object-oriented programming knowledge",
+        "description": "COMP41670 examines software engineering practice in an era where AI tools routinely produce the first draft of code. Using Java 21, students learn to design, build, test, and defend non-trivial software systems, and develop the critical judgment to evaluate AI-generated code for ..."
       },
       {
         "name": "Exploring Ruby (COMP47530)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "The course will cover the Ruby programming language, introducing its main programming constructs (e.g., variable assignment, iterative constructs, conditionals, recursion) with a strong practical emphasis on system building. The Rails software framework will also be introduced a..."
       },
       {
         "name": "Distributed Systems (COMP41720)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module teaches students to design robust, scalable and maintainable distributed architectures by understanding key principles and trade-offs - and to do so in a world where generative AI is both a tool for building systems and a class of systems to be built. Modern AI infras..."
       },
       {
         "name": "Ethical Hacking (COMP47860)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "Applications continue to be leveraged as a means of attack into organisations and even individual stakeholders. As an asset to organisations it is fundamental that a mature application security program is in place to protect against threats. In this module, students will gain an ..."
       },
       {
         "name": "Advanced Data Structures in Java (online) (COMP47500)",
         "credits": 10,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module is suitable for students with experience in Java programming language and interested in the design and analysis of efficient algorithms and data structures. This module will emphasise on ways of storing data in a computer so that it can be used efficiently (a data str..."
       },
       {
         "name": "Augmented and Virtual Reality (COMP47930)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "Course will act as an introduction to the field of Augmented and Virtual Reality, which is traditional in academic circles referred to as Mixed Reality. In much of the current popular media it is normally referred to as XR , Extended Reality . The course aims to allow students t..."
       },
       {
         "name": "Object-Oriented Programming (COMP20350)",
         "credits": 5,
         "kind": "optional",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module is suitable for students interested in introduction to OOP through the Java programming language, building upon prior exposure to programming languages. Specific topics addressed in this module include: • Introduction to Object Oriented Programming • Class Design,..."
       },
       {
         "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
         "credits": 10,
         "kind": "optional",
-        "semester": "2"
+        "semester": "2",
+        "description": "Collection, organisation and storage of data are major tasks in many human activities and in every modern computing system. Computer-based information systems ensure that this data is permanently maintained, quickly updated and made accessible to users. Databases are essential co..."
       },
       {
         "name": "Recommender Systems (COMP31010)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Level 3 module; Module has programming prerequisites"
+        "comments": "Level 3 module; Module has programming prerequisites",
+        "description": "Recommendation technologies have become an important part of our online experiences, helping us to discover books, movies, and music that are relevant to our likes and preferences. So much so, in fact, that recommender systems are now a fundamental component of most e-commerce pl..."
       },
       {
         "name": "Game Development (COMP30540)",
         "credits": 5,
         "kind": "optional",
         "semester": "2",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "The module will provide an introduction to the essentials of computer game development. The process of development by small independents, even single individuals, shares important features with development by large companies: innovation, creativity, storyboarding, software devel..."
       },
       {
         "name": "Digital & Embedded Systems (EEEN40280)",
@@ -448,79 +512,91 @@
         "credits": 5,
         "kind": "core",
         "semester": "1",
-        "comments": "Level 3 module; note, this is a prerequisite for COMP41960 (see below)"
+        "comments": "Level 3 module; note, this is a prerequisite for COMP41960 (see below)",
+        "description": "This course provides an introduction to the field of information security, with a focus on cryptographic protocols and their use in real settings. The continuation of this module (COMP41960) provides a more in-depth study of the cryptographic primitives used to discuss informatio..."
       },
       {
         "name": "Information Theory (COMP30690)",
         "credits": 5,
         "kind": "core",
         "semester": "1",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "This course provides an introduction to the fundamentals of Information Theory for computer scientists. Shannon's Information Theory is one of the greatest intellectual achievements of the 20th century. It provides a comprehensive view on the concept of information, whereby funda..."
       },
       {
         "name": "Enterprise, Innovation & Entrepreneurship (COMP30390)",
         "credits": 5,
         "kind": "core",
         "semester": "1",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "Although this is a Computer Science module no prior knowledge or competency of computer science is required beyond that of basic computer technology usage such as Facebook, Google, linkedin etc. Over the past 5 years students from Arts, Science, Engineering and the humaniti..."
       },
       {
         "name": "Information Visualisation (COMP40610)",
         "credits": 5,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module is suitable for students interested in the fundamental and practical underpinnings of Information Visualisation. Information Visualisation is a research area that focuses on the use of graphical techniques to present data in an explicit form. Such static or dynamic pr..."
       },
       {
         "name": "Technical Communication (online) (MEEN40820)",
         "credits": 5,
         "kind": "core",
         "semester": "1",
-        "comments": "See MEEN40670 below."
+        "comments": "See MEEN40670 below.",
+        "description": "See sample lesson What will I study? This module focuses on making presentations. To do this an understanding of the entire communication chain is required (eg. handouts, questions, follow..."
       },
       {
         "name": "Social Simulation: Methods and Models (SOC40640)",
         "credits": 10,
         "kind": "core",
-        "semester": "1"
+        "semester": "1",
+        "description": "This module is grounded on key concepts of analytical sociology, with particular focus on agent-based models. Social dynamics is defined as the set of potentially heterogeneous individual behaviours and its ensuing collective outcomes. During the entire trimester you are expected..."
       },
       {
         "name": "Information Visualisation (blended delivery) (COMP47970)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "This module is suitable for students interested in the fundamental and practical underpinnings of Information Visualisation. Information Visualisation is a research area that focuses on the use of graphical techniques to present data in an explicit form. Such static or dynamic pr..."
       },
       {
         "name": "Advanced Information Security (COMP41960)",
         "credits": 5,
         "kind": "core",
         "semester": "2",
-        "comments": "Prerequisite: COMP30940 (see above)"
+        "comments": "Prerequisite: COMP30940 (see above)",
+        "description": "COMP41960 (Advanced Information Security) is a continuation of COMP30940 (Information Security), covering more advanced topics in the field of information security. The goal is to delve deeper into techniques and algorithms studied in COMP30940 and to introduce further topics i..."
       },
       {
         "name": "Technical Communication (MEEN40670)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "See Video • This module looks at some of the principles of communication in technical topics, applied to both oral (primarily) and written communications. • Three group presentations will ..."
       },
       {
         "name": "Digital Media Ethics (IS30370)",
         "credits": 5,
         "kind": "core",
         "semester": "2",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "This module explores ethical issues in the design and use of information and communication technologies (ICTs). It examines ethical theories and practices from historical, interdisciplinary and cross-cultural perspectives relating to current and emerging ICTs. We study the major ..."
       },
       {
         "name": "Digital Storytelling (IS30380)",
         "credits": 5,
         "kind": "core",
         "semester": "2",
-        "comments": "Level 3 module"
+        "comments": "Level 3 module",
+        "description": "This module explores how we tell stories with digital media whether for information, news, entertainment, social, educational, political or other purposes. It examines the basic elements of narrative structure and the impact that digital interactivity has on storytelling. Best pr..."
       },
       {
         "name": "Digital Libraries (IS40560)",
         "credits": 5,
         "kind": "core",
-        "semester": "2"
+        "semester": "2",
+        "description": "Digital libraries offer exciting possibilities for providing access to digital and digitised content, but raise numerous technical, social, and organisational challenges. This module will examine some of the issues associated with the evolving concept and development of digital ..."
       }
     ]
   }

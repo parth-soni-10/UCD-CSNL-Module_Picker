@@ -622,6 +622,7 @@ function renderCourseCard(c) {
         ${c.extra ? `<button class="remove-extra-btn" data-code="${esc(c.code)}" title="Remove from list" aria-label="Remove ${esc(c.code)} from list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` : ""}
       </div>
     </div>
+    ${c.description ? `<p class="card-desc">${esc(c.description)}</p>` : ""}
     ${c.comments ? `<div class="card-note" title="From the UCD CSNL streams page">${esc(c.comments)}</div>` : ""}
     <div class="offerings" data-code="${esc(c.code)}"></div>
   `;

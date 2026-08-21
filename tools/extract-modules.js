@@ -121,6 +121,43 @@ function parseNlStreams(html) {
     })),
   }));
 
+  // attach the short descriptions from UCD's generic module catalogue
+  try {
+    const descPage = await fetch(
+      "https://hub.ucd.ie/usis/!W_HU_MENU.P_PUBLISH?p_tag=MODULESCURRENT",
+      { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0" } }
+    );
+    const descHtml = await descPage.text();
+    const token =
+      descHtml.match(
+        /W_HU_REPORTING\.P_JSON_QUERY\?p_format=ARRAY&p_query=CB470-1&p_parameters=([A-F0-9]+)/
+      ) || [];
+    if (token[1]) {
+      const res = await fetch(
+        `https://hub.ucd.ie/usis/W_HU_REPORTING.P_JSON_QUERY?p_format=ARRAY&p_query=CB470-1&p_parameters=${token[1]}`,
+        { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0" } }
+      );
+      const json = await res.json();
+      const rows = Array.isArray(json) ? json : json.data;
+      const byCode = new Map();
+      for (const r of rows) {
+        const cm = r[0] && String(r[0]).match(/MODULE=([A-Z0-9]{5,9})/);
+        if (!cm || !r[1]) continue;
+        const d = r[1].match(/<div class="col-12 d-none d-sm-inline">([\s\S]*)$/);
+        if (d) byCode.set(cm[1], cleanCell(d[1]));
+      }
+      for (const t of out) {
+        for (const c of t.courses) {
+          const code = String(c.name).match(/\(([^)]+)\)\s*$/);
+          const desc = code && byCode.get(code[1].trim());
+          if (desc) c.description = desc;
+        }
+      }
+    }
+  } catch (e) {
+    console.log("Descriptions unavailable (", e.message, ") — writing without them");
+  }
+
   fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + "\n");
   const total = out.reduce((n, t) => n + t.courses.length, 0);
   console.log(`Wrote ${OUT}`);

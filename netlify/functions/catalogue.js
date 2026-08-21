@@ -38,7 +38,7 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const VERSION = 4;
+const VERSION = 5; // bumped when the stored catalogue shape changes
 const NL_STREAMS_URL = "https://www.ucd.ie/cs/study/postgraduate/nlstreams/";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
@@ -214,11 +214,43 @@ async function fetchUcdCatalogue() {
     const titleMatch = r[1].match(/<strong><a[^>]*>([^<]*)<\/a><\/strong>/);
     const title = (titleMatch ? titleMatch[1] : r[1].replace(/<[^>]*>/g, "")).trim();
     if (!title) continue;
+    // the module descriptor (short description) follows the title in the cell
+    const descRaw = r[1].match(/<div class="col-12 d-none d-sm-inline">([\s\S]*)$/);
+    const description = descRaw ? cleanCell(descRaw[1]) : "";
     const creditsMatch = r[6].match(/>([0-9.]+)</);
-    byCode.set(code, { title, credits: creditsMatch ? parseFloat(creditsMatch[1]) : null });
+    byCode.set(code, {
+      title,
+      credits: creditsMatch ? parseFloat(creditsMatch[1]) : null,
+      description,
+    });
   }
   if (byCode.size === 0) throw new Error("no modules parsed from catalogue");
   return { termYear: termYear || currentCatalogueYear(), byCode };
+}
+
+// Adds each module's short description (from the generic catalogue) to the
+// stream courses. Best-effort: modules without a published descriptor keep
+// none, and the frontend simply doesn't show one.
+function attachDescriptions(themes, byCode) {
+  if (!byCode) return themes;
+  for (const t of themes) {
+    for (const c of t.courses) {
+      const entry = byCode.get(codeFromName(c.name));
+      if (entry && entry.description) c.description = entry.description;
+    }
+  }
+  return themes;
+}
+
+// Attaches short descriptions to a freshly built catalogue object.
+async function withDescriptions(cat) {
+  try {
+    const ucd = await fetchUcdCatalogue();
+    cat.themes = attachDescriptions(cat.themes, ucd.byCode);
+  } catch (e) {
+    /* descriptions are a nice-to-have */
+  }
+  return cat;
 }
 
 function codeFromName(name) {
@@ -226,13 +258,16 @@ function codeFromName(name) {
   return m ? m[1].trim() : name;
 }
 
-// Merges the committed seed with UCD's generic catalogue, refreshing credits.
+// Merges the committed seed with UCD's generic catalogue, refreshing credits
+// and attaching descriptions.
 function buildFromGenericCatalogue(curated, ucd) {
   const themes = curated.map((t) => ({
     theme: t.theme,
     courses: t.courses.map((c) => {
       const u = ucd.byCode.get(codeFromName(c.name));
-      return { name: c.name, credits: u && u.credits != null ? u.credits : c.credits };
+      const course = { name: c.name, credits: u && u.credits != null ? u.credits : c.credits };
+      if (u && u.description) course.description = u.description;
+      return course;
     }),
   }));
   return {
@@ -283,7 +318,7 @@ async function getCatalogue(opts) {
       if (stored.pageUpdated === pageUpdated) {
         return stored; // unchanged since we last looked
       }
-      const fresh = buildFromStreams(streams, pageUpdated);
+      const fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
       fresh.year = targetYear;
       fresh.v = VERSION;
       await writeStored(fresh);
@@ -297,7 +332,7 @@ async function getCatalogue(opts) {
   try {
     const html = await fetchText(NL_STREAMS_URL);
     const { streams, pageUpdated } = parseNlStreams(html);
-    const fresh = buildFromStreams(streams, pageUpdated);
+    const fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
     fresh.year = targetYear;
     fresh.v = VERSION;
     await writeStored(fresh);
