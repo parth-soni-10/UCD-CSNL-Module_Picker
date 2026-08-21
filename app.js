@@ -86,6 +86,7 @@ const els = {
   planResults: document.getElementById("plan-results"),
   bootScreen: document.getElementById("boot-screen"),
   bootFill: document.getElementById("boot-fill"),
+  bootPercent: document.getElementById("boot-percent"),
   bootCountText: document.getElementById("boot-count-text"),
   bootSub: document.getElementById("boot-sub"),
   bootRetry: document.getElementById("boot-retry"),
@@ -105,6 +106,7 @@ function setAppInert(on) {
 
 function finishBoot() {
   els.bootFill.style.width = "100%";
+  els.bootPercent.textContent = "100%";
   els.bootScreen.setAttribute("aria-busy", "false");
   els.bootScreen.classList.add("done");
   setAppInert(false);
@@ -376,6 +378,7 @@ async function fetchAllTimings(fresh, refreshAll) {
     els.progressFill.style.width = `${pct}%`;
     els.progressText.textContent = `Fetching live timetables from UCD… ${done}/${total}`;
     els.bootFill.style.width = `${pct}%`;
+    els.bootPercent.textContent = `${pct}%`;
     els.bootCountText.textContent = `${done}/${total} modules`;
   };
 
@@ -1303,6 +1306,7 @@ function startAutoRefresh() {
     els.bootSub.textContent = `Restored ${cachedCount} saved timetables — refreshing from UCD…`;
     els.bootCountText.textContent = `${cachedCount} cached modules`;
     els.bootFill.style.width = "100%";
+    els.bootPercent.textContent = "100%";
     finishBoot();
     setLoadingStatus("Refreshing live timings from UCD…");
     try {
