@@ -181,7 +181,7 @@ function loadTimingsCache() {
     let n = 0;
     for (const [code, data] of Object.entries(results)) {
       if (data && typeof data === "object") {
-        live.set(code, data);
+        live.set(code, normalizeTimetable(data));
         n++;
       }
     }
@@ -189,6 +189,36 @@ function loadTimingsCache() {
   } catch (e) {
     return 0; // private mode / quota — just fetch live as before
   }
+}
+
+// "29 Sep 2026" -> "2026-09-29" for chronological comparison
+const MONTHS = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
+function normDate(s) {
+  const m = String(s).match(/^(\d{2}) (\w{3}) (\d{4})$/);
+  if (!m) return String(s);
+  return m[3] + "-" + (MONTHS[m[2]] || "00") + "-" + m[1];
+}
+
+// A module can have several classes sharing one offeringKey but differing by
+// term code (e.g. a full-year module whose lecture runs in both Autumn and
+// Spring). The UI keys selections by offeringKey, so those rows must be
+// merged into a single offering whose weeks cover all terms — otherwise the
+// renderer picks only the first row (wrong weeks, false clashes).
+function normalizeTimetable(data) {
+  if (!data || !Array.isArray(data.classes) || data.classes.length < 2) return data;
+  const byKey = new Map();
+  for (const cls of data.classes) {
+    const key = offeringKey(cls);
+    const g = byKey.get(key);
+    if (!g) {
+      byKey.set(key, { ...cls, weeks: [...cls.weeks] });
+      continue;
+    }
+    g.weeks = [...new Set(g.weeks.concat(cls.weeks))].sort((a, b) => a - b);
+    if (normDate(cls.firstDate) < normDate(g.firstDate)) g.firstDate = cls.firstDate;
+    if (normDate(cls.lastDate) > normDate(g.lastDate)) g.lastDate = cls.lastDate;
+  }
+  return { ...data, classes: [...byKey.values()] };
 }
 
 function saveTimingsCache() {
@@ -345,7 +375,7 @@ async function retryModule(code) {
   try {
     const json = await fetchBatch([code], true);
     const d = json.results && json.results[code];
-    if (d) live.set(code, { ...d, fetchedAt: json.generatedAt });
+    if (d) live.set(code, { ...normalizeTimetable(d), fetchedAt: json.generatedAt });
     else live.set(code, { found: false, reason: "Unavailable" });
   } catch (e) {
     live.set(code, { found: false, reason: `Fetch error: ${e.message}`, failed: true });
@@ -391,7 +421,7 @@ async function fetchAllTimings(fresh, refreshAll) {
       try {
         const json = await fetchBatch(batch, fresh);
         for (const [code, data] of Object.entries(json.results || {})) {
-          live.set(code, { ...data, fetchedAt: json.generatedAt });
+          live.set(code, { ...normalizeTimetable(data), fetchedAt: json.generatedAt });
         }
         // remember failures so a later refresh doesn't re-request forever
         for (const code of batch) {
@@ -1060,8 +1090,43 @@ function modulesCompatible(a, b) {
   return false;
 }
 
+// Picks one class per module so that no two clash, or null if impossible.
+// Backtracking over each module's offerings — pairwise compatibility is not
+// enough: a set of modules can be pairwise-compatible yet have no single
+// clash-free assignment (e.g. two modules whose only classes both land at
+// Thu 10:00), which would make "Use this plan" produce a clashing timetable.
+function clashFreeAssignment(mods) {
+  const groups = mods.map((m) => m.data.classes);
+  const chosen = [];
+  function tryAssign(i) {
+    if (i === groups.length) return true;
+    for (const cls of groups[i]) {
+      if (!chosen.some((c) => classesClash(c, cls))) {
+        chosen.push(cls);
+        if (tryAssign(i + 1)) return true;
+        chosen.pop();
+      }
+    }
+    return false;
+  }
+  return tryAssign(0) ? chosen : null;
+}
+
 const PLAN_RESULTS = 6;
 const PLAN_MAX_COMBOS = 6000;
+
+// A suggested plan must be valid under the CSNL programme rules (same limits
+// enforced by the policy warning), so applying it never lands the student in
+// a rule violation right away.
+function planViolatesPolicy(modules) {
+  let l3 = 0;
+  let nonComp = 0;
+  for (const m of modules) {
+    if (moduleLevel(m.code) <= 3) l3 += m.credits;
+    if (!String(m.code).startsWith("COMP")) nonComp += m.credits;
+  }
+  return l3 > POLICY_MAX_LEVEL3 || nonComp > POLICY_MAX_NON_COMP;
+}
 
 function findPlans(target, sem) {
   const pool = planPool(sem);
@@ -1082,7 +1147,7 @@ function findPlans(target, sem) {
     explored++;
     if (combo.length >= 2) {
       const diff = Math.abs(total - target);
-      if (diff <= tolerance) {
+      if (diff <= tolerance && !planViolatesPolicy(combo) && clashFreeAssignment(combo)) {
         results.push({ modules: combo.slice(), total, diff });
       }
     }
@@ -1156,25 +1221,17 @@ function renderPlans() {
 }
 
 function applyPlan(codes) {
-  // Replace the current timetable's selection with a clash-free offering pick
-  // for each module in the plan (greedy: take the first class that doesn't
-  // clash with classes already picked).
-  const picked = [];
-  const sel = [];
+  // Replace the current timetable's selection with a genuinely clash-free
+  // offering pick for each module in the plan.
+  const mods = [];
   for (const code of codes) {
     const data = live.get(code);
-    if (!data || !data.classes) continue;
-    let chosen = null;
-    for (const cls of data.classes) {
-      if (!picked.some((p) => classesClash(p, cls))) {
-        chosen = cls;
-        break;
-      }
-    }
-    if (!chosen) chosen = data.classes[0]; // fall back; clash warning will flag it
-    picked.push(chosen);
-    sel.push({ code, offeringKey: offeringKey(chosen) });
+    if (data && data.classes) mods.push({ code, data });
   }
+  const picked = clashFreeAssignment(mods);
+  const sel = picked
+    ? mods.map((m, i) => ({ code: m.code, offeringKey: offeringKey(picked[i]) }))
+    : [];
   selection[activeTimetable] = sel;
   saveState();
   refreshUI();
