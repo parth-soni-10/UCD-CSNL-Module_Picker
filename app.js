@@ -32,7 +32,6 @@ function gridMetrics() {
 
 const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
-const LS_EXTRA = "csnlPicker:extraCodes:v1";
 const LS_THEME = "csnlPicker:theme:v1";
 const LS_TIMINGS = "csnlPicker:timings:v1"; // browser cache of fetched UCD timings
 
@@ -46,7 +45,6 @@ const catalogue = []; // [{ theme, courses: [{ title, code, credits, kind, semes
 const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
-let extraCodes = []; // user-added module codes (persisted; timings always live)
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -158,12 +156,6 @@ function loadState() {
   } catch (e) {
     /* ignore */
   }
-  try {
-    const e = JSON.parse(localStorage.getItem(LS_EXTRA) || "[]");
-    if (Array.isArray(e)) extraCodes = e.map((s) => String(s).toUpperCase()).filter(Boolean);
-  } catch (err) {
-    /* ignore */
-  }
   if (!selection[activeTimetable]) selection[activeTimetable] = [];
 }
 
@@ -197,10 +189,9 @@ function loadTimingsCache() {
   }
 }
 
-function saveTimingsCache(extra) {
+function saveTimingsCache() {
   try {
-    const keep = new Set(allCodes());
-    if (extra) for (const c of extra) keep.add(c);
+    const keep = new Set(curatedCodes());
     const results = {};
     for (const [code, data] of live) {
       if (keep.has(code) && data) results[code] = data;
@@ -359,7 +350,7 @@ async function retryModule(code) {
   }
   updateStatus();
   refreshUI();
-  saveTimingsCache([code]);
+  saveTimingsCache();
 }
 
 // fresh: bypass the server's 30-min cache and pull straight from UCD
@@ -367,11 +358,11 @@ async function retryModule(code) {
 //             background refresh after restoring the browser cache)
 async function fetchAllTimings(fresh, refreshAll) {
   const codes = [];
-  for (const code of allCodes()) if (!live.has(code)) codes.push(code);
+  for (const code of curatedCodes()) if (!live.has(code)) codes.push(code);
 
   if (codes.length === 0 && !fresh && !refreshAll) return;
 
-  const toFetch = fresh || refreshAll ? allCodes() : codes;
+  const toFetch = fresh || refreshAll ? curatedCodes() : codes;
   const total = toFetch.length;
   let done = 0;
 
@@ -435,7 +426,7 @@ function updateStatus() {
   const noTtCount = [...live.entries()].filter(
     ([, d]) => d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
   ).length;
-  const total = allCodes().length;
+  const total = curatedCodes().length;
   const ts = new Date();
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   els.statusPill.classList.remove("loading", "error");
@@ -465,14 +456,11 @@ function setErrorStatus(text) {
 // rendering
 // ---------------------------------------------------------------------------
 
+// unique module codes (streams cross-list some modules, so dedupe)
 function curatedCodes() {
   const codes = [];
   for (const t of catalogue) for (const c of t.courses) codes.push(c.code);
-  return codes;
-}
-
-function allCodes() {
-  return [...new Set([...curatedCodes(), ...extraCodes])];
+  return [...new Set(codes)];
 }
 
 function moduleInfo(code) {
@@ -914,7 +902,7 @@ function planModuleSemesters(info, data) {
 function planPool(sem) {
   // Modules with live classes + known credits, matching the chosen semester
   const pool = [];
-  for (const code of allCodes()) {
+  for (const code of curatedCodes()) {
     const data = live.get(code);
     if (!data || !data.found || !data.classes || !data.classes.length) continue;
     const info = moduleInfo(code);
@@ -997,7 +985,7 @@ function renderPlans() {
     resultsEl.innerHTML = `<p class="muted">Enter a target credit total (e.g. 30) to get suggestions.</p>`;
     return;
   }
-  if (live.size < allCodes().length) {
+  if (live.size < curatedCodes().length) {
     resultsEl.innerHTML = `<p class="muted">Timings are still loading — try again in a moment.</p>`;
     return;
   }
@@ -1162,10 +1150,6 @@ els.printBtn.addEventListener("click", () => window.print());
 window.addEventListener("beforeprint", () => renderTimetable());
 window.addEventListener("afterprint", () => renderTimetable());
 
-function persistExtraCodes() {
-  localStorage.setItem(LS_EXTRA, JSON.stringify(extraCodes));
-}
-
 // Inline error next to the add-by-code field (kept in sync with aria-describedby).
 function showAddCodeError(msg) {
   els.addCodeError.textContent = msg || "";
@@ -1263,11 +1247,6 @@ els.suggestForm.addEventListener("input", () => els.suggestDone.classList.add("h
 // so no non-CSNL module is ever fetched or shown.
 function purgeNonCsnl() {
   const csnl = new Set(curatedCodes());
-  const kept = extraCodes.filter((c) => csnl.has(c));
-  if (kept.length !== extraCodes.length) {
-    extraCodes = kept;
-    persistExtraCodes();
-  }
   for (const name of Object.keys(selection)) {
     const sel = selection[name].filter((s) => csnl.has(s.code));
     if (sel.length !== selection[name].length) selection[name] = sel;
