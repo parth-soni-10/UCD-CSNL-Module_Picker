@@ -1041,6 +1041,48 @@ body {
   color: #ffffff;
 }
 
+/* live COMP / level credit breakdown under the Selection header */
+.credits-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cb-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cb-cell .cb-val {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cb-cell .cb-label {
+  font-size: 10.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.cb-cell.over {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+}
+
+.cb-cell.over .cb-val {
+  color: var(--danger);
+}
+
 .summary-list {
   display: flex;
   flex-direction: column;

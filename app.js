@@ -63,6 +63,7 @@ const els = {
   progressText: document.getElementById("fetch-progress-text"),
   totalCredits: document.getElementById("total-credits"),
   summaryList: document.getElementById("summary-list"),
+  creditsBreakdown: document.getElementById("credits-breakdown"),
   timetableSwitcher: document.getElementById("timetable-switcher"),
   newTimetableName: document.getElementById("new-timetable-name"),
   addTimetableBtn: document.getElementById("add-timetable-btn"),
@@ -808,6 +809,41 @@ function renderSummary() {
     list.innerHTML = `<p class="muted" style="margin:4px 2px 12px">Nothing selected yet — tick classes in the module list.</p>`;
   }
   els.totalCredits.textContent = `${credits} credits`;
+  renderCreditsBreakdown();
+}
+
+// Live credit breakdown in the Selection panel: COMP vs non-COMP, and
+// Level 3-or-below vs Level 4, each counted once per module (not per
+// offering). The same rules the policy warning enforces, shown while picking.
+function renderCreditsBreakdown() {
+  const el = els.creditsBreakdown;
+  if (!el) return;
+  const seen = new Set();
+  let comp = 0;
+  let nonComp = 0;
+  let level3 = 0;
+  let level4 = 0;
+  for (const s of currentSelection()) {
+    if (seen.has(s.code)) continue;
+    seen.add(s.code);
+    const info = moduleInfo(s.code);
+    if (!info || !info.credits) continue;
+    const cr = info.credits;
+    const lvl = moduleLevel(s.code);
+    if (String(s.code).startsWith("COMP")) comp += cr;
+    else nonComp += cr;
+    if (lvl <= 3) level3 += cr;
+    else level4 += cr;
+  }
+  const cell = (label, value, over) =>
+    `<div class="cb-cell${over ? " over" : ""}" title="${esc(label)}">` +
+    `<span class="cb-val">${value}</span><span class="cb-label">${esc(label)}</span></div>`;
+  el.innerHTML = `
+    ${cell("COMP", `${comp} cr`)}
+    ${cell("Non-COMP", `${nonComp} cr`, nonComp > POLICY_MAX_NON_COMP)}
+    ${cell("Level ≤3", `${level3} cr`, level3 > POLICY_MAX_LEVEL3)}
+    ${cell("Level 4+", `${level4} cr`)}
+  `;
 }
 
 // ---------------------------------------------------------------------------
