@@ -20,3 +20,12 @@
 # publication date. The GET endpoint also self-heals on every request.
 [functions."refresh-catalogue"]
   schedule = "0 0 * * *"
+
+# Suppress Netlify's "Powered by Netlify" badge, which Netlify injects as an
+# inline script on Free-plan projects. Omitting 'unsafe-inline' from script-src
+# blocks that injected script; the site itself only uses the self-hosted app.js,
+# so nothing here is affected.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "script-src 'self'"
