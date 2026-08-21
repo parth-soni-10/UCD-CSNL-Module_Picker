@@ -23,8 +23,9 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // state
 // ---------------------------------------------------------------------------
 
-const catalogue = []; // curated [{ theme, courses: [{ title, code, credits }] }]
+const catalogue = []; // curated [{ theme, courses: [{ title, code, credits }], lazy }]
 const live = new Map(); // code -> timetable payload from the function
+const lazyCodes = new Set(); // auto-discovered codes fetched only when their theme is expanded
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
 let moduleCount = 0;
@@ -278,7 +279,10 @@ async function fetchAllTimings(fresh) {
 }
 
 function updateStatus() {
-  const liveCount = [...live.values()].filter((d) => d.found && d.classes && d.classes.length).length;
+  // lazy (auto-discovered) modules are excluded — they fetch only on expand
+  const liveCount = [...live.entries()]
+    .filter(([code, d]) => !lazyCodes.has(code) && d.found && d.classes && d.classes.length)
+    .length;
   const total = allCodes().length;
   const ts = new Date();
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -304,7 +308,10 @@ function setErrorStatus(text) {
 
 function curatedCodes() {
   const codes = [];
-  for (const t of catalogue) for (const c of t.courses) codes.push(c.code);
+  for (const t of catalogue) {
+    if (t.lazy) continue; // auto-discovered modules fetch only on expand
+    for (const c of t.courses) codes.push(c.code);
+  }
   return codes;
 }
 
@@ -333,6 +340,7 @@ function render() {
 
   const themes = catalogue.map((t) => ({
     name: t.theme,
+    lazy: t.lazy,
     courses: t.courses.filter(
       (c) =>
         !term ||
@@ -341,7 +349,7 @@ function render() {
     ),
   }));
   const extraCourses = extraCodes
-    .filter((code) => !curatedCodes().includes(code))
+    .filter((code) => !curatedCodes().includes(code) && !lazyCodes.has(code))
     .filter(
       (code) =>
         !term ||
@@ -358,6 +366,7 @@ function render() {
 
     const section = document.createElement("div");
     section.className = "theme";
+    if (themeObj.lazy) section.dataset.lazy = "1";
     section.innerHTML = `
       <button class="theme-toggle collapsed">
         <span>${esc(themeObj.name)}<span class="theme-count">${themeObj.courses.length}</span></span>
@@ -389,6 +398,7 @@ function renderCourseCard(c) {
   const data = live.get(c.code);
   const card = document.createElement("div");
   card.className = "course-card";
+  card.dataset.code = c.code;
 
   const badges = [];
   if (data && data.semester) {
@@ -625,6 +635,31 @@ els.courseList.addEventListener("change", (e) => {
   }
 });
 
+async function ensureThemeFetched(body) {
+  // lazy themes (auto-discovered UCD modules) fetch timings only when expanded
+  const codes = [...body.querySelectorAll(".course-card")]
+    .map((card) => card.dataset.code)
+    .filter((c) => c && !live.has(c));
+  if (!codes.length) return;
+  for (let i = 0; i < codes.length; i += BATCH_SIZE) {
+    const batch = codes.slice(i, i + BATCH_SIZE);
+    try {
+      const json = await fetchBatch(batch, false);
+      for (const [code, data] of Object.entries(json.results || {})) {
+        live.set(code, { ...data, fetchedAt: json.generatedAt });
+      }
+      for (const code of batch) {
+        if (!live.has(code)) live.set(code, { found: false, reason: "Unavailable" });
+      }
+    } catch (e) {
+      for (const code of batch) {
+        if (!live.has(code)) live.set(code, { found: false, reason: `Fetch error: ${e.message}` });
+      }
+    }
+    refreshUI();
+  }
+}
+
 els.courseList.addEventListener("click", (e) => {
   const toggle = e.target.closest(".theme-toggle");
   if (toggle) {
@@ -638,6 +673,9 @@ els.courseList.addEventListener("click", (e) => {
     }
     toggle.classList.toggle("collapsed", !collapsed);
     body.classList.toggle("hidden", !collapsed);
+    if (collapsed && toggle.parentElement.dataset.lazy) {
+      ensureThemeFetched(body);
+    }
   }
 });
 
@@ -770,7 +808,8 @@ function renderAll() {
     }
     for (const t of data) {
       const courses = t.courses.map((c) => ({ ...c, ...parseName(c.name) }));
-      catalogue.push({ theme: t.theme, courses });
+      catalogue.push({ theme: t.theme, courses, lazy: !!t.lazy });
+      if (t.lazy) for (const c of courses) lazyCodes.add(c.code);
     }
     moduleCount = allCodes().length;
   } catch (e) {

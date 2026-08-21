@@ -12,8 +12,9 @@ across future academic years:
 | Module title | **Live** — UCD |
 | Academic year (auto-picks the latest published) | **Live** — UCD |
 | Trimester / semester (Autumn, Spring, or both) | **Live** — UCD |
-| Module code list (default view) | Curated, **auto-refreshed every 1 August** via `/catalogue` + **add any code live at runtime** |
-| Credits | Curated (UCD exposes no public credits API), refreshed with the list on 1 August |
+| Module code list (default view) | Curated themes, **auto-refreshed from UCD's own module catalogue every 1 August** |
+| Credits | **Live from UCD's module catalogue**, refreshed yearly |
+| New modules each year | **Auto-discovered from UCD** into a lazy "More UCD Modules" theme |
 
 There are **no hardcoded timings anywhere**. When UCD updates a schedule —
 or publishes next year's timetable — the picker shows it automatically.
@@ -33,26 +34,38 @@ Modules with no timetable yet show UCD's own reason ("currently not timetabled",
    the default list — the code is remembered, but its timings are always
    re-fetched live.
 
-## Automatic yearly refresh (1 August)
+## Automatic yearly refresh (1 August) — UCD is the source of truth
 
 UCD publishes the next academic year's module set around the start of August.
-The module list updates itself every **1 August**, no code change needed:
+The whole site updates itself every **1 August**, with no code change:
 
 - A **scheduled function** (`refresh-catalogue`) runs at `00:00 UTC` on
-  **1 August** and re-scrapes the module list from the CSNL module-picker site
-  (override the source with the `MODULE_SOURCE_URL` env var).
-- The catalogue is served to the frontend by `/catalogue`, which stores the
-  refreshed list in **Netlify Blobs**. If the scheduled run is ever missed, the
-  first page load on/after 1 August regenerates it automatically (the year
-  stamp on the stored list is compared against the current date).
-- If the source site is down or unparseable, the site falls back to the
-  committed `modules.json` — timings for every existing module are still
-  fetched live from UCD, so nothing breaks.
-- Timings, titles, trimesters and the auto-picked latest academic year were
-  already live per module, so the refresh only concerns which modules appear
-  and their credits.
+  **1 August** and pulls **UCD's own published module catalogue** (the
+  "Search All Modules" listing, `p_tag=MODULESCURRENT` — every module UCD
+  offers, with credits, level and school).
+- The `/catalogue` service rebuilds the module list from it:
+  - curated themes keep their grouping, but **credits are refreshed from UCD**
+    (they're no longer curated data);
+  - every School of Computer Science module at levels 3–4 that isn't already
+    curated is **auto-added** under a "More UCD Modules" theme, so genuinely
+    new modules appear automatically each year — and modules UCD retires
+    disappear from that theme on their own;
+  - the auto theme is **lazy**: its timings are fetched from UCD only when you
+    expand it, keeping the initial load fast and UCD requests polite.
+- The refreshed list is stored in **Netlify Blobs**. If the scheduled run is
+  ever missed, the first page load on/after 1 August regenerates it
+  automatically — and because the stored year is the academic year UCD itself
+  reports in the data, the service keeps re-checking until UCD actually
+  publishes the new year's list.
+- If UCD's catalogue is unreachable, the site falls back to the committed
+  `modules.json` — per-module timings are still fetched live from UCD, so
+  nothing breaks.
 
-Manually regenerate the committed list anytime:
+Timings, titles, trimesters and the auto-picked latest academic year are
+fetched live per module on every page load, so the yearly refresh only needs
+UCD to have published the new list once.
+
+Manually regenerate the committed seed list anytime:
 
 ```bash
 node tools/extract-modules.js                              # from the snapshot
@@ -84,7 +97,7 @@ No build step. Either:
 | File | Purpose |
 | --- | --- |
 | `index.html` / `styles.css` / `app.js` | The site |
-| `modules.json` | Curated default module list (name + credits only — **no timings**); fallback for `/catalogue` |
+| `modules.json` | Curated seed module list (name + credits — **no timings**); fallback for `/catalogue` |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
 | `netlify/functions/catalogue.js` | Auto-refreshing module list service (Netlify Blobs + fallback) |
 | `netlify/functions/refresh-catalogue.js` | Scheduled 1-August refresh (cron in `netlify.toml`) |

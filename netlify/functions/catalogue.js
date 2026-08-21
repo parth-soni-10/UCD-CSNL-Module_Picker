@@ -1,19 +1,30 @@
-// Auto-refreshing module catalogue service.
+// Auto-refreshing module catalogue service — UCD-first.
 //
-// Serves the curated module list (themes + name + credits only — timings,
-// titles and semesters are always fetched live per module by timetable.js).
-// Regenerates the list once per year, on 1 August, from the CSNL module
-// picker site (or $MODULE_SOURCE_URL), because that is when UCD publishes
-// the next academic year's module set. Falls back to the committed
-// modules.json whenever the source is unreachable or unparseable, so the
-// app keeps working regardless.
+// On 1 August each year (when UCD publishes the next academic year's module
+// set) this service pulls UCD's own published module catalogue and rebuilds
+// the module list automatically:
+//
+//   - Curated themes (the committed modules.json seed) are kept, but their
+//     credits are refreshed from UCD's catalogue (credits are no longer
+//     curated data).
+//   - Every CSNL-relevant module UCD offers that isn't already curated
+//     (School of Computer Science + the schools of the curated modules, at
+//     levels 3–4) is auto-added under a "More UCD Modules" theme. New
+//     modules appear every year with zero code changes.
+//   - Modules that UCD retires disappear from that auto theme automatically.
+//
+// The catalogue's stored year is the academic year UCD itself reports in the
+// data (TERMCODE), so if UCD publishes late the service simply keeps
+// re-checking on each request until the new year's list appears.
 //
 // Persistence: Netlify Blobs in production (zero-config from functions);
-// in-memory cache on the local dev server. Both paths are guarded, so the
-// function works even without @netlify/blobs installed.
+// in-memory cache on the local dev server. Both are guarded, so the function
+// works even without @netlify/blobs installed. If UCD is unreachable, the
+// committed modules.json is served instead — timings stay live either way.
 
 "use strict";
 
+const zlib = require("zlib");
 const FALLBACK = require("../../modules.json");
 
 let getStore = null;
@@ -25,9 +36,10 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const SOURCE_URL =
-  process.env.MODULE_SOURCE_URL || "https://csnl-module-picker.onrender.com/";
-const SOURCE_TIMEOUT_MS = 20000;
+const VERSION = 2;
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+const FETCH_TIMEOUT_MS = 20000;
 
 // in-memory cache for the local dev server (long-lived process)
 let memCache = null;
@@ -39,47 +51,108 @@ function currentCatalogueYear() {
   return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
 }
 
-function extractFromHtml(html) {
-  const marker = "const courseDataString = `";
-  const start = html.indexOf(marker);
-  if (start === -1) throw new Error("courseDataString not found in source");
-  const from = start + marker.length;
-  const end = html.indexOf("`;", from);
-  if (end === -1) throw new Error("courseDataString terminator not found in source");
-  const data = JSON.parse(html.slice(from, end).trim());
-  if (
-    !Array.isArray(data) ||
-    !data.every((t) => t && typeof t.theme === "string" && Array.isArray(t.courses))
-  ) {
-    throw new Error("unexpected source data shape");
-  }
-  return {
-    year: currentCatalogueYear(),
-    generatedAt: new Date().toISOString(),
-    source: SOURCE_URL,
-    themes: data.map((t) => ({
-      theme: t.theme,
-      courses: t.courses.map((c) => ({ name: c.name, credits: c.credits })),
-    })),
-  };
-}
-
-async function fetchSourceHtml() {
+async function fetchText(url, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs || FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(SOURCE_URL, {
+    const res = await fetch(url, {
       signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-      },
+      headers: { "User-Agent": UA },
+      redirect: "follow",
     });
-    if (!res.ok) throw new Error(`source returned HTTP ${res.status}`);
-    return await res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buf = await res.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      return zlib.gunzipSync(Buffer.from(bytes)).toString("utf8");
+    }
+    return new TextDecoder("utf-8").decode(bytes);
   } finally {
     clearTimeout(timer);
   }
+}
+
+// Fetches UCD's official current-year module catalogue and normalizes it to
+// a map keyed by module code. Returns { termYear, byCode }.
+async function fetchUcdCatalogue() {
+  const page = await fetchText(
+    "https://hub.ucd.ie/usis/!W_HU_MENU.P_PUBLISH?p_tag=MODULESCURRENT"
+  );
+  const tokenMatch = page.match(
+    /W_HU_REPORTING\.P_JSON_QUERY\?p_format=ARRAY&p_query=CB470-1&p_parameters=([A-F0-9]+)/
+  );
+  if (!tokenMatch) throw new Error("module catalogue token not found");
+  const jsonText = await fetchText(
+    `https://hub.ucd.ie/usis/W_HU_REPORTING.P_JSON_QUERY?p_format=ARRAY&p_query=CB470-1&p_parameters=${tokenMatch[1]}`,
+    30000
+  );
+  const json = JSON.parse(jsonText);
+  const rows = Array.isArray(json) ? json : json.data;
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error("empty module catalogue");
+
+  const byCode = new Map();
+  let termYear = null;
+  for (const r of rows) {
+    if (!Array.isArray(r) || r.length < 8) continue;
+    const codeMatch = r[0].match(/MODULE=([A-Z0-9]{5,9})/);
+    if (!codeMatch) continue;
+    const code = codeMatch[1];
+    if (!termYear) {
+      const term = r[0].match(/TERMCODE=([0-9]{6})/);
+      if (term) termYear = parseInt(term[1].slice(0, 4), 10);
+    }
+    const titleMatch = r[1].match(/<strong><a[^>]*>([^<]*)<\/a><\/strong>/);
+    const title = (titleMatch ? titleMatch[1] : r[1].replace(/<[^>]*>/g, "")).trim();
+    if (!title) continue;
+    const creditsMatch = r[6].match(/>([0-9.]+)</);
+    const levelMatch = r[5].match(/>([0-9]+)</);
+    byCode.set(code, {
+      title,
+      credits: creditsMatch ? parseFloat(creditsMatch[1]) : null,
+      level: levelMatch ? levelMatch[1] : null,
+      school: typeof r[7] === "string" ? r[7] : "",
+    });
+  }
+  if (byCode.size === 0) throw new Error("no modules parsed from catalogue");
+  return { termYear: termYear || currentCatalogueYear(), byCode };
+}
+
+function codeFromName(name) {
+  const m = String(name).match(/\(([^)]+)\)\s*$/);
+  return m ? m[1].trim() : name;
+}
+
+// Merges the curated seed with UCD's catalogue: refreshes credits and
+// auto-discovers School of Computer Science modules (levels 3-4, matching the
+// curated profile) into a lazy "More UCD Modules" theme. Cross-school modules
+// in the curated themes stay curated without expanding their whole schools.
+function buildCatalogue(curated, ucd) {
+  const curatedCodes = new Set();
+  for (const t of curated) for (const c of t.courses) curatedCodes.add(codeFromName(c.name));
+
+  const themes = curated.map((t) => ({
+    theme: t.theme,
+    courses: t.courses.map((c) => {
+      const u = ucd.byCode.get(codeFromName(c.name));
+      return { name: c.name, credits: u && u.credits != null ? u.credits : c.credits };
+    }),
+  }));
+
+  const auto = [];
+  for (const [code, u] of ucd.byCode) {
+    if (u.school !== "S012") continue; // School of Computer Science
+    if (u.level !== "3" && u.level !== "4") continue; // match the curated profile
+    if (curatedCodes.has(code)) continue;
+    auto.push({ name: `${u.title} (${code})`, credits: u.credits });
+  }
+  auto.sort((a, b) => a.name.localeCompare(b.name));
+  if (auto.length) themes.push({ theme: "More UCD Modules", lazy: true, courses: auto });
+
+  return {
+    source: "ucd.ie module catalogue",
+    generatedAt: new Date().toISOString(),
+    themes,
+  };
 }
 
 async function readStored() {
@@ -106,25 +179,31 @@ async function writeStored(value) {
 
 async function getCatalogue(opts) {
   const force = opts && opts.force;
-  const year = currentCatalogueYear();
+  const targetYear = currentCatalogueYear();
   const stored = await readStored();
 
-  if (!force && stored && stored.themes && stored.year && stored.year >= year) {
+  if (
+    !force &&
+    stored &&
+    stored.v === VERSION &&
+    stored.year &&
+    stored.year >= targetYear
+  ) {
     return stored;
   }
 
-  // New academic year (or first run): regenerate from the live source.
   try {
-    const html = await fetchSourceHtml();
-    const fresh = extractFromHtml(html);
-    if (fresh.themes.length === 0) throw new Error("source produced an empty list");
-    await writeStored(fresh);
-    return fresh;
+    const ucd = await fetchUcdCatalogue();
+    const merged = buildCatalogue(FALLBACK, ucd);
+    merged.year = ucd.termYear;
+    merged.v = VERSION;
+    await writeStored(merged);
+    return merged;
   } catch (e) {
-    // Source unreachable or unparseable — serve the committed list instead.
+    // UCD catalogue unreachable or unparseable — serve the committed seed.
     return {
+      v: VERSION,
       year: null,
-      generatedAt: null,
       source: "committed modules.json (fallback)",
       themes: FALLBACK,
     };
