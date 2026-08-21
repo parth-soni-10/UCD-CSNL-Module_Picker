@@ -678,6 +678,7 @@ function toggleOffering(code, key, checked) {
   selection[activeTimetable] = sel;
   saveState();
   refreshUI();
+  syncUrl();
 }
 
 // ---------------------------------------------------------------------------
@@ -846,20 +847,41 @@ function renderTimetable() {
 }
 
 // ---------------------------------------------------------------------------
-// URL state: reflect the view (?q=search & ?t=timetable) so a link can be
-// deep-linked and shared. replaceState keeps the back button free of noise.
+// URL state: reflect the view (?q=search & ?t=timetable & ?s=selection) so a
+// link can be deep-linked and shared. replaceState keeps the back button free
+// of noise.
 // ---------------------------------------------------------------------------
 
+// Selection -> compact, readable URL form: "CODE:day.start.type.offering,..."
+// (the internal offeringKey's "|" becomes "." so URLs stay clean).
+function encodeSelection(sel) {
+  return sel.map((s) => `${s.code}:${s.offeringKey.replace(/\|/g, ".")}`).join(",");
+}
+
+function decodeSelection(raw) {
+  const out = [];
+  for (const part of String(raw).split(",")) {
+    const idx = part.indexOf(":");
+    if (idx <= 0) continue;
+    const code = part.slice(0, idx).toUpperCase();
+    const key = part.slice(idx + 1).replace(/\./g, "|");
+    if (/^[A-Z]{2,5}\d{3,6}$/.test(code) && key) out.push({ code, offeringKey: key });
+  }
+  return out;
+}
+
 function syncUrl() {
-  const params = new URLSearchParams();
+  const parts = [];
   const q = els.search.value.trim();
-  if (q) params.set("q", q);
-  if (activeTimetable !== "Default Timetable") params.set("t", activeTimetable);
-  const qs = params.toString();
+  if (q) parts.push("q=" + encodeURIComponent(q));
+  if (activeTimetable !== "Default Timetable") parts.push("t=" + encodeURIComponent(activeTimetable));
+  const sel = currentSelection();
+  if (sel.length) parts.push("s=" + encodeSelection(sel));
+  const qs = parts.join("&");
   history.replaceState(null, "", qs ? `${location.pathname}?${qs}` : location.pathname);
 }
 
-// Apply ?q= / ?t= from a shared link before the first render.
+// Apply ?q= / ?t= / ?s= from a shared link before the first render.
 function readUrlParams() {
   const params = new URLSearchParams(location.search);
   const q = (params.get("q") || "").trim();
@@ -868,6 +890,11 @@ function readUrlParams() {
   if (t) {
     activeTimetable = t;
     if (!selection[t]) selection[t] = [];
+  }
+  const s = params.get("s");
+  if (s) {
+    const sel = decodeSelection(s);
+    if (sel.length) selection[activeTimetable] = sel;
   }
 }
 
@@ -1115,6 +1142,7 @@ function applyPlan(codes) {
   selection[activeTimetable] = sel;
   saveState();
   refreshUI();
+  syncUrl();
   els.planResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -1170,6 +1198,7 @@ els.summaryList.addEventListener("click", (e) => {
   selection[activeTimetable] = currentSelection().filter((s) => s.code !== code);
   saveState();
   refreshUI();
+  syncUrl();
 });
 
 els.addTimetableBtn.addEventListener("click", () => {
@@ -1208,6 +1237,7 @@ els.clearBtn.addEventListener("click", () => {
   selection[activeTimetable] = [];
   saveState();
   refreshUI();
+  syncUrl();
 });
 
 els.refreshBtn.addEventListener("click", () => {
