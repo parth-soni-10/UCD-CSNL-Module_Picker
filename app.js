@@ -59,6 +59,10 @@ const els = {
   addCodeBtn: document.getElementById("add-code-btn"),
   themeToggle: document.getElementById("theme-toggle"),
   semesterFilter: document.getElementById("semester-filter"),
+  planTarget: document.getElementById("plan-target"),
+  planSemester: document.getElementById("plan-semester"),
+  planBtn: document.getElementById("plan-btn"),
+  planResults: document.getElementById("plan-results"),
   bootScreen: document.getElementById("boot-screen"),
   bootFill: document.getElementById("boot-fill"),
   bootCountText: document.getElementById("boot-count-text"),
@@ -270,6 +274,23 @@ function esc(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// Do two class rows actually run at the same time? Same day + overlapping
+// times + overlapping weeks. If either side lacks week data, fall back to
+// treating an overlapping time as a clash. Shared by the timetable renderer
+// and the clash-free plan builder, so both use identical rules.
+function classesClash(a, b) {
+  if (!a || !b || a.day !== b.day) return false;
+  const s1 = timeToMinutes(a.startTime);
+  const e1 = timeToMinutes(a.endTime);
+  const s2 = timeToMinutes(b.startTime);
+  const e2 = timeToMinutes(b.endTime);
+  if (Math.max(s1, s2) >= Math.min(e1, e2)) return false; // times don't overlap
+  const wa = a.weeks && a.weeks.length ? a.weeks : null;
+  const wb = b.weeks && b.weeks.length ? b.weeks : null;
+  if (wa && wb) return wa.some((w) => wb.includes(w));
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -685,33 +706,11 @@ function renderTimetable() {
 
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
-      const a = events[i].cls;
-      const b = events[j].cls;
-      if (a.day !== b.day) continue;
-      const s1 = timeToMinutes(a.startTime);
-      const e1 = timeToMinutes(a.endTime);
-      const s2 = timeToMinutes(b.startTime);
-      const e2 = timeToMinutes(b.endTime);
-      if (Math.max(s1, s2) >= Math.min(e1, e2)) continue; // times don't overlap
-      // Only a real clash if the classes actually run in overlapping weeks
-      // (e.g. a Semester 1 Mon 16:00 class and a Semester 2 Mon 15:00 class
-      // are fine — they never run at the same time). If either side has no
-      // week data, fall back to treating it as a clash.
-      const wa = a.weeks && a.weeks.length ? a.weeks : null;
-      const wb = b.weeks && b.weeks.length ? b.weeks : null;
-      if (wa && wb) {
-        let weekOverlap = false;
-        for (const w of wa) {
-          if (wb.includes(w)) {
-            weekOverlap = true;
-            break;
-          }
-        }
-        if (!weekOverlap) continue;
+      if (classesClash(events[i].cls, events[j].cls)) {
+        hasClash = true;
+        events[i].el.classList.add("clash");
+        events[j].el.classList.add("clash");
       }
-      hasClash = true;
-      events[i].el.classList.add("clash");
-      events[j].el.classList.add("clash");
     }
   }
 
@@ -733,6 +732,181 @@ function renderSwitcher() {
     els.timetableSwitcher.appendChild(opt);
   }
 }
+
+// ---------------------------------------------------------------------------
+// clash-free plan builder
+// ---------------------------------------------------------------------------
+// Suggests combinations of modules whose live timetables can coexist (no
+// class clashes, using the same rules as the weekly timetable), close to a
+// target credit total. Pure client-side over the already-fetched live data.
+
+function planModuleSemesters(info, data) {
+  // "1", "2", or "1, 2" from the catalogue; fall back to live trimesters
+  const sem = (info && info.semester) || (data && data.semester) || "";
+  if (sem) return sem.split(",").map((s) => s.trim()).filter(Boolean);
+  const trims = (data && data.trimesters) || [];
+  return trims.map((t) => (/autumn/i.test(t) ? "1" : /spring/i.test(t) ? "2" : null)).filter(Boolean);
+}
+
+function planPool(sem) {
+  // Modules with live classes + known credits, matching the chosen semester
+  const pool = [];
+  for (const code of allCodes()) {
+    const data = live.get(code);
+    if (!data || !data.found || !data.classes || !data.classes.length) continue;
+    const info = moduleInfo(code);
+    const credits = info && info.credits ? info.credits : 0;
+    if (!credits) continue;
+    const sems = planModuleSemesters(info, data);
+    if (sem !== "all" && sems.length && !sems.includes(sem)) continue;
+    pool.push({ code, credits, info, data });
+  }
+  return pool;
+}
+
+// Can these two modules be taken together? There must be a class in each
+// whose schedules don't overlap.
+function modulesCompatible(a, b) {
+  for (const ca of a.data.classes) {
+    for (const cb of b.data.classes) {
+      if (!classesClash(ca, cb)) return true;
+    }
+  }
+  return false;
+}
+
+function findPlans(target, sem, maxResults = 6, maxCombos = 6000) {
+  const pool = planPool(sem);
+  if (pool.length < 2) return [];
+  pool.sort((a, b) => b.credits - a.credits);
+
+  // suffix sums for credit-bound pruning
+  const suffixMax = new Array(pool.length + 1).fill(0);
+  for (let i = pool.length - 1; i >= 0; i--) suffixMax[i] = suffixMax[i + 1] + pool[i].credits;
+
+  const results = [];
+  const combo = [];
+  let explored = 0;
+  const tolerance = 5; // accept totals within ±5 credits of the target
+
+  function search(startIdx, total) {
+    if (explored >= maxCombos) return;
+    explored++;
+    if (combo.length >= 2) {
+      const diff = Math.abs(total - target);
+      if (diff <= tolerance) {
+        results.push({ modules: combo.slice(), total, diff });
+      }
+    }
+    for (let i = startIdx; i < pool.length; i++) {
+      const m = pool[i];
+      if (total + m.credits > target + tolerance) continue; // don't overshoot
+      if (total + suffixMax[i] < target - tolerance) break; // can't reach the target
+      let ok = true;
+      for (const cm of combo) {
+        if (!modulesCompatible(cm, m)) {
+          ok = false;
+          break;
+        }
+      }
+      if (!ok) continue;
+      combo.push(m);
+      search(i + 1, total + m.credits);
+      combo.pop();
+      if (results.length >= maxResults && explored > maxCombos * 0.6) return;
+    }
+  }
+
+  search(0, 0);
+  results.sort((a, b) => a.diff - b.diff || a.modules.length - b.modules.length);
+  return results.slice(0, maxResults);
+}
+
+function renderPlans() {
+  const target = parseInt(els.planTarget.value, 10);
+  const semChoice = els.planSemester.value;
+  const sem = semChoice === "current" ? getCurrentSemester() || "1" : semChoice;
+  const resultsEl = els.planResults;
+
+  if (!target || target < 5) {
+    resultsEl.innerHTML = `<p class="muted">Enter a target credit total (e.g. 30) to get suggestions.</p>`;
+    return;
+  }
+  if (live.size < allCodes().length) {
+    resultsEl.innerHTML = `<p class="muted">Timings are still loading — try again in a moment.</p>`;
+    return;
+  }
+
+  const plans = findPlans(target, sem);
+  const semLabel = sem === "1" ? "Semester 1" : sem === "2" ? "Semester 2" : "both semesters";
+
+  if (!plans.length) {
+    resultsEl.innerHTML = `<p class="muted">No clash-free ${semLabel} combinations found near ${target} credits yet.</p>`;
+    return;
+  }
+
+  resultsEl.innerHTML = `<p class="plan-results-head">${plans.length} clash-free ${semLabel} plan${plans.length > 1 ? "s" : ""} near ${target} credits:</p>`;
+  for (const plan of plans) {
+    const item = document.createElement("div");
+    item.className = "plan-item";
+    const rows = plan.modules
+      .map((m) => `<div class="plan-mod"><span class="plan-credits">${m.credits} cr</span> ${esc(m.info.title || m.code)} <span class="mono">${esc(m.code)}</span></div>`)
+      .join("");
+    const badge =
+      plan.diff === 0
+        ? `<span class="plan-badge exact">exact</span>`
+        : `<span class="plan-badge">±${plan.diff}</span>`;
+    item.innerHTML = `
+      <div class="plan-item-head">
+        <strong class="plan-total">${plan.total} credits</strong>
+        ${badge}
+        <button class="btn btn-ghost plan-use" data-plan="${esc(JSON.stringify(plan.modules.map((m) => m.code)))}">Use this plan</button>
+      </div>
+      <div class="plan-mods">${rows}</div>
+    `;
+    resultsEl.appendChild(item);
+  }
+}
+
+function applyPlan(codes) {
+  // Replace the current timetable's selection with a clash-free offering pick
+  // for each module in the plan (greedy: take the first class that doesn't
+  // clash with classes already picked).
+  const picked = [];
+  const sel = [];
+  for (const code of codes) {
+    const data = live.get(code);
+    if (!data || !data.classes) continue;
+    let chosen = null;
+    for (const cls of data.classes) {
+      if (!picked.some((p) => classesClash(p, cls))) {
+        chosen = cls;
+        break;
+      }
+    }
+    if (!chosen) chosen = data.classes[0]; // fall back; clash warning will flag it
+    picked.push(chosen);
+    sel.push({ code, offeringKey: offeringKey(chosen) });
+  }
+  selection[activeTimetable] = sel;
+  saveState();
+  refreshUI();
+  els.planResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+els.planBtn.addEventListener("click", renderPlans);
+els.planTarget.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") renderPlans();
+});
+els.planResults.addEventListener("click", (e) => {
+  const btn = e.target.closest(".plan-use");
+  if (!btn) return;
+  try {
+    applyPlan(JSON.parse(btn.dataset.plan));
+  } catch (err) {
+    /* ignore malformed plans */
+  }
+});
 
 // ---------------------------------------------------------------------------
 // events

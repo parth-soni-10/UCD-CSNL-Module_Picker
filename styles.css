@@ -985,6 +985,112 @@ body {
   padding-top: 14px;
 }
 
+/* ------------------------------------------------------- clash-free plans */
+.plan-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.45;
+}
+
+.plan-controls {
+  margin-bottom: 8px;
+}
+
+.plan-target {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.plan-sem {
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-results {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.plan-results-head {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.plan-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.plan-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.plan-total {
+  font-size: 13px;
+}
+
+.plan-badge {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-3);
+}
+
+.plan-badge.exact {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.plan-use {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 11.5px;
+}
+
+.plan-mods {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.plan-mod {
+  font-size: 12px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-mod .mono {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.plan-credits {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: var(--surface-3);
+  color: var(--text-2);
+  border-radius: 999px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
 /* ---------------------------------------------------------- timetable grid */
 .timetable-wrap {
   position: relative;

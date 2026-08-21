@@ -129,6 +129,36 @@
           </div>
         </div>
 
+        <!-- Clash-free plan builder -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Clash-Free Plans</h2>
+          </div>
+          <p class="plan-hint">Find module combinations that hit a credit target without timetable clashes (uses live UCD timings).</p>
+          <div class="row plan-controls">
+            <input
+              id="plan-target"
+              class="input plan-target"
+              type="number"
+              min="5"
+              max="120"
+              step="5"
+              placeholder="Target credits"
+              aria-label="Target credit total"
+            />
+            <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan">
+              <option value="current">Current sem.</option>
+              <option value="1">Semester 1</option>
+              <option value="2">Semester 2</option>
+              <option value="all">Both</option>
+            </select>
+          </div>
+          <div class="row">
+            <button id="plan-btn" class="btn btn-primary grow">Find clash-free plans</button>
+          </div>
+          <div id="plan-results" class="plan-results"></div>
+        </div>
+
         <!-- Weekly timetable -->
         <div class="panel">
           <div class="panel-head">
