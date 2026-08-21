@@ -626,6 +626,7 @@ function render() {
     };
   });
   const shownCodes = new Set();
+  const over = overLimitModules();
   for (const themeObj of themes) {
     if (themeObj.courses.length === 0) continue;
     for (const c of themeObj.courses) shownCodes.add(c.code);
@@ -643,7 +644,7 @@ function render() {
       <div class="theme-body${isExpanded ? "" : " hidden"}"></div>
     `;
     const body = section.querySelector(".theme-body");
-    for (const c of themeObj.courses) body.appendChild(renderCourseCard(c));
+    for (const c of themeObj.courses) body.appendChild(renderCourseCard(c, over));
     list.appendChild(section);
   }
 
@@ -660,7 +661,7 @@ function liveTitle(code) {
 
 const UCD_MODULE_BASE = "https://www.ucd.ie/modules/";
 
-function renderCourseCard(c) {
+function renderCourseCard(c, over) {
   const data = live.get(c.code);
   const card = document.createElement("div");
   card.className = "course-card";
@@ -671,6 +672,18 @@ function renderCourseCard(c) {
   const moduleSem = c.semester || (data && data.semester);
   if (currentSem && moduleSem && moduleSem.includes(currentSem)) {
     card.classList.add("current-semester");
+  }
+
+  // highlight if this module pushes the selection over a CSNL limit
+  if (over) {
+    const l3 = over.level3 && over.level3.has(c.code);
+    const nc = over.nonComp && over.nonComp.has(c.code);
+    if (l3 || nc) {
+      card.classList.add("over-limit");
+      if (l3 && nc) card.classList.add("over-both");
+      else if (l3) card.classList.add("over-l3");
+      else card.classList.add("over-nc");
+    }
   }
 
   const badges = [];
@@ -698,11 +711,17 @@ function renderCourseCard(c) {
   if (failed) badges.push({ text: "Load failed", cls: "fail" });
   if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
+  const overBadge =
+    over && (over.level3.has(c.code) || over.nonComp.has(c.code))
+      ? `<span class="badge over-limit-badge" title="This module pushes your selection over the CSNL credit limits — consider swapping it out.">⚠ Over limit</span>`
+      : "";
+
   card.innerHTML = `
     <div class="card-top">
       <div>
         <h3><a class="module-link" href="${UCD_MODULE_BASE}${esc(c.code)}" target="_blank" rel="noopener" title="View ${esc(c.code)} on ucd.ie">${esc(liveTitle(c.code))}</a></h3>
         <div class="badges">
+          ${overBadge}
           ${badges.map((b) => `<span class="badge${b.cls ? " " + esc(b.cls) : ""}${data && data.found ? " live" : ""}">${esc(b.text !== undefined ? b.text : b)}</span>`).join("")}
         </div>
       </div>
@@ -1056,6 +1075,37 @@ const POLICY_MAX_NON_COMP = 15; // credits from non-COMP modules
 function moduleLevel(code) {
   const d = (String(code).match(/\d+/) || [""])[0];
   return d ? parseInt(d[0], 10) : 9;
+}
+
+// Which currently-selected modules push the selection over each CSNL rule.
+// Returns { level3: Set<code>, nonComp: Set<code> } — empty unless the rule
+// is actually exceeded, so the module list can highlight exactly what to
+// swap out.
+function overLimitModules() {
+  const seen = new Map(); // code -> info (each module once, not per offering)
+  for (const s of currentSelection()) {
+    if (!seen.has(s.code)) seen.set(s.code, moduleInfo(s.code));
+  }
+  const level3 = [];
+  const nonComp = [];
+  let l3Total = 0;
+  let ncTotal = 0;
+  for (const [code, info] of seen) {
+    if (!info || !info.credits) continue;
+    const lvl = moduleLevel(code);
+    if (lvl <= 3) {
+      l3Total += info.credits;
+      level3.push(code);
+    }
+    if (!code.startsWith("COMP")) {
+      ncTotal += info.credits;
+      nonComp.push(code);
+    }
+  }
+  return {
+    level3: l3Total > POLICY_MAX_LEVEL3 ? new Set(level3) : new Set(),
+    nonComp: ncTotal > POLICY_MAX_NON_COMP ? new Set(nonComp) : new Set(),
+  };
 }
 
 function renderPolicyWarning() {

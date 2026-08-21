@@ -900,6 +900,28 @@ body {
 }
 
 /* brief highlight when jumping to a module via the code box */
+/* a selected module that pushes the selection over a CSNL credit limit */
+.course-card.over-limit {
+  border-color: var(--danger-border);
+  background: color-mix(in srgb, var(--danger-soft) 55%, var(--surface));
+}
+
+.course-card.over-limit:hover {
+  border-color: var(--danger-bright);
+}
+
+[data-theme="dark"] .course-card.over-limit {
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(248, 113, 113, 0.07);
+}
+
+.badge.over-limit-badge {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .course-card.flash {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
