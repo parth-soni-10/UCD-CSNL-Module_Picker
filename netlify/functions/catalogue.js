@@ -38,7 +38,7 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const VERSION = 6; // bumped when the stored catalogue shape changes
+const VERSION = 7; // bumped when the stored catalogue shape changes
 const NL_STREAMS_URL = "https://www.ucd.ie/cs/study/postgraduate/nlstreams/";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
@@ -159,6 +159,19 @@ function parseNlStreams(html) {
   return { streams, pageUpdated };
 }
 
+// Self-check: do the served course codes exactly match the codes parsed from
+// the CSNL page? Catches parser regressions (if UCD changes the page markup
+// and rows silently drop) as well as fallback data, and is surfaced to the
+// frontend so visitors can see the list was re-verified on load.
+function verifyCatalogue(themes, pageCodes) {
+  const served = new Set();
+  for (const t of themes) for (const c of t.courses) served.add(codeFromName(c.name).toUpperCase());
+  const page = new Set(pageCodes.map((c) => String(c).toUpperCase()));
+  const extra = [...served].filter((c) => !page.has(c));
+  const missing = [...page].filter((c) => !served.has(c));
+  return { verified: extra.length === 0 && missing.length === 0, extra, missing };
+}
+
 function buildFromStreams(streams, pageUpdated) {
   const themes = streams.map((s) => ({
     theme: s.name,
@@ -170,11 +183,16 @@ function buildFromStreams(streams, pageUpdated) {
       comments: m.comments || undefined,
     })),
   }));
+  const check = verifyCatalogue(
+    themes,
+    streams.flatMap((s) => s.modules.map((m) => m.code))
+  );
   return {
     source: "ucd.ie/cs/study/postgraduate/nlstreams",
     pageUpdated,
     generatedAt: new Date().toISOString(),
     themes,
+    verified: check.verified,
   };
 }
 
@@ -354,6 +372,7 @@ async function getCatalogue(opts) {
       const merged = buildFromGenericCatalogue(FALLBACK, ucd);
       merged.year = ucd.termYear;
       merged.v = VERSION;
+      merged.verified = false; // couldn't re-read the CSNL page
       await writeStored(merged);
       return merged;
     } catch (e2) {
@@ -363,6 +382,7 @@ async function getCatalogue(opts) {
         year: null,
         source: "committed modules.json (fallback)",
         themes: FALLBACK,
+        verified: false, // couldn't re-read the CSNL page
       };
     }
   }

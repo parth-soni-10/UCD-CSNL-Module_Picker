@@ -54,6 +54,7 @@ const els = {
   courseList: document.getElementById("course-list"),
   search: document.getElementById("search"),
   moduleCount: document.getElementById("module-count"),
+  csnlBadge: document.getElementById("csnl-badge"),
   statusPill: document.getElementById("status-pill"),
   statusText: document.getElementById("status-text"),
   refreshBtn: document.getElementById("refresh-btn"),
@@ -456,6 +457,26 @@ function setErrorStatus(text) {
 // ---------------------------------------------------------------------------
 // rendering
 // ---------------------------------------------------------------------------
+
+// Self-check metadata from the catalogue function: whether the served list
+// was re-verified against UCD's CSNL page on this load, and the page's own
+// last-update stamp.
+let catalogueMeta = null;
+
+function updateCsnlBadge() {
+  if (!els.csnlBadge) return;
+  if (catalogueMeta && catalogueMeta.verified) {
+    els.csnlBadge.classList.remove("warn");
+    els.csnlBadge.title =
+      "Verified against UCD's CSNL streams page" +
+      (catalogueMeta.pageUpdated ? ` (updated ${catalogueMeta.pageUpdated})` : "") +
+      ". Only modules on that list are offered.";
+  } else {
+    els.csnlBadge.classList.add("warn");
+    els.csnlBadge.title =
+      "Could not re-verify against UCD's CSNL page on this load — showing the last known list. Only CSNL modules are offered.";
+  }
+}
 
 // unique module codes (streams cross-list some modules, so dedupe)
 function curatedCodes() {
@@ -1417,7 +1438,16 @@ function startAutoRefresh() {
       const res = await fetch(CATALOGUE_URL);
       if (res.ok) {
         const json = await res.json();
-        data = Array.isArray(json) ? json : json.themes;
+        if (Array.isArray(json)) {
+          data = json;
+        } else {
+          data = json.themes;
+          catalogueMeta = {
+            verified: !!json.verified,
+            pageUpdated: json.pageUpdated,
+            year: json.year,
+          };
+        }
       }
     } catch (e) {
       /* fall through to modules.json */
@@ -1426,11 +1456,14 @@ function startAutoRefresh() {
       const res = await fetch("modules.json");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       data = await res.json();
+      // committed fallback — CSNL-only but not live-verified this load
+      catalogueMeta = { verified: false, pageUpdated: null, year: null };
     }
     for (const t of data) {
       const courses = t.courses.map((c) => ({ ...c, ...parseName(c.name) }));
       catalogue.push({ theme: t.theme, courses });
     }
+    updateCsnlBadge();
   } catch (e) {
     setErrorStatus("Could not load module list");
     failBoot("Could not load the module list.");
