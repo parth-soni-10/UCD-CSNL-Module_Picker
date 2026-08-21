@@ -266,14 +266,15 @@ async function fetchModuleTimetable(code) {
     };
   }
 
-  // 3. choose the latest academic year that has a link
-  let bestIdx = -1;
-  for (let i = 0; i < parsed.years.length; i++) {
-    if (row.links[i] && (bestIdx === -1 || parsed.years[i] > parsed.years[bestIdx])) {
-      bestIdx = i;
-    }
-  }
-  if (bestIdx === -1) {
+  // 3. try each year that has a timetable link, newest first. UCD often
+  //    creates the year entry before publishing the actual schedule, so the
+  //    latest year may be empty — fall back to the previous year in that case.
+  const linkedYears = parsed.years
+    .map((y, i) => ({ y, i }))
+    .filter(({ i }) => row.links[i])
+    .sort((a, b) => b.y.localeCompare(a.y));
+
+  if (!linkedYears.length) {
     return {
       found: true,
       title: row.title || parsed.titlesByCode[code] || null,
@@ -281,23 +282,23 @@ async function fetchModuleTimetable(code) {
       reason: "No timetable published",
     };
   }
-  const year = parsed.years[bestIdx];
-  const link = row.links[bestIdx];
 
-  // 4. CM801 launch returns the timetable HTML directly
-  const launchPath =
-    "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM801&p_parameters=" +
-    link.split("p_parameters=")[1];
-  const launch = await ucdGet(launchPath);
-  if (launch.status !== 200) {
-    throw new Error(`UCD timetable fetch failed (HTTP ${launch.status})`);
+  let fallback = null;
+  for (const { y: year, i } of linkedYears) {
+    const launchPath =
+      "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM801&p_parameters=" +
+      row.links[i].split("p_parameters=")[1];
+    const launch = await ucdGet(launchPath);
+    if (launch.status !== 200) continue;
+    const tt = parseTimetable(launch.body, code);
+    tt.found = true;
+    tt.title = row.title || parsed.titlesByCode[code] || null;
+    tt.year = year;
+    tt.semester = deriveSemester(tt.trimesters);
+    if (tt.classes.length > 0) return tt; // real timetable — use it
+    if (!fallback) fallback = tt; // keep first empty result as fallback
   }
-  const tt = parseTimetable(launch.body, code);
-  tt.found = true;
-  tt.title = row.title || parsed.titlesByCode[code] || null;
-  tt.year = year;
-  tt.semester = deriveSemester(tt.trimesters);
-  return tt;
+  return fallback;
 }
 
 // "Autumn" -> 1, "Spring" -> 2, both -> "1, 2", unknown -> null
