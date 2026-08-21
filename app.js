@@ -74,6 +74,7 @@ const els = {
   timetableWrap: document.querySelector(".timetable-wrap"),
   clashWarning: document.getElementById("clash-warning"),
   policyWarning: document.getElementById("policy-warning"),
+  totalWarning: document.getElementById("total-warning"),
   printBtn: document.getElementById("print-btn"),
   printHeader: document.getElementById("print-header"),
   printModules: document.getElementById("print-modules"),
@@ -546,6 +547,7 @@ function refreshUI() {
   renderSwitcher();
   renderTimetable();
   renderPolicyWarning();
+  renderTotalWarning();
   renderPrintInfo();
 }
 
@@ -1107,6 +1109,51 @@ function renderPolicyWarning() {
     `<div class="policy-head">Your selection is over the CSNL programme credit limits:</div>` +
     `<div class="policy-note">Students may take no more than 20 credits at Level 3 or below, and no more than 15 credits from non-COMP modules.</div>` +
     rules.join("");
+}
+
+// Total-credit target: a full CSNL year is 90 credits (60 taught + 30
+// thesis). Warn when the selection sits far from it — under means not
+// enough modules picked, over means too many — so the banner reads like
+// the clash and policy warnings.
+const TOTAL_YEAR_TARGET = 90;
+const TOTAL_WARN_LOW = 60; // below this: clearly under the year's need
+const TOTAL_WARN_HIGH = 120; // above this: clearly over-enrolled
+
+function renderTotalWarning() {
+  const el = els.totalWarning;
+  if (!el) return;
+  const seen = new Set();
+  let total = 0;
+  for (const s of currentSelection()) {
+    if (seen.has(s.code)) continue;
+    seen.add(s.code);
+    const info = moduleInfo(s.code);
+    if (info && info.credits) total += info.credits;
+  }
+  if (total === 0) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  const diff = total - TOTAL_YEAR_TARGET;
+  const under = total < TOTAL_WARN_LOW;
+  const over = total > TOTAL_WARN_HIGH;
+  const show = under || over;
+  el.classList.toggle("hidden", !show);
+  el.classList.toggle("over", over);
+  if (!show) {
+    el.innerHTML = "";
+    return;
+  }
+  if (under) {
+    el.innerHTML =
+      `<div class="tw-head">You're at ${total} credits — under the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
+      `<div class="tw-note">A full CSNL year is about ${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis). You're ${TOTAL_YEAR_TARGET - total} short — keep adding modules to stay on track.</div>`;
+  } else if (over) {
+    el.innerHTML =
+      `<div class="tw-head">You're at ${total} credits — ${total - TOTAL_YEAR_TARGET} over the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
+      `<div class="tw-note">A full CSNL year is about ${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis). Consider trimming your selection to keep the workload manageable.</div>`;
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -1554,6 +1554,47 @@ body {
   color: #fcd34d;
 }
 
+/* total-credit target warning — amber when under the year's ~90 credits,
+   red-tinted when clearly over-enrolled */
+.total-warning {
+  background: #fffbeb;
+  border: 1px solid #f2d48f;
+  color: #7c4a03;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.total-warning .tw-head {
+  font-weight: 600;
+}
+
+.total-warning .tw-note {
+  font-size: 11.5px;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.total-warning.over {
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+[data-theme="dark"] .total-warning {
+  background: rgba(251, 191, 36, 0.09);
+  border-color: rgba(251, 191, 36, 0.32);
+  color: #f2d48f;
+}
+
+[data-theme="dark"] .total-warning.over {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.35);
+  color: #f87171;
+}
+
 /* --------------------------------------------------------------- footnote */
 .footnote {
   font-size: 11.5px;
