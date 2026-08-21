@@ -4,8 +4,8 @@
 
 const FUNCTION_URL = "/.netlify/functions/timetable";
 const CATALOGUE_URL = "/.netlify/functions/catalogue";
-const BATCH_SIZE = 14; // modules per function call
-const PARALLEL_BATCHES = 2; // function calls run at once
+const BATCH_SIZE = 20; // modules per function call (fewer, bigger requests)
+const PARALLEL_BATCHES = 4; // function calls run at once
 // UCD's timetable uses Tue/Thu abbreviations
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const DAY_INDEX = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 };
@@ -309,6 +309,41 @@ async function fetchBatch(codes, fresh) {
   return res.json();
 }
 
+// Turn a raw fetch error into a human-readable, actionable reason.
+function friendlyFailure(reason) {
+  const r = String(reason || "");
+  const m = r.match(/HTTP (\d{3})/);
+  if (m) {
+    const code = parseInt(m[1], 10);
+    if (code === 429) return "UCD is rate-limiting requests — wait a moment and retry";
+    if (code === 408 || code === 504) return "UCD's timetable service timed out — retry";
+    if (code >= 500) return `UCD's timetable service returned an error (HTTP ${code}) — retry`;
+    return `UCD rejected the request (HTTP ${code}) — retry`;
+  }
+  if (/failed to fetch|networkerror|load failed|net::/i.test(r)) {
+    return "No response from UCD — check your internet connection, or UCD may be down — retry";
+  }
+  if (/abort|timeout/i.test(r)) return "The request timed out — retry";
+  return r || "Unknown error — retry";
+}
+
+// Re-fetch a single module that failed to load, bypassing the server cache.
+async function retryModule(code) {
+  const btn = document.querySelector(`.retry-module[data-code="${CSS.escape(code)}"]`);
+  if (btn) btn.textContent = "Retrying…";
+  try {
+    const json = await fetchBatch([code], true);
+    const d = json.results && json.results[code];
+    if (d) live.set(code, { ...d, fetchedAt: json.generatedAt });
+    else live.set(code, { found: false, reason: "Unavailable" });
+  } catch (e) {
+    live.set(code, { found: false, reason: `Fetch error: ${e.message}`, failed: true });
+  }
+  updateStatus();
+  refreshUI();
+  saveTimingsCache([code]);
+}
+
 // fresh: bypass the server's 30-min cache and pull straight from UCD
 // refreshAll: re-fetch every module even if we already have it (used for the
 //             background refresh after restoring the browser cache)
@@ -352,7 +387,11 @@ async function fetchAllTimings(fresh, refreshAll) {
         }
       } catch (e) {
         for (const code of batch) {
-          live.set(code, { found: false, reason: `Fetch error: ${e.message}` });
+          live.set(code, {
+            found: false,
+            reason: `Fetch error: ${e.message}`,
+            failed: true, // network/proxy error — distinct from "no timetable"
+          });
         }
       } finally {
         done += batch.length;
@@ -374,18 +413,23 @@ function updateStatus() {
   const liveCount = [...live.entries()]
     .filter(([code, d]) => d.found && d.classes && d.classes.length)
     .length;
+  const failedCount = [...live.entries()].filter(([, d]) => d.failed).length;
   const noTtCount = [...live.entries()].filter(
-    ([code, d]) => d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
+    ([, d]) =>
+      !d.failed &&
+      d.found !== undefined &&
+      (d.found === false || !d.classes || d.classes.length === 0)
   ).length;
   const total = allCodes().length;
   const ts = new Date();
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   els.statusPill.classList.remove("loading", "error");
-  const pending = total - liveCount - noTtCount;
+  const pending = total - liveCount - noTtCount - failedCount;
   const currentSem = getCurrentSemester();
   let status = `Live UCD timings · ${liveCount}/${total} modules`;
   if (currentSem) status += ` · Semester ${currentSem} now`;
   if (noTtCount) status += ` · ${noTtCount} no timetable yet`;
+  if (failedCount) status += ` · ${failedCount} failed to load`;
   if (pending > 0) status += ` · ${pending} pending`;
   status += ` · updated ${time}`;
   els.statusText.textContent = status;
@@ -528,8 +572,13 @@ function renderCourseCard(c) {
         : data.trimester || "";
     badges.push(`${data.year} · ${terms}`.trim());
   }
+  const failed = data && data.failed;
   const noTimetable =
-    data && data.found !== undefined && (data.found === false || !data.classes || data.classes.length === 0);
+    !failed &&
+    data &&
+    data.found !== undefined &&
+    (data.found === false || !data.classes || data.classes.length === 0);
+  if (failed) badges.push({ text: "Load failed", cls: "fail" });
   if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
   card.innerHTML = `
@@ -552,6 +601,9 @@ function renderCourseCard(c) {
   const offeringsEl = card.querySelector(".offerings");
   if (!data) {
     offeringsEl.innerHTML = `<div class="note loading">Loading live timetable…</div>`;
+  } else if (data.failed) {
+    // the fetch itself failed (network/UCD down) — explain why and offer a retry
+    offeringsEl.innerHTML = `<div class="note warn fail">Couldn't load this timetable — ${esc(friendlyFailure(data.reason))}. <button class="retry-module" data-code="${esc(c.code)}">Retry</button></div>`;
   } else if (data.found === false || !data.classes || data.classes.length === 0) {
     const note = data.scheduleNote || data.reason || "No classes scheduled";
     offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet — ${esc(note)}.</div>`;
@@ -1071,6 +1123,14 @@ async function addModuleByCode(rawCode) {
 els.addCodeBtn.addEventListener("click", () => addModuleByCode(els.addCodeInput.value));
 els.addCodeInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addModuleByCode(els.addCodeInput.value);
+});
+
+els.courseList.addEventListener("click", (e) => {
+  const retry = e.target.closest(".retry-module");
+  if (retry) {
+    retryModule(retry.dataset.code);
+    return;
+  }
 });
 
 els.courseList.addEventListener("click", (e) => {

@@ -803,6 +803,12 @@ body {
   color: var(--danger);
 }
 
+.badge.fail {
+  background: var(--danger-soft);
+  color: var(--danger-bright);
+  border: 1px solid var(--danger-border);
+}
+
 .remove-extra-btn {
   border: none;
   background: transparent;
@@ -902,6 +908,33 @@ body {
   background: var(--danger-soft);
   border-radius: 8px;
   padding: 8px 10px;
+}
+
+.note.fail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.retry-module {
+  border: 1px solid var(--danger-border);
+  background: transparent;
+  color: var(--danger);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.retry-module:hover {
+  background: var(--danger);
+  color: var(--accent-text);
 }
 
 .note.loading {

@@ -16,7 +16,7 @@ const BASE = "https://hub.ucd.ie/usis/";
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36";
 const CACHE_TTL_MS = 30 * 60 * 1000; // keep UCD happy between refreshes
-const MAX_CONCURRENCY = 4;
+const MAX_CONCURRENCY = 6;
 const MAX_CODES = 80;
 
 const TYPE_LABELS = {
