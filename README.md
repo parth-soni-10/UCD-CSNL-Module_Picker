@@ -28,7 +28,10 @@ Modules with no timetable yet show UCD's own reason ("currently not timetabled",
    grabs the "View Timetable" link for the **latest academic year**, downloads
    the published weekly schedule and normalizes it to JSON.
 3. Results are cached in-memory for 30 minutes so repeat loads are fast and we
-   don't hammer UCD. **↻ Refresh timings** forces a fresh pull from UCD.
+   don't hammer UCD. **↻ Refresh timings** forces a fresh pull from UCD, and
+   the page also **auto-refreshes every 30 minutes** (skipping while the tab
+   is hidden, and catching up when it's shown again) so timings stay current
+   without touching anything.
 4. Use the **"Add any UCD module code"** box to pull in modules that aren't in
    the default list — the code is remembered, but its timings are always
    re-fetched live.

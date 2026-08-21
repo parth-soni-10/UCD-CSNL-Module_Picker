@@ -6,6 +6,9 @@ const FUNCTION_URL = "/.netlify/functions/timetable";
 const CATALOGUE_URL = "/.netlify/functions/catalogue";
 const BATCH_SIZE = 20; // modules per function call (fewer, bigger requests)
 const PARALLEL_BATCHES = 4; // function calls run at once
+// Auto-refresh cadence; matches the proxy's 30-min cache, so a background
+// refresh only pulls new data from UCD once the server cache has expired.
+const AUTO_REFRESH_MS = 30 * 60 * 1000;
 // UCD's timetable uses Tue/Thu abbreviations
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const DAY_INDEX = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 };
@@ -1180,6 +1183,35 @@ els.courseList.addEventListener("click", (e) => {
 // boot
 // ---------------------------------------------------------------------------
 
+let autoRefreshing = false;
+let lastAutoRefresh = 0;
+
+// Periodic background refresh so timings stay current without the manual
+// button. Skips when a refresh is already running, the tab is hidden, or
+// we refreshed moments ago (background-tab timers get throttled, so the
+// visibility handler catches up when the tab is shown again).
+async function autoRefresh() {
+  if (autoRefreshing || document.hidden) return;
+  if (Date.now() - lastAutoRefresh < AUTO_REFRESH_MS) return;
+  autoRefreshing = true;
+  try {
+    setLoadingStatus("Refreshing live timings…");
+    await fetchAllTimings(false, true); // respect the server cache; updates the browser cache too
+    lastAutoRefresh = Date.now();
+  } catch (e) {
+    setErrorStatus(`Auto-refresh failed: ${e.message}`);
+  } finally {
+    autoRefreshing = false;
+  }
+}
+
+function startAutoRefresh() {
+  setInterval(autoRefresh, AUTO_REFRESH_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) autoRefresh();
+  });
+}
+
 (async function init() {
   loadState();
   initTheme();
@@ -1239,4 +1271,8 @@ els.courseList.addEventListener("click", (e) => {
       failBoot(`Could not load timings: ${e.message}`);
     }
   }
+
+  // Keep timings current from here on; also self-heals a failed initial load.
+  lastAutoRefresh = Date.now();
+  startAutoRefresh();
 })();
