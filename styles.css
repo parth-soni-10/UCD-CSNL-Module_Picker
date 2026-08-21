@@ -566,6 +566,32 @@ body {
   color: #f2d48f;
 }
 
+.csnl-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-strong);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+
+.csnl-source svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  opacity: 0.7;
+}
+
+.csnl-source:hover,
+.csnl-source:focus-visible {
+  color: var(--accent);
+  border-bottom-style: solid;
+}
+
 /* ------------------------------------------------- inputs and buttons */
 .input,
 .search {
