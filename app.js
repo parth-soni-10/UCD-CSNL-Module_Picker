@@ -517,6 +517,21 @@ function renderPrintInfo() {
       : `<p class="muted">Nothing selected yet.</p>`);
 }
 
+// Does a module title match the search term? Plain substring, or the term as
+// initials of consecutive words ("ml" finds "Machine Learning", "ai" finds
+// "Artificial Intelligence").
+function titleMatches(title, term) {
+  const t = title.toLowerCase();
+  if (t.includes(term)) return true;
+  const words = t.split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+  for (let i = 0; i < words.length; i++) {
+    let initials = "";
+    for (let j = i; j < words.length && j < i + 4; j++) initials += words[j][0];
+    if (initials.startsWith(term)) return true;
+  }
+  return false;
+}
+
 function render() {
   const term = els.search.value.toLowerCase().trim();
   const list = els.courseList;
@@ -531,10 +546,7 @@ function render() {
   const themes = catalogue.map((t) => ({
     name: t.theme,
     courses: t.courses.filter(
-      (c) =>
-        !term ||
-        liveTitle(c.code).toLowerCase().includes(term) ||
-        c.code.toLowerCase().includes(term)
+      (c) => !term || titleMatches(liveTitle(c.code), term) || c.code.toLowerCase().includes(term)
     ),
   }));
   const shownCodes = new Set();
@@ -1179,6 +1191,7 @@ function revealModule(code) {
 
 function addModuleByCode(rawCode) {
   const code = String(rawCode || "").trim().toUpperCase();
+  if (!code) return; // empty field — nothing to do
   if (!/^[A-Z]{2,5}\d{3,6}$/.test(code)) {
     showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code — try e.g. COMP30960`);
     els.addCodeInput.focus();

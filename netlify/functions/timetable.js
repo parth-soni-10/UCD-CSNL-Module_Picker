@@ -29,6 +29,16 @@ const TYPE_LABELS = {
   WSH: "Workshop",
 };
 
+// The only modules this proxy will fetch: those on UCD's official CSNL
+// streams page (the committed fallback mirrors it). Defense in depth — the
+// frontend already restricts, this closes the API for direct callers.
+const CSNL_CODES = new Set(
+  require("../../modules.json")
+    .flatMap((t) => t.courses.map((c) => String(c.name).match(/\(([^)]+)\)\s*$/)))
+    .map((m) => m && m[1].trim().toUpperCase())
+    .filter(Boolean)
+);
+
 const cache = new Map(); // code -> { fetchedAt, data }
 
 // --- HTTP helpers ---------------------------------------------------------
@@ -358,15 +368,42 @@ async function handler(event) {
   const q = event.queryStringParameters || {};
   const fresh = q.fresh === "1" || q.fresh === "true";
   const raw = (q.codes || "").split(",").map((s) => s.trim()).filter(Boolean);
-  const codes = [...new Set(raw)].slice(0, MAX_CODES);
-  if (codes.length === 0) {
+  const requested = [...new Set(raw)].slice(0, MAX_CODES);
+  if (requested.length === 0) {
     return {
       statusCode: 400,
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({ error: "No module codes supplied (?codes=A,B,C)" }),
     };
   }
-  return handle(codes, fresh);
+  // Reject anything not on the CSNL list without ever touching UCD.
+  const codes = requested.filter((c) => CSNL_CODES.has(c.toUpperCase()));
+  const rejected = requested.filter((c) => !CSNL_CODES.has(c.toUpperCase()));
+  const rejectedResults = Object.fromEntries(
+    rejected.map((c) => [
+      c.toUpperCase(),
+      { found: false, reason: "Only modules from UCD's CSNL list are offered" },
+    ])
+  );
+  if (codes.length === 0) {
+    return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        source: "https://hub.ucd.ie/usis/ (UCD Hub)",
+        results: rejectedResults,
+        errors: {},
+      }),
+    };
+  }
+  const handled = JSON.parse((await handle(codes, fresh)).body);
+  handled.results = { ...rejectedResults, ...handled.results };
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(handled),
+  };
 }
 
 module.exports = { handler };
