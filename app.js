@@ -14,6 +14,9 @@ const HOUR_HEIGHT = 52;
 const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
 const LS_EXTRA = "csnlPicker:extraCodes:v1";
+const LS_THEME = "csnlPicker:theme:v1";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // ---------------------------------------------------------------------------
 // state
@@ -53,6 +56,7 @@ const els = {
   clashWarning: document.getElementById("clash-warning"),
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
+  themeToggle: document.getElementById("theme-toggle"),
 };
 
 // ---------------------------------------------------------------------------
@@ -99,10 +103,60 @@ function saveState() {
   localStorage.setItem(LS_ACTIVE, activeTimetable);
 }
 
-function colorFor(code) {
+// deterministic per-module hue; the CSS turns it into theme-aware event colors
+function hueFor(code) {
   let hash = 0;
   for (const ch of code) hash = ch.charCodeAt(0) + ((hash << 5) - hash);
-  return `hsl(${Math.abs(hash) % 360}, 55%, 55%)`;
+  return Math.abs(hash) % 360;
+}
+
+// ---------------------------------------------------------------------------
+// theme (light / dark / system)
+// ---------------------------------------------------------------------------
+
+function systemPrefersDark() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  if (theme === "dark" || theme === "light") {
+    root.setAttribute("data-theme", theme);
+  } else {
+    root.removeAttribute("data-theme"); // follow the OS
+  }
+  const dark = theme === "dark" || (!theme && systemPrefersDark());
+  els.themeToggle.setAttribute("aria-pressed", String(dark));
+}
+
+function initTheme() {
+  let stored = null;
+  try {
+    stored = localStorage.getItem(LS_THEME);
+  } catch (e) {
+    /* ignore */
+  }
+  applyTheme(stored);
+
+  els.themeToggle.addEventListener("click", () => {
+    // first click makes the choice explicit; afterwards it's a plain toggle
+    const explicit = document.documentElement.getAttribute("data-theme");
+    const isDark = explicit === "dark" || (!explicit && systemPrefersDark());
+    const next = isDark ? "light" : "dark";
+    try {
+      localStorage.setItem(LS_THEME, next);
+    } catch (e) {
+      /* ignore */
+    }
+    applyTheme(next);
+  });
+
+  // while the user hasn't chosen explicitly, track the OS preference live
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", () => {
+      if (!document.documentElement.getAttribute("data-theme")) applyTheme(null);
+    });
 }
 
 function timeToMinutes(t) {
@@ -268,7 +322,9 @@ function render() {
     section.innerHTML = `
       <button class="theme-toggle collapsed">
         <span>${esc(themeObj.name)}<span class="theme-count">${themeObj.courses.length}</span></span>
-        <span class="chev">▼</span>
+        <span class="chev" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </span>
       </button>
       <div class="theme-body hidden"></div>
     `;
@@ -316,7 +372,7 @@ function renderCourseCard(c) {
       </div>
       <div class="card-code-col">
         <span class="badge">${esc(c.code)}</span>
-        ${c.extra ? `<button class="remove-extra-btn" data-code="${esc(c.code)}" title="Remove from list">✕</button>` : ""}
+        ${c.extra ? `<button class="remove-extra-btn" data-code="${esc(c.code)}" title="Remove from list" aria-label="Remove ${esc(c.code)} from list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` : ""}
       </div>
     </div>
     <div class="offerings" data-code="${esc(c.code)}"></div>
@@ -324,7 +380,7 @@ function renderCourseCard(c) {
 
   const offeringsEl = card.querySelector(".offerings");
   if (!data) {
-    offeringsEl.innerHTML = `<div class="note">Loading live timetable…</div>`;
+    offeringsEl.innerHTML = `<div class="note loading">Loading live timetable…</div>`;
   } else if (data.found === false || !data.classes || data.classes.length === 0) {
     const note = data.scheduleNote || data.reason || "No classes scheduled";
     offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet — ${esc(note)}.</div>`;
@@ -403,7 +459,9 @@ function renderSummary() {
         <div class="s-code">${esc(liveTitle(code))}</div>
         <div class="s-detail">${esc(detail)}</div>
       </div>
-      <button class="s-x" data-code="${esc(code)}" title="Remove">✕</button>
+      <button class="s-x" data-code="${esc(code)}" title="Remove from selection" aria-label="Remove ${esc(liveTitle(code))} from selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
     `;
     list.appendChild(item);
   }
@@ -420,9 +478,10 @@ function renderSummary() {
 
 function createGrid() {
   els.timetableGrid.innerHTML = "";
+  const todayName = DAY_NAMES[new Date().getDay()];
   DAYS.forEach((day, i) => {
     const h = document.createElement("div");
-    h.className = "day-header";
+    h.className = "day-header" + (day === todayName ? " today" : "");
     h.textContent = day;
     h.style.gridColumn = `${i + 2} / ${i + 3}`;
     els.timetableGrid.appendChild(h);
@@ -469,9 +528,7 @@ function renderTimetable() {
     el.style.height = `${Math.max(height, 18)}px`;
     el.style.left = `calc(56px + ${dayIndex - 1} * ((100% - 56px) / 5) + 2px)`;
     el.style.width = `calc((100% - 56px) / 5 - 4px)`;
-    const color = colorFor(s.code);
-    el.style.background = color;
-    el.style.border = `1px solid ${color}`;
+    el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
       <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
@@ -650,6 +707,7 @@ function renderAll() {
 
 (async function init() {
   loadState();
+  initTheme();
   try {
     const res = await fetch("modules.json");
     const data = await res.json();

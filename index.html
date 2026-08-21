@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CSNL Module Picker — Live UCD Timings</title>
+    <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <div class="brand-mark">CS</div>
+          <div class="brand-mark" aria-hidden="true">CS</div>
           <div>
             <h1>CSNL Module Picker</h1>
             <p>Build a clash-free timetable from UCD's live module timetables</p>
@@ -19,10 +19,34 @@
         <div class="topbar-actions">
           <div id="status-pill" class="status-pill">
             <span id="status-dot" class="dot"></span>
-            <span id="status-text">Loading timetables…</span>
+            <span id="status-text">Loading timetables</span>
           </div>
+          <button
+            id="theme-toggle"
+            class="icon-btn"
+            type="button"
+            title="Toggle light and dark mode"
+            aria-label="Toggle light and dark mode"
+            aria-pressed="false"
+          >
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+          </button>
           <button id="refresh-btn" class="btn btn-secondary" title="Fetch the latest timings from UCD right now">
-            ↻ Refresh timings
+            <span class="refresh-btn-glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M8 16H3v5"></path>
+              </svg>
+            </span>
+            Refresh timings
           </button>
         </div>
       </div>
@@ -30,7 +54,7 @@
 
     <div id="fetch-progress" class="fetch-progress hidden">
       <div class="fetch-progress-bar"><div id="fetch-progress-fill" class="fetch-progress-fill"></div></div>
-      <div id="fetch-progress-text" class="fetch-progress-text">Fetching live timetables from UCD… 0/70</div>
+      <div id="fetch-progress-text" class="fetch-progress-text">Fetching live timetables from UCD, 0/70</div>
     </div>
 
     <main class="layout">
@@ -45,15 +69,17 @@
             type="search"
             id="search"
             class="search"
-            placeholder="Search by module name or code…"
+            placeholder="Search by module name or code"
             autocomplete="off"
+            aria-label="Search modules"
           />
           <div class="row add-code-row">
             <input
               id="add-code-input"
               class="input grow"
-              placeholder="Add any UCD module code… e.g. COMP30960"
+              placeholder="Add any UCD module code, e.g. COMP30960"
               autocomplete="off"
+              aria-label="Add a UCD module by code"
             />
             <button id="add-code-btn" class="btn btn-secondary" title="Fetch this module's live timetable from UCD">Add</button>
           </div>
@@ -74,8 +100,8 @@
           <div class="timetable-tools">
             <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
             <div class="row">
-              <input id="new-timetable-name" class="input grow" placeholder="New timetable name…" />
-              <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable">+</button>
+              <input id="new-timetable-name" class="input grow" placeholder="New timetable name" aria-label="New timetable name" />
+              <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable" aria-label="Add timetable">+</button>
             </div>
             <div class="row">
               <button id="clear-btn" class="btn btn-ghost grow">Clear selection</button>
@@ -90,7 +116,7 @@
             <h2>Weekly Timetable</h2>
           </div>
           <div id="clash-warning" class="clash-warning hidden">
-            ⚠ Clashing slots are highlighted in red.
+            Warning: you have timetable clashes. Clashing slots are highlighted in red.
           </div>
           <div class="timetable-wrap">
             <div id="timetable-grid" class="timetable-grid"></div>
