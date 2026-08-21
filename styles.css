@@ -146,6 +146,59 @@
     --ok-border: rgba(52, 211, 153, 0.35);
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
   }
+
+  /* Component-level dark styles for the OS-preference case (no data-theme).
+     Mirrors the explicit [data-theme="dark"] rules below so colours that are
+     hard-coded (not tokens) still flip when the user follows their OS theme. */
+  :root:not([data-theme]) .timetable-event {
+    background: hsl(var(--ev-hue) 40% 16%);
+    color: hsl(var(--ev-hue) 50% 82%);
+    border: 1px solid hsl(var(--ev-hue) 50% 38%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  :root:not([data-theme]) .icon-btn .icon-sun {
+    display: block;
+  }
+
+  :root:not([data-theme]) .icon-btn .icon-moon {
+    display: none;
+  }
+
+  :root:not([data-theme]) .csnl-badge.warn {
+    background: rgba(251, 191, 36, 0.09);
+    border-color: rgba(251, 191, 36, 0.32);
+    color: #f2d48f;
+  }
+
+  :root:not([data-theme]) .course-card.over-limit {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.07);
+  }
+
+  :root:not([data-theme]) .policy-warning {
+    background: rgba(251, 191, 36, 0.09);
+    border-color: rgba(251, 191, 36, 0.32);
+    color: #f2d48f;
+  }
+
+  :root:not([data-theme]) .policy-warning .policy-mod {
+    background: rgba(251, 191, 36, 0.08);
+    border-color: rgba(251, 191, 36, 0.3);
+    color: #fcd34d;
+  }
+
+  :root:not([data-theme]) .total-warning {
+    background: rgba(251, 191, 36, 0.09);
+    border-color: rgba(251, 191, 36, 0.32);
+    color: #f2d48f;
+  }
+
+  :root:not([data-theme]) .total-warning.over {
+    background: rgba(248, 113, 113, 0.1);
+    border-color: rgba(248, 113, 113, 0.35);
+    color: #f87171;
+  }
 }
 
 /* ------------------------------------------------------------------ base */
@@ -443,47 +496,53 @@ body {
   max-width: 1360px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Modules + sticky sidebar share one grid row; the timetable sits below as a
+   separate block so the sticky sidebar can never overlap it. */
+.layout-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
-  grid-template-areas:
-    "modules side"
-    "timetable timetable";
   gap: 20px;
   align-items: start;
 }
 
 @media (max-width: 960px) {
-  .layout {
+  .layout-top {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "modules"
-      "side"
-      "timetable";
   }
 }
 
 .col-modules {
-  grid-area: modules;
   min-width: 0;
 }
 
 .col-side {
-  grid-area: side;
   position: sticky;
   top: 78px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* The three stacked panels can be taller than the screen. Cap the sticky
+     sidebar to the viewport and scroll it internally, otherwise the bottom
+     panel falls below the fold and can't be reached while the page scrolls. */
+  max-height: calc(100vh - 98px); /* 78px sticky offset + 20px bottom gap */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .col-timetable {
-  grid-area: timetable;
+  margin-top: 20px;
   min-width: 0;
 }
 
 @media (max-width: 960px) {
   .col-side {
     position: static;
+    max-height: none;
+    overflow-y: visible;
+    overscroll-behavior: auto;
   }
 }
 
@@ -1777,6 +1836,8 @@ body {
   }
   .layout {
     padding: 12px;
+  }
+  .layout-top {
     gap: 14px;
   }
 
