@@ -12,7 +12,7 @@ across future academic years:
 | Module title | **Live** — UCD |
 | Academic year (auto-picks the latest published) | **Live** — UCD |
 | Trimester / semester (Autumn, Spring, or both) | **Live** — UCD |
-| Module list (streams, core/optional, semester, credits, comments) | **Live from UCD's official CSNL page** (ucd.ie/cs/study/postgraduate/nlstreams) — re-checked on every load and on 1 August |
+| Module list (streams, core/optional, semester, credits, comments) | **Live from UCD's official CSNL page** (ucd.ie/cs/study/postgraduate/nlstreams) — re-checked on every load and daily |
 | New modules each year | **Appear automatically** — whatever UCD publishes on the CSNL streams page is what the site offers |
 
 There are **no hardcoded timings anywhere**. When UCD updates a schedule —

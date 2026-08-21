@@ -6,7 +6,7 @@
 //     https://www.ucd.ie/cs/study/postgraduate/nlstreams/
 //
 // This is the same logic the /catalogue function runs automatically on every
-// request (and the scheduled refresh runs on 1 August); the script exists for
+// request (and the scheduled refresh runs daily); the script exists for
 // manual runs and CI so the committed fallback mirrors the live source.
 //
 // Usage (from the repo root):

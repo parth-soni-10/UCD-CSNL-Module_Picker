@@ -24,12 +24,10 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // state
 // ---------------------------------------------------------------------------
 
-const catalogue = []; // curated [{ theme, courses: [{ title, code, credits }], lazy }]
+const catalogue = []; // [{ theme, courses: [{ title, code, credits, kind, semester, comments }] }]
 const live = new Map(); // code -> timetable payload from the function
-const lazyCodes = new Set(); // auto-discovered codes fetched only when their theme is expanded
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
-let moduleCount = 0;
 let extraCodes = []; // user-added module codes (persisted; timings always live)
 
 // ---------------------------------------------------------------------------
@@ -41,7 +39,6 @@ const els = {
   search: document.getElementById("search"),
   moduleCount: document.getElementById("module-count"),
   statusPill: document.getElementById("status-pill"),
-  statusDot: document.getElementById("status-dot"),
   statusText: document.getElementById("status-text"),
   refreshBtn: document.getElementById("refresh-btn"),
   progress: document.getElementById("fetch-progress"),
@@ -327,12 +324,11 @@ async function fetchAllTimings(fresh, refreshAll) {
 }
 
 function updateStatus() {
-  // lazy (auto-discovered) modules are excluded — they fetch only on expand
   const liveCount = [...live.entries()]
-    .filter(([code, d]) => !lazyCodes.has(code) && d.found && d.classes && d.classes.length)
+    .filter(([code, d]) => d.found && d.classes && d.classes.length)
     .length;
   const noTtCount = [...live.entries()].filter(
-    ([code, d]) => !lazyCodes.has(code) && d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
+    ([code, d]) => d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
   ).length;
   const total = allCodes().length;
   const ts = new Date();
@@ -364,10 +360,7 @@ function setErrorStatus(text) {
 
 function curatedCodes() {
   const codes = [];
-  for (const t of catalogue) {
-    if (t.lazy) continue; // auto-discovered modules fetch only on expand
-    for (const c of t.courses) codes.push(c.code);
-  }
+  for (const t of catalogue) for (const c of t.courses) codes.push(c.code);
   return codes;
 }
 
@@ -402,7 +395,6 @@ function render() {
 
   const themes = catalogue.map((t) => ({
     name: t.theme,
-    lazy: t.lazy,
     courses: t.courses.filter(
       (c) =>
         !term ||
@@ -411,7 +403,7 @@ function render() {
     ),
   }));
   const extraCourses = extraCodes
-    .filter((code) => !curatedCodes().includes(code) && !lazyCodes.has(code))
+    .filter((code) => !curatedCodes().includes(code))
     .filter(
       (code) =>
         !term ||
@@ -428,7 +420,6 @@ function render() {
 
     const section = document.createElement("div");
     section.className = "theme";
-    if (themeObj.lazy) section.dataset.lazy = "1";
     const isExpanded = expanded.has(themeObj.name);
     section.innerHTML = `
       <button class="theme-toggle${isExpanded ? "" : " collapsed"}">
@@ -721,32 +712,6 @@ els.courseList.addEventListener("change", (e) => {
   }
 });
 
-async function ensureThemeFetched(body) {
-  // lazy themes (auto-discovered UCD modules) fetch timings only when expanded
-  const codes = [...body.querySelectorAll(".course-card")]
-    .map((card) => card.dataset.code)
-    .filter((c) => c && !live.has(c));
-  if (!codes.length) return;
-  for (let i = 0; i < codes.length; i += BATCH_SIZE) {
-    const batch = codes.slice(i, i + BATCH_SIZE);
-    try {
-      const json = await fetchBatch(batch, false);
-      for (const [code, data] of Object.entries(json.results || {})) {
-        live.set(code, { ...data, fetchedAt: json.generatedAt });
-      }
-      for (const code of batch) {
-        if (!live.has(code)) live.set(code, { found: false, reason: "Unavailable" });
-      }
-    } catch (e) {
-      for (const code of batch) {
-        if (!live.has(code)) live.set(code, { found: false, reason: `Fetch error: ${e.message}` });
-      }
-    }
-    refreshUI();
-    saveTimingsCache(batch);
-  }
-}
-
 els.courseList.addEventListener("click", (e) => {
   const toggle = e.target.closest(".theme-toggle");
   if (toggle) {
@@ -760,9 +725,6 @@ els.courseList.addEventListener("click", (e) => {
     }
     toggle.classList.toggle("collapsed", !collapsed);
     body.classList.toggle("hidden", !collapsed);
-    if (collapsed && toggle.parentElement.dataset.lazy) {
-      ensureThemeFetched(body);
-    }
   }
 });
 
@@ -869,10 +831,6 @@ els.courseList.addEventListener("click", (e) => {
 // boot
 // ---------------------------------------------------------------------------
 
-function renderAll() {
-  refreshUI();
-}
-
 (async function init() {
   loadState();
   initTheme();
@@ -897,10 +855,8 @@ function renderAll() {
     }
     for (const t of data) {
       const courses = t.courses.map((c) => ({ ...c, ...parseName(c.name) }));
-      catalogue.push({ theme: t.theme, courses, lazy: !!t.lazy });
-      if (t.lazy) for (const c of courses) lazyCodes.add(c.code);
+      catalogue.push({ theme: t.theme, courses });
     }
-    moduleCount = allCodes().length;
   } catch (e) {
     setErrorStatus("Could not load module list");
     failBoot("Could not load the module list.");
@@ -912,7 +868,7 @@ function renderAll() {
   // Restore saved timetables from the browser cache so the page is usable
   // instantly on repeat visits, then refresh from UCD in the background.
   const cachedCount = loadTimingsCache();
-  renderAll();
+  refreshUI();
   if (cachedCount > 0) {
     els.bootSub.textContent = `Restored ${cachedCount} saved timetables — refreshing from UCD…`;
     els.bootCountText.textContent = `${cachedCount} cached modules`;

@@ -31,13 +31,9 @@ const TYPE_LABELS = {
 
 const cache = new Map(); // code -> { fetchedAt, data }
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 // --- HTTP helpers ---------------------------------------------------------
 
-async function ucdGet(path, jar) {
+async function ucdGet(path) {
   const res = await fetch(BASE + path, {
     headers: {
       "User-Agent": USER_AGENT,
@@ -46,19 +42,8 @@ async function ucdGet(path, jar) {
     },
     redirect: "manual",
   });
-  for (const cookie of res.headers.getSetCookie ? res.headers.getSetCookie() : []) {
-    const kv = cookie.split(";")[0];
-    const eq = kv.indexOf("=");
-    if (eq > 0) jar[kv.slice(0, eq).trim()] = kv.slice(eq + 1);
-  }
   const body = await res.text();
   return { status: res.status, body };
-}
-
-function cookieHeader(jar) {
-  return Object.entries(jar)
-    .map(([k, v]) => `${k}=${v}`)
-    .join("; ");
 }
 
 // --- Parsing --------------------------------------------------------------
@@ -137,28 +122,10 @@ function timePlusMinutes(start, length) {
 function parseTimetable(html, code) {
   const out = {
     code,
-    coordinator: null,
-    email: null,
     trimester: null,
     trimesters: [],
-    contact: [],
     classes: [],
   };
-
-  const coordTable = html.match(/<table[^>]*id="CM801-0Q"[\s\S]*?<\/table>/i);
-  if (coordTable) {
-    const rows = [...coordTable[0].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map((r) => r[1]);
-    for (const row of rows) {
-      const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((c) =>
-        stripTags(c[1])
-      );
-      if (cells.length >= 2 && /@/.test(cells[1])) {
-        out.coordinator = cells[0] || null;
-        out.email = cells[1] || null;
-        break;
-      }
-    }
-  }
 
   const contactTable = html.match(/<table[^>]*id="CM801-4Q"[\s\S]*?<\/table>/i);
   if (contactTable) {
@@ -170,13 +137,9 @@ function parseTimetable(html, code) {
       const cells = [...row.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((c) =>
         stripTags(c[1])
       );
-      if (cells.length) {
-        const rec = Object.fromEntries(headers.map((h, i) => [h, cells[i] ?? ""]));
-        out.contact.push(rec);
-        if (headers[0] === "Trimester" && cells[0]) {
-          if (!out.trimester) out.trimester = cells[0];
-          if (!out.trimesters.includes(cells[0])) out.trimesters.push(cells[0]);
-        }
+      if (headers[0] === "Trimester" && cells[0]) {
+        if (!out.trimester) out.trimester = cells[0];
+        if (!out.trimesters.includes(cells[0])) out.trimesters.push(cells[0]);
       }
     }
   }
@@ -253,13 +216,13 @@ function parseTimetable(html, code) {
 
 // --- Fetching -------------------------------------------------------------
 
-async function fetchModuleTimetable(code, jar) {
+async function fetchModuleTimetable(code) {
   // 1. CM802 search for the exact code
   const searchPath =
     "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM802&p_filter1=" +
     encodeURIComponent(code) +
     "&p_BUTTON=Search";
-  const search = await ucdGet(searchPath, jar);
+  const search = await ucdGet(searchPath);
   if (search.status !== 200) {
     throw new Error(`UCD search failed (HTTP ${search.status})`);
   }
@@ -315,7 +278,7 @@ async function fetchModuleTimetable(code, jar) {
   const launchPath =
     "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM801&p_parameters=" +
     link.split("p_parameters=")[1];
-  const launch = await ucdGet(launchPath, jar);
+  const launch = await ucdGet(launchPath);
   if (launch.status !== 200) {
     throw new Error(`UCD timetable fetch failed (HTTP ${launch.status})`);
   }
@@ -343,8 +306,7 @@ async function fetchModuleWithCache(code, fresh) {
     const hit = cache.get(code);
     if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) return hit.data;
   }
-  const jar = {};
-  const data = await fetchModuleTimetable(code, jar);
+  const data = await fetchModuleTimetable(code);
   cache.set(code, { fetchedAt: Date.now(), data });
   return data;
 }
@@ -407,4 +369,4 @@ async function handler(event) {
   return handle(codes, fresh);
 }
 
-module.exports = { handler, handle };
+module.exports = { handler };
