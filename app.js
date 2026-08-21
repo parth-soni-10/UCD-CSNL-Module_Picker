@@ -173,13 +173,14 @@ async function fetchAllTimings(fresh) {
       } finally {
         done += batch.length;
         setProgress();
-        render();
+        refreshUI();
       }
     }
   });
 
   await Promise.all(workers);
   progressEl.classList.add("hidden");
+  refreshUI();
   updateStatus();
 }
 
