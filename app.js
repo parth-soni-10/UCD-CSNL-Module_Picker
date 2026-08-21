@@ -31,7 +31,6 @@ const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
 let extraCodes = []; // user-added module codes (persisted; timings always live)
-let semesterFilter = "all"; // "all" | "1" | "2"
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -61,7 +60,6 @@ const els = {
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
   themeToggle: document.getElementById("theme-toggle"),
-  semesterFilter: document.getElementById("semester-filter"),
   planTarget: document.getElementById("plan-target"),
   planSemester: document.getElementById("plan-semester"),
   planBtn: document.getElementById("plan-btn"),
@@ -208,13 +206,6 @@ function getCurrentSemester() {
   // Jun(5) - Jul(6) = break (return null)
   if (month >= 7 || month <= 4) return month >= 7 ? "1" : "2";
   return null; // summer break
-}
-
-function semesterMatchesFilter(moduleSemester) {
-  if (semesterFilter === "all") return true;
-  if (!moduleSemester) return true; // no semester info, show it
-  // moduleSemester can be "1", "2", or "1, 2"
-  return moduleSemester.includes(semesterFilter);
 }
 
 // ---------------------------------------------------------------------------
@@ -413,23 +404,18 @@ function updateStatus() {
   const liveCount = [...live.entries()]
     .filter(([code, d]) => d.found && d.classes && d.classes.length)
     .length;
-  const failedCount = [...live.entries()].filter(([, d]) => d.failed).length;
   const noTtCount = [...live.entries()].filter(
-    ([, d]) =>
-      !d.failed &&
-      d.found !== undefined &&
-      (d.found === false || !d.classes || d.classes.length === 0)
+    ([, d]) => d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
   ).length;
   const total = allCodes().length;
   const ts = new Date();
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   els.statusPill.classList.remove("loading", "error");
-  const pending = total - liveCount - noTtCount - failedCount;
+  const pending = total - liveCount - noTtCount;
   const currentSem = getCurrentSemester();
   let status = `Live UCD timings · ${liveCount}/${total} modules`;
   if (currentSem) status += ` · Semester ${currentSem} now`;
   if (noTtCount) status += ` · ${noTtCount} no timetable yet`;
-  if (failedCount) status += ` · ${failedCount} failed to load`;
   if (pending > 0) status += ` · ${pending} pending`;
   status += ` · updated ${time}`;
   els.statusText.textContent = status;
@@ -490,20 +476,18 @@ function render() {
     name: t.theme,
     courses: t.courses.filter(
       (c) =>
-        (!term ||
+        !term ||
         liveTitle(c.code).toLowerCase().includes(term) ||
-        c.code.toLowerCase().includes(term)) &&
-        semesterMatchesFilter(c.semester)
+        c.code.toLowerCase().includes(term)
     ),
   }));
   const extraCourses = extraCodes
     .filter((code) => !curatedCodes().includes(code))
     .filter(
       (code) =>
-        (!term ||
+        !term ||
         liveTitle(code).toLowerCase().includes(term) ||
-        code.toLowerCase().includes(term)) &&
-        semesterMatchesFilter(moduleInfo(code).semester)
+        code.toLowerCase().includes(term)
     )
     .map((code) => ({ code, extra: true }));
   if (extraCourses.length) themes.push({ name: "My Modules", courses: extraCourses });
@@ -870,7 +854,10 @@ function modulesCompatible(a, b) {
   return false;
 }
 
-function findPlans(target, sem, maxResults = 6, maxCombos = 6000) {
+const PLAN_RESULTS = 6;
+const PLAN_MAX_COMBOS = 6000;
+
+function findPlans(target, sem) {
   const pool = planPool(sem);
   if (pool.length < 2) return [];
   pool.sort((a, b) => b.credits - a.credits);
@@ -885,7 +872,7 @@ function findPlans(target, sem, maxResults = 6, maxCombos = 6000) {
   const tolerance = 5; // accept totals within ±5 credits of the target
 
   function search(startIdx, total) {
-    if (explored >= maxCombos) return;
+    if (explored >= PLAN_MAX_COMBOS) return;
     explored++;
     if (combo.length >= 2) {
       const diff = Math.abs(total - target);
@@ -908,13 +895,12 @@ function findPlans(target, sem, maxResults = 6, maxCombos = 6000) {
       combo.push(m);
       search(i + 1, total + m.credits);
       combo.pop();
-      if (results.length >= maxResults && explored > maxCombos * 0.6) return;
     }
   }
 
   search(0, 0);
   results.sort((a, b) => a.diff - b.diff || a.modules.length - b.modules.length);
-  return results.slice(0, maxResults);
+  return results.slice(0, PLAN_RESULTS);
 }
 
 function renderPlans() {
@@ -1008,17 +994,6 @@ els.planResults.addEventListener("click", (e) => {
 // ---------------------------------------------------------------------------
 
 els.search.addEventListener("input", render);
-
-// semester filter buttons
-if (els.semesterFilter) {
-  els.semesterFilter.addEventListener("click", (e) => {
-    const btn = e.target.closest(".semester-btn");
-    if (!btn) return;
-    semesterFilter = btn.dataset.semester;
-    els.semesterFilter.querySelectorAll(".semester-btn").forEach((b) => b.classList.toggle("active", b === btn));
-    render();
-  });
-}
 
 els.courseList.addEventListener("change", (e) => {
   if (e.target.type === "checkbox" && e.target.dataset.code) {
