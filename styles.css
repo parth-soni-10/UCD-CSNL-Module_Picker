@@ -383,11 +383,14 @@ body {
 
 /* ---------------------------------------------------------------- layout */
 .layout {
-  max-width: 1280px;
+  max-width: 1360px;
   margin: 0 auto;
   padding: 20px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 400px;
+  grid-template-areas:
+    "modules side"
+    "timetable timetable";
   gap: 20px;
   align-items: start;
 }
@@ -395,15 +398,30 @@ body {
 @media (max-width: 960px) {
   .layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "modules"
+      "side"
+      "timetable";
   }
 }
 
+.col-modules {
+  grid-area: modules;
+  min-width: 0;
+}
+
 .col-side {
+  grid-area: side;
   position: sticky;
   top: 78px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.col-timetable {
+  grid-area: timetable;
+  min-width: 0;
 }
 
 @media (max-width: 960px) {
@@ -1102,9 +1120,9 @@ body {
 
 .timetable-grid {
   display: grid;
-  grid-template-columns: 52px repeat(5, minmax(92px, 1fr));
-  grid-template-rows: 36px repeat(12, 50px);
-  min-width: 600px;
+  grid-template-columns: 58px repeat(5, minmax(150px, 1fr));
+  grid-template-rows: 44px repeat(12, 62px);
+  min-width: 640px;
 }
 
 .day-header {
@@ -1112,13 +1130,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   font-family: var(--font-mono);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-3);
   border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
 }
 
 .day-header.today {
@@ -1127,15 +1146,15 @@ body {
 
 .time-slot {
   grid-column: 1 / 2;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-3);
   text-align: right;
-  padding-right: 8px;
+  padding-right: 10px;
   line-height: 1;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding-top: 2px;
+  padding-top: 3px;
   font-family: var(--font-mono);
 }
 
@@ -1152,9 +1171,9 @@ body {
 
 .timetable-event {
   position: absolute;
-  border-radius: 8px;
-  padding: 4px 7px;
-  font-size: 10.5px;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12.5px;
   overflow: hidden;
   pointer-events: auto;
   transition: filter 0.15s ease, transform 0.15s ease;
@@ -1193,9 +1212,11 @@ body {
   opacity: 0.85;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-size: 11.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-top: 2px;
 }
 
 .clash-warning {

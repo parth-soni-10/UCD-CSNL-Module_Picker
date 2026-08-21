@@ -10,7 +10,9 @@ const PARALLEL_BATCHES = 2; // function calls run at once
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const DAY_INDEX = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 };
 const HOUR_START = 8;
-const HOUR_HEIGHT = 52;
+const HOUR_HEIGHT = 62; // px per hour, matches .timetable-grid rows
+const GRID_HEADER_H = 44; // px, matches .timetable-grid header row
+const TIME_COL_W = 58; // px, matches the time column width
 
 const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
@@ -685,7 +687,7 @@ function renderTimetable() {
 
     const start = timeToMinutes(cls.startTime);
     const end = timeToMinutes(cls.endTime);
-    const top = (start / 60 - HOUR_START) * HOUR_HEIGHT + 38;
+    const top = (start / 60 - HOUR_START) * HOUR_HEIGHT + GRID_HEADER_H;
     const height = ((end - start) / 60) * HOUR_HEIGHT;
     const dayIndex = DAY_INDEX[cls.day];
     if (!dayIndex) continue;
@@ -693,9 +695,9 @@ function renderTimetable() {
     const el = document.createElement("div");
     el.className = "timetable-event";
     el.style.top = `${top}px`;
-    el.style.height = `${Math.max(height, 18)}px`;
-    el.style.left = `calc(56px + ${dayIndex - 1} * ((100% - 56px) / 5) + 2px)`;
-    el.style.width = `calc((100% - 56px) / 5 - 4px)`;
+    el.style.height = `${Math.max(height, 24)}px`;
+    el.style.left = `calc(${TIME_COL_W}px + ${dayIndex - 1} * ((100% - ${TIME_COL_W}px) / 5) + 3px)`;
+    el.style.width = `calc((100% - ${TIME_COL_W}px) / 5 - 6px)`;
     el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
