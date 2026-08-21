@@ -1,9 +1,11 @@
-// Scheduled catalogue refresh — runs 1 August 00:00 UTC (see netlify.toml).
+// Scheduled catalogue refresh — runs daily (see netlify.toml).
 //
-// Pre-warms the blob store with the fresh module list on the day UCD
-// publishes the next academic year's modules, so the first visitor after
-// 1 August gets it instantly. The GET endpoint (catalogue.js) also
-// self-heals on its own if this ever fails or runs late.
+// Re-reads UCD's CSNL streams page every day and updates the stored module
+// list the moment UCD changes it (the page's `page_last_update` stamp is
+// compared, so the blob is only rewritten when something actually changed).
+// This keeps the offerings current even between the yearly publication cycle
+// and with zero visitors. The GET endpoint (catalogue.js) also self-heals on
+// every request, so the site never goes stale even if this ever fails.
 
 "use strict";
 
@@ -11,9 +13,11 @@ const { getCatalogue } = require("./catalogue.js");
 
 exports.handler = async () => {
   try {
-    const catalogue = await getCatalogue({ force: true });
+    // No `force`: the stamp-compare path re-reads the page and only rewrites
+    // the blob when UCD has actually changed the module list.
+    const catalogue = await getCatalogue();
     console.log(
-      `Catalogue refreshed: year=${catalogue.year}, themes=${catalogue.themes.length}, source=${catalogue.source}`
+      `Catalogue checked: year=${catalogue.year}, themes=${catalogue.themes.length}, pageUpdated=${catalogue.pageUpdated}, source=${catalogue.source}`
     );
     return { statusCode: 200, body: "ok" };
   } catch (e) {

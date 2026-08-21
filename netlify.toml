@@ -14,8 +14,9 @@
 [functions.catalogue]
   maxDuration = 26
 
-# Regenerate the module list on 1 August (UTC) each year, when UCD publishes
-# the next academic year's modules. The GET endpoint self-heals if this is
-# ever missed.
+# Re-read UCD's CSNL streams page daily and update the module list the moment
+# UCD changes it (page_last_update stamp compare; only rewrites on change).
+# This keeps offerings current year-round, not just on the 1-August
+# publication date. The GET endpoint also self-heals on every request.
 [functions."refresh-catalogue"]
-  schedule = "0 0 1 8 *"
+  schedule = "0 0 * * *"

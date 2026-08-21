@@ -342,3 +342,5 @@ exports.handler = async () => {
     };
   }
 };
+
+exports.getCatalogue = getCatalogue; // used by the scheduled refresh function

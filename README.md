@@ -33,10 +33,11 @@ Modules with no timetable yet show UCD's own reason ("currently not timetabled",
    the default list — the code is remembered, but its timings are always
    re-fetched live.
 
-## Automatic yearly refresh (1 August) — UCD is the source of truth
+## Periodic refresh — UCD is the source of truth
 
-UCD publishes the next academic year's module set around the start of August.
-The whole site updates itself every **1 August**, with no code change:
+UCD publishes the next academic year's module set around the start of August,
+and can adjust the offering list at any time. The module list is kept current
+on three levels, with no code change:
 
 - The module list comes from **UCD's own CSNL page** —
   https://www.ucd.ie/cs/study/postgraduate/nlstreams/ — which lists every
@@ -44,11 +45,13 @@ The whole site updates itself every **1 August**, with no code change:
   core/optional flags, semester, credits and comments. There is **no curated
   data**: whatever UCD publishes there each year is exactly what the site
   offers, so new modules appear and retired ones disappear automatically.
-- On every request, `/catalogue` re-checks the page; if UCD has changed it
+- On every request, `/catalogue` re-reads the page; if UCD has changed it
   (the page's `page_last_update` stamp differs), the list is regenerated
   immediately — the site can't go stale even mid-year.
-- A **scheduled function** (`refresh-catalogue`) also runs at `00:00 UTC` on
-  **1 August** to pre-warm the fresh list for the new academic year.
+- A **scheduled function** (`refresh-catalogue`) re-reads the page **daily**
+  at `00:00 UTC` (`0 0 * * *`), so the stored list stays current even with
+  zero visitors. It compares the page stamp and only rewrites the blob when
+  UCD actually changed the list.
 - If the CSNL page is unreachable, the service falls back to UCD's generic
   current-year module catalogue (credits refreshed), and finally to the
   committed `modules.json` — per-module timings are still fetched live from
@@ -102,7 +105,7 @@ No build step. Either:
 | `modules.json` | Fallback module list (streams, credits, semester, comments — **no timings**), regenerated from the CSNL page; last-resort fallback for `/catalogue` |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
 | `netlify/functions/catalogue.js` | Auto-refreshing module list service (Netlify Blobs + fallback) |
-| `netlify/functions/refresh-catalogue.js` | Scheduled 1-August refresh (cron in `netlify.toml`) |
+| `netlify/functions/refresh-catalogue.js` | Scheduled daily catalogue check (cron in `netlify.toml`) |
 | `server.js` | Zero-dependency local server (mounts both functions) |
 | `netlify.toml` | Netlify config (publish `.`, functions dir, cron schedule) |
 
