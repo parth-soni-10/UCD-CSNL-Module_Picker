@@ -55,6 +55,21 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Suggestions form (Netlify Forms): on Netlify the platform intercepts
+  // the POST at "/" before this handler. Locally there is no form backend,
+  // so log the submission and accept it so the flow is testable.
+  if (req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => {
+      const data = new URLSearchParams(body);
+      console.log(`[suggestion] ${data.get("name") || "anonymous"}: ${data.get("suggestion") || "(empty)"}`);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, dev: true }));
+    });
+    return;
+  }
+
   // Static files
   let filePath = path.join(ROOT, url.pathname === "/" ? "index.html" : url.pathname);
   // basic traversal guard

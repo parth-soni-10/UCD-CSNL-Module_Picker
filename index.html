@@ -168,6 +168,47 @@
           </div>
           <div id="plan-results" class="plan-results" aria-live="polite"></div>
         </div>
+
+        <!-- Suggestions -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Suggestions</h2>
+          </div>
+          <form
+            id="suggest-form"
+            class="suggest-form"
+            name="suggestions"
+            method="POST"
+            data-netlify="true"
+            netlify-honeypot="bot-field"
+          >
+            <input type="hidden" name="form-name" value="suggestions" />
+            <p class="hidden" aria-hidden="true">
+              <label>Leave this field empty: <input name="bot-field" /></label>
+            </p>
+            <p class="plan-hint">Found a missing module, a bug, or a feature idea? Send it our way.</p>
+            <label class="suggest-label" for="suggest-name">Name <span class="muted">(optional)</span></label>
+            <input
+              id="suggest-name"
+              name="name"
+              class="input"
+              type="text"
+              autocomplete="name"
+              placeholder="Your name"
+            />
+            <label class="suggest-label" for="suggest-text">Suggestion</label>
+            <textarea
+              id="suggest-text"
+              name="suggestion"
+              class="input suggest-text"
+              rows="4"
+              placeholder="What should we add or improve?"
+            ></textarea>
+            <div id="suggest-error" class="add-code-error" role="alert" hidden></div>
+            <button id="suggest-submit" class="btn btn-primary" type="submit">Send suggestion</button>
+            <p id="suggest-done" class="suggest-done hidden" role="status">Thanks — your suggestion is on its way.</p>
+          </form>
+        </div>
       </aside>
 
       <!-- Weekly timetable (full width) -->

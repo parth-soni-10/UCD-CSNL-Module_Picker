@@ -84,6 +84,11 @@ const els = {
   planSemester: document.getElementById("plan-semester"),
   planBtn: document.getElementById("plan-btn"),
   planResults: document.getElementById("plan-results"),
+  suggestForm: document.getElementById("suggest-form"),
+  suggestSubmit: document.getElementById("suggest-submit"),
+  suggestText: document.getElementById("suggest-text"),
+  suggestError: document.getElementById("suggest-error"),
+  suggestDone: document.getElementById("suggest-done"),
   bootScreen: document.getElementById("boot-screen"),
   bootFill: document.getElementById("boot-fill"),
   bootPercent: document.getElementById("boot-percent"),
@@ -1212,6 +1217,40 @@ els.courseList.addEventListener("click", (e) => {
     return;
   }
 });
+
+// Suggestions — posts to Netlify Forms via AJAX (no page reload). In
+// production Netlify intercepts the POST at "/"; the local dev server logs
+// the submission instead.
+els.suggestForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!els.suggestText.value.trim()) {
+    els.suggestError.textContent = "Write a suggestion before sending.";
+    els.suggestError.hidden = false;
+    els.suggestText.focus();
+    return;
+  }
+  els.suggestError.hidden = true;
+  els.suggestSubmit.disabled = true;
+  els.suggestSubmit.textContent = "Sending…";
+  try {
+    // URL-encoded (not multipart) — this is the AJAX shape Netlify Forms accepts
+    const res = await fetch("/", {
+      method: "POST",
+      body: new URLSearchParams(new FormData(els.suggestForm)),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    els.suggestForm.reset();
+    els.suggestDone.classList.remove("hidden");
+  } catch (err) {
+    els.suggestError.textContent = "Couldn't send your suggestion — check your connection and try again.";
+    els.suggestError.hidden = false;
+  } finally {
+    els.suggestSubmit.disabled = false;
+    els.suggestSubmit.textContent = "Send suggestion";
+  }
+});
+// hide the success note again once the visitor starts typing a new one
+els.suggestForm.addEventListener("input", () => els.suggestDone.classList.add("hidden"));
 
 els.courseList.addEventListener("click", (e) => {
   const btn = e.target.closest(".remove-extra-btn");
