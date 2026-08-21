@@ -731,6 +731,11 @@ body {
   color: var(--text-3);
 }
 
+.badge.none {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 .remove-extra-btn {
   border: none;
   background: transparent;

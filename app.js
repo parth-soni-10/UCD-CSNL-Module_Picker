@@ -283,11 +283,19 @@ function updateStatus() {
   const liveCount = [...live.entries()]
     .filter(([code, d]) => !lazyCodes.has(code) && d.found && d.classes && d.classes.length)
     .length;
+  const noTtCount = [...live.entries()].filter(
+    ([code, d]) => !lazyCodes.has(code) && d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)
+  ).length;
   const total = allCodes().length;
   const ts = new Date();
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   els.statusPill.classList.remove("loading", "error");
-  els.statusText.textContent = `Live UCD timings · ${liveCount}/${total} modules · updated ${time}`;
+  const pending = total - liveCount - noTtCount;
+  let status = `Live UCD timings · ${liveCount}/${total} modules`;
+  if (noTtCount) status += ` · ${noTtCount} no timetable yet`;
+  if (pending > 0) status += ` · ${pending} pending`;
+  status += ` · updated ${time}`;
+  els.statusText.textContent = status;
 }
 
 function setLoadingStatus(text) {
@@ -423,6 +431,9 @@ function renderCourseCard(c) {
         : data.trimester || "";
     badges.push(`${data.year} · ${terms}`.trim());
   }
+  const noTimetable =
+    data && data.found !== undefined && (data.found === false || !data.classes || data.classes.length === 0);
+  if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
   card.innerHTML = `
     <div class="card-top">
