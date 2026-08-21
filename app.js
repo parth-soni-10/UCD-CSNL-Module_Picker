@@ -57,7 +57,42 @@ const els = {
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
   themeToggle: document.getElementById("theme-toggle"),
+  bootScreen: document.getElementById("boot-screen"),
+  bootFill: document.getElementById("boot-fill"),
+  bootCountText: document.getElementById("boot-count-text"),
+  bootSub: document.getElementById("boot-sub"),
+  bootRetry: document.getElementById("boot-retry"),
 };
+
+// ---------------------------------------------------------------------------
+// boot screen (full-screen loader during the initial live fetch)
+// ---------------------------------------------------------------------------
+
+function setAppInert(on) {
+  // keep keyboard focus and interaction out of the app while the loader is up
+  const topbar = document.querySelector(".topbar");
+  const main = document.querySelector("main");
+  if (topbar) topbar.inert = on;
+  if (main) main.inert = on;
+}
+
+function finishBoot() {
+  els.bootFill.style.width = "100%";
+  els.bootScreen.setAttribute("aria-busy", "false");
+  els.bootScreen.classList.add("done");
+  setAppInert(false);
+}
+
+function failBoot(message) {
+  els.bootSub.textContent = message;
+  els.bootCountText.classList.add("error");
+  els.bootCountText.textContent = "Timings unavailable — retry";
+  els.bootRetry.classList.remove("hidden");
+  els.bootScreen.setAttribute("aria-busy", "false");
+  setAppInert(false);
+}
+
+els.bootRetry.addEventListener("click", () => location.reload());
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -199,8 +234,11 @@ async function fetchAllTimings(fresh) {
   progressEl.classList.remove("hidden");
 
   const setProgress = () => {
-    els.progressFill.style.width = `${Math.round((done / total) * 100)}%`;
+    const pct = Math.round((done / total) * 100);
+    els.progressFill.style.width = `${pct}%`;
     els.progressText.textContent = `Fetching live timetables from UCD… ${done}/${total}`;
+    els.bootFill.style.width = `${pct}%`;
+    els.bootCountText.textContent = `${done}/${total} modules`;
   };
 
   const batches = [];
@@ -708,6 +746,7 @@ function renderAll() {
 (async function init() {
   loadState();
   initTheme();
+  setAppInert(true);
   try {
     const res = await fetch("modules.json");
     const data = await res.json();
@@ -718,6 +757,7 @@ function renderAll() {
     moduleCount = allCodes().length;
   } catch (e) {
     setErrorStatus("Could not load module list");
+    failBoot("Could not load the module list.");
     return;
   }
 
@@ -726,7 +766,9 @@ function renderAll() {
   setLoadingStatus("Fetching live timings from UCD…");
   try {
     await fetchAllTimings(false);
+    finishBoot();
   } catch (e) {
     setErrorStatus(`Failed to fetch timings: ${e.message}`);
+    failBoot(`Could not load timings: ${e.message}`);
   }
 })();
