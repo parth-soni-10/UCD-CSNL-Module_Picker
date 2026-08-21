@@ -1,0 +1,14 @@
+{
+  "name": "csnl-module-picker",
+  "version": "1.0.0",
+  "description": "UCD CS module picker with live timings fetched from UCD on every page load",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "serve": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

@@ -1,0 +1,10 @@
+# Netlify deployment config for the CSNL Module Picker
+[build]
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+
+# Cold fetches for a batch of modules can take a while; allow up to 26s.
+[functions.timetable]
+  maxDuration = 26

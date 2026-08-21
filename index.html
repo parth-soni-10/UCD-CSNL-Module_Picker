@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSNL Module Picker — Live UCD Timings</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">CS</div>
+          <div>
+            <h1>CSNL Module Picker</h1>
+            <p>Build a clash-free timetable from UCD's live module timetables</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div id="status-pill" class="status-pill">
+            <span id="status-dot" class="dot"></span>
+            <span id="status-text">Loading timetables…</span>
+          </div>
+          <button id="refresh-btn" class="btn btn-secondary" title="Fetch the latest timings from UCD right now">
+            ↻ Refresh timings
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="fetch-progress" class="fetch-progress hidden">
+      <div class="fetch-progress-bar"><div id="fetch-progress-fill" class="fetch-progress-fill"></div></div>
+      <div id="fetch-progress-text" class="fetch-progress-text">Fetching live timetables from UCD… 0/70</div>
+    </div>
+
+    <main class="layout">
+      <!-- Module catalogue -->
+      <section class="col-modules">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Available Modules</h2>
+            <span id="module-count" class="muted">0 modules</span>
+          </div>
+          <input
+            type="search"
+            id="search"
+            class="search"
+            placeholder="Search by module name or code…"
+            autocomplete="off"
+          />
+          <div class="row add-code-row">
+            <input
+              id="add-code-input"
+              class="input grow"
+              placeholder="Add any UCD module code… e.g. COMP30960"
+              autocomplete="off"
+            />
+            <button id="add-code-btn" class="btn btn-secondary" title="Fetch this module's live timetable from UCD">Add</button>
+          </div>
+          <p class="add-code-hint">Module list, timings and offerings are fetched live from UCD on every load.</p>
+          <div id="course-list" class="course-list"></div>
+        </div>
+      </section>
+
+      <!-- Sidebar -->
+      <aside class="col-side">
+        <!-- Selection summary -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Selection</h2>
+            <span id="total-credits" class="credits-badge">0 credits</span>
+          </div>
+          <div id="summary-list" class="summary-list"></div>
+          <div class="timetable-tools">
+            <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
+            <div class="row">
+              <input id="new-timetable-name" class="input grow" placeholder="New timetable name…" />
+              <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable">+</button>
+            </div>
+            <div class="row">
+              <button id="clear-btn" class="btn btn-ghost grow">Clear selection</button>
+              <button id="delete-timetable-btn" class="btn btn-danger grow">Delete timetable</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly timetable -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Weekly Timetable</h2>
+          </div>
+          <div id="clash-warning" class="clash-warning hidden">
+            ⚠ Clashing slots are highlighted in red.
+          </div>
+          <div class="timetable-wrap">
+            <div id="timetable-grid" class="timetable-grid"></div>
+            <div id="timetable-events" class="timetable-events"></div>
+          </div>
+        </div>
+
+        <p class="footnote">
+          Timings fetched live from
+          <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
+          on every page load. Not an official UCD service.
+        </p>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

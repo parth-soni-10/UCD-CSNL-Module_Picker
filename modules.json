@@ -1,0 +1,332 @@
+[
+  {
+    "theme": "Artificial Intelligence and Cognitive Science",
+    "courses": [
+      {
+        "name": "Human Computer Interaction (COMP30960)",
+        "credits": 5
+      },
+      {
+        "name": "Introduction to Cognitive Psychology (COMP40250)",
+        "credits": 7.5
+      },
+      {
+        "name": "Multi-Agent Systems (COMP41400)",
+        "credits": 5
+      },
+      {
+        "name": "Human-Centred Artificial Intelligence (COMP41740)",
+        "credits": 5
+      },
+      {
+        "name": "Artificial/Human Intelligence (COMP41760)",
+        "credits": 5
+      },
+      {
+        "name": "Introduction to Cognitive Science (Graduate) (COMP47230)",
+        "credits": 7.5
+      },
+      {
+        "name": "Connectionism and Dynamical Systems (COMP40260)",
+        "credits": 7.5
+      },
+      {
+        "name": "Speech and Audio (COMP47700)",
+        "credits": 5
+      },
+      {
+        "name": "Generative AI: Language Models (COMP47980)",
+        "credits": 5
+      },
+      {
+        "name": "Artificial Intelligence & Ethics (IS40970)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Computer Engineering",
+    "courses": [
+      {
+        "name": "Wireless Systems (EEEN40050)",
+        "credits": 5
+      },
+      {
+        "name": "Digital Communications (EEEN40060)",
+        "credits": 5
+      },
+      {
+        "name": "Quantitative Methods for Engineers (STAT40690)",
+        "credits": 5
+      },
+      {
+        "name": "Performance of Computer Systems (COMP40010)",
+        "credits": 5
+      },
+      {
+        "name": "Advances in Wireless Networking (COMP40660)",
+        "credits": 5
+      },
+      {
+        "name": "Digital & Embedded Systems (EEEN40280)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Computers and Society",
+    "courses": [
+      {
+        "name": "Enterprise, Innovation & Entrepreneurship (COMP30390)",
+        "credits": 5
+      },
+      {
+        "name": "Social Simulation: Methods and Models (SOC40640)",
+        "credits": 10
+      },
+      {
+        "name": "Enviro-Tech Boot Camp (COMP30840)",
+        "credits": 5
+      },
+      {
+        "name": "Ethical Hacking (COMP47860)",
+        "credits": 5
+      },
+      {
+        "name": "Digital Media Ethics (IS30370)",
+        "credits": 5
+      },
+      {
+        "name": "Digital Storytelling (IS30380)",
+        "credits": 5
+      },
+      {
+        "name": "Digital Libraries (IS40560)",
+        "credits": 5
+      },
+      {
+        "name": "Social Networks Online and Off (IS41510)",
+        "credits": 10
+      }
+    ]
+  },
+  {
+    "theme": "Data Manipulation and Visualisation",
+    "courses": [
+      {
+        "name": "Information Visualisation (COMP40610)",
+        "credits": 5
+      },
+      {
+        "name": "Augmented and Virtual Reality (COMP47930)",
+        "credits": 5
+      },
+      {
+        "name": "GIS Principles and Applications (GEOG40820)",
+        "credits": 10
+      },
+      {
+        "name": "Spatial Information Systems (COMP30110)",
+        "credits": 5
+      },
+      {
+        "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
+        "credits": 10
+      },
+      {
+        "name": "Information Visualisation (blended delivery) (COMP47970)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Prediction and Learning with Data",
+    "courses": [
+      {
+        "name": "Data Mining (COMP40370)",
+        "credits": 5
+      },
+      {
+        "name": "Connectionist Computing (COMP41390)",
+        "credits": 5
+      },
+      {
+        "name": "Text Analytics (COMP41730)",
+        "credits": 5
+      },
+      {
+        "name": "Machine Learning (COMP47460)",
+        "credits": 5
+      },
+      {
+        "name": "Machine Learning w/ Python (COMP47750)",
+        "credits": 5
+      },
+      {
+        "name": "Optimisation (COMP47790)",
+        "credits": 5
+      },
+      {
+        "name": "Intro. to Quantum Computing (EEEN40680)",
+        "credits": 5
+      },
+      {
+        "name": "Recommender Systems & Collective Intelligence (COMP31010)",
+        "credits": 5
+      },
+      {
+        "name": "Advanced Machine Learning (COMP47590)",
+        "credits": 5
+      },
+      {
+        "name": "Deep Learning (COMP47650)",
+        "credits": 5
+      },
+      {
+        "name": "Quantum Machine Learning (COMP47950)",
+        "credits": 5
+      },
+      {
+        "name": "Machine Learning w/ Python (online) (COMP47990)",
+        "credits": 5
+      },
+      {
+        "name": "Statistical Machine Learning (STAT30270)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Data Science Programming",
+    "courses": [
+      {
+        "name": "Data Programming with R (STAT30340)",
+        "credits": 5
+      },
+      {
+        "name": "Data Science in Python (COMP41680)",
+        "credits": 5
+      },
+      {
+        "name": "Big Data Programming (COMP47470)",
+        "credits": 5
+      },
+      {
+        "name": "Data Science in Python (COMP47670)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Distributed Computing",
+    "courses": [
+      {
+        "name": "Networks and Internet Systems (COMP30040)",
+        "credits": 5
+      },
+      {
+        "name": "Parallel Computing (COMP30250)",
+        "credits": 5
+      },
+      {
+        "name": "Distributed Systems (COMP41720)",
+        "credits": 5
+      },
+      {
+        "name": "Cloud Computing (COMP47780)",
+        "credits": 10
+      }
+    ]
+  },
+  {
+    "theme": "Mathematics and Statistics",
+    "courses": [
+      {
+        "name": "Information Theory (COMP30690)",
+        "credits": 5
+      },
+      {
+        "name": "Formal Foundations 3 (COMP31020)",
+        "credits": 5
+      },
+      {
+        "name": "Partial Differential Equations (ACM30220)",
+        "credits": 5
+      },
+      {
+        "name": "Numerical Algorithms (ACM40290)",
+        "credits": 5
+      },
+      {
+        "name": "Monte Carlo Inference (STAT40400)",
+        "credits": 5
+      },
+      {
+        "name": "Time Series Analysis (STAT40700)",
+        "credits": 5
+      },
+      {
+        "name": "Multivariate Analysis (STAT40150)",
+        "credits": 5
+      }
+    ]
+  },
+  {
+    "theme": "Software Engineering",
+    "courses": [
+      {
+        "name": "Java Programming (COMP20300)",
+        "credits": 5
+      },
+      {
+        "name": "Software Engineering (COMP41670)",
+        "credits": 5
+      },
+      {
+        "name": "Game Development (COMP30540)",
+        "credits": 5
+      },
+      {
+        "name": "Contemporary Software Development (COMP47480)",
+        "credits": 5
+      },
+      {
+        "name": "Advanced Data Structures in Java (online) (COMP47500)",
+        "credits": 10
+      }
+    ]
+  },
+  {
+    "theme": "Miscellaneous",
+    "courses": [
+      {
+        "name": "Information Security (COMP30940)",
+        "credits": 5
+      },
+      {
+        "name": "Blockchain & Decentralisation (COMP41770)",
+        "credits": 5
+      },
+      {
+        "name": "Bioinformatics (COMP40400)",
+        "credits": 5
+      },
+      {
+        "name": "Advanced Information Security (COMP41960)",
+        "credits": 5
+      },
+      {
+        "name": "Leading Teams in the Scientific Enterprise (BMOL30100)",
+        "credits": 5
+      },
+      {
+        "name": "Technical Communication (MEEN40670)",
+        "credits": 5
+      },
+      {
+        "name": "Decision Analytics (MIS30010)",
+        "credits": 5
+      }
+    ]
+  }
+]
