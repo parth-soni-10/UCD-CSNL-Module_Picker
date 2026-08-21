@@ -16,6 +16,7 @@ const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
 const LS_EXTRA = "csnlPicker:extraCodes:v1";
 const LS_THEME = "csnlPicker:theme:v1";
+const LS_TIMINGS = "csnlPicker:timings:v1"; // browser cache of fetched UCD timings
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -140,6 +141,48 @@ function saveState() {
   localStorage.setItem(LS_ACTIVE, activeTimetable);
 }
 
+// --- browser cache of fetched UCD timings -----------------------------------
+// The full `live` payloads are cached in localStorage so a returning visit
+// renders instantly from the saved timetables, then refreshes in the
+// background from UCD (stale-while-revalidate). Nothing here ever replaces
+// the live fetch — the cache only makes the first paint immediate.
+
+function loadTimingsCache() {
+  try {
+    const raw = localStorage.getItem(LS_TIMINGS);
+    if (!raw) return 0;
+    const { results } = JSON.parse(raw);
+    if (!results || typeof results !== "object") return 0;
+    let n = 0;
+    for (const [code, data] of Object.entries(results)) {
+      if (data && typeof data === "object") {
+        live.set(code, data);
+        n++;
+      }
+    }
+    return n;
+  } catch (e) {
+    return 0; // private mode / quota — just fetch live as before
+  }
+}
+
+function saveTimingsCache(extra) {
+  try {
+    const keep = new Set(allCodes());
+    if (extra) for (const c of extra) keep.add(c);
+    const results = {};
+    for (const [code, data] of live) {
+      if (keep.has(code) && data) results[code] = data;
+    }
+    localStorage.setItem(
+      LS_TIMINGS,
+      JSON.stringify({ savedAt: Date.now(), results })
+    );
+  } catch (e) {
+    /* quota exceeded / private mode — cache is best-effort */
+  }
+}
+
 // deterministic per-module hue; the CSS turns it into theme-aware event colors
 function hueFor(code) {
   let hash = 0;
@@ -222,13 +265,16 @@ async function fetchBatch(codes, fresh) {
   return res.json();
 }
 
-async function fetchAllTimings(fresh) {
+// fresh: bypass the server's 30-min cache and pull straight from UCD
+// refreshAll: re-fetch every module even if we already have it (used for the
+//             background refresh after restoring the browser cache)
+async function fetchAllTimings(fresh, refreshAll) {
   const codes = [];
   for (const code of allCodes()) if (!live.has(code)) codes.push(code);
 
-  if (codes.length === 0 && !fresh) return;
+  if (codes.length === 0 && !fresh && !refreshAll) return;
 
-  const toFetch = fresh ? allCodes() : codes;
+  const toFetch = fresh || refreshAll ? allCodes() : codes;
   const total = toFetch.length;
   let done = 0;
 
@@ -268,6 +314,7 @@ async function fetchAllTimings(fresh) {
         done += batch.length;
         setProgress();
         refreshUI();
+        saveTimingsCache(); // keep the browser cache current as results land
       }
     }
   });
@@ -276,6 +323,7 @@ async function fetchAllTimings(fresh) {
   progressEl.classList.add("hidden");
   refreshUI();
   updateStatus();
+  saveTimingsCache();
 }
 
 function updateStatus() {
@@ -680,6 +728,7 @@ async function ensureThemeFetched(body) {
       }
     }
     refreshUI();
+    saveTimingsCache(batch);
   }
 }
 
@@ -773,6 +822,7 @@ async function addModuleByCode(rawCode) {
     }
     updateStatus();
     refreshUI();
+    saveTimingsCache([code]);
   } else {
     els.addCodeInput.value = "";
     refreshUI();
@@ -797,6 +847,7 @@ els.courseList.addEventListener("click", (e) => {
   live.delete(code);
   saveState();
   refreshUI();
+  saveTimingsCache();
 });
 
 // ---------------------------------------------------------------------------
@@ -842,13 +893,30 @@ function renderAll() {
   }
 
   createGrid();
+
+  // Restore saved timetables from the browser cache so the page is usable
+  // instantly on repeat visits, then refresh from UCD in the background.
+  const cachedCount = loadTimingsCache();
   renderAll();
-  setLoadingStatus("Fetching live timings from UCD…");
-  try {
-    await fetchAllTimings(false);
+  if (cachedCount > 0) {
+    els.bootSub.textContent = `Restored ${cachedCount} saved timetables — refreshing from UCD…`;
+    els.bootCountText.textContent = `${cachedCount} cached modules`;
+    els.bootFill.style.width = "100%";
     finishBoot();
-  } catch (e) {
-    setErrorStatus(`Failed to fetch timings: ${e.message}`);
-    failBoot(`Could not load timings: ${e.message}`);
+    setLoadingStatus("Refreshing live timings from UCD…");
+    try {
+      await fetchAllTimings(false, true);
+    } catch (e) {
+      setErrorStatus(`Refresh failed: ${e.message}`);
+    }
+  } else {
+    setLoadingStatus("Fetching live timings from UCD…");
+    try {
+      await fetchAllTimings(false);
+      finishBoot();
+    } catch (e) {
+      setErrorStatus(`Failed to fetch timings: ${e.message}`);
+      failBoot(`Could not load timings: ${e.message}`);
+    }
   }
 })();

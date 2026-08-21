@@ -58,9 +58,15 @@ Timings, titles, trimesters and the auto-picked latest academic year are
 fetched live per module on every page load, so the yearly refresh only needs
 UCD to have published the new list once.
 
-Timings, titles, trimesters and the auto-picked latest academic year are
-fetched live per module on every page load, so the yearly refresh only needs
-UCD to have published the new list once.
+## Browser cache (fast repeat visits)
+
+The last-fetched timings are saved to the browser's `localStorage`
+(`csnlPicker:timings:v1`). On a repeat visit the picker restores them
+instantly — the boot screen shows "Restored N saved timetables — refreshing
+from UCD…" and the page is usable right away — then re-fetches live timings
+from UCD in the background and overwrites the cache. This never replaces the
+live fetch (the cache is only for the first paint); selections and timings
+always refresh from UCD on every load.
 
 Manually regenerate the committed fallback list anytime:
 
@@ -105,9 +111,9 @@ No build step. Either:
 - Not an official UCD service. Data sources:
   https://www.ucd.ie/students/course_search/generalreferencetimetable/ (timings)
   and https://www.ucd.ie/cs/study/postgraduate/nlstreams/ (the CSNL module list).
-- Selections, added module codes and timetables are stored in your browser's
-  `localStorage`. Selections are matched to classes by their live schedule key,
-  so they keep working even after times change.
+- Selections, added module codes, the theme choice and the cached timings are
+  stored in your browser's `localStorage`. Selections are matched to classes
+  by their live schedule key, so they keep working even after times change.
 - The only runtime dependency is `@netlify/blobs` (used by `/catalogue` on
   Netlify); Netlify installs it automatically. Locally, `node server.js` works
   with zero installed dependencies — the catalogue caches in memory instead.
