@@ -705,6 +705,27 @@ body {
   color: var(--accent);
 }
 
+.badge.core {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge.optional {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.card-note {
+  font-size: 12px;
+  color: var(--text-3);
+  line-height: 1.45;
+  margin: 10px 0 4px;
+  padding: 7px 10px;
+  border-left: 2px solid var(--accent-soft);
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+}
+
 .badge.missing {
   background: var(--surface-3);
   color: var(--text-3);

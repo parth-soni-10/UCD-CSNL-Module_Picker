@@ -1,273 +1,368 @@
 [
   {
-    "theme": "Artificial Intelligence and Cognitive Science",
+    "theme": "Artificial Intelligence",
     "courses": [
       {
-        "name": "Human Computer Interaction (COMP30960)",
-        "credits": 5
+        "name": "Text Analytics (COMP41730)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
-        "name": "Introduction to Cognitive Psychology (COMP40250)",
-        "credits": 7.5
-      },
-      {
-        "name": "Multi-Agent Systems (COMP41400)",
-        "credits": 5
+        "name": "Artificial / Human Intelligence (COMP41760)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
         "name": "Human-Centred Artificial Intelligence (COMP41740)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
-        "name": "Artificial/Human Intelligence (COMP41760)",
-        "credits": 5
-      },
-      {
-        "name": "Introduction to Cognitive Science (Graduate) (COMP47230)",
-        "credits": 7.5
-      },
-      {
-        "name": "Connectionism and Dynamical Systems (COMP40260)",
-        "credits": 7.5
-      },
-      {
-        "name": "Speech and Audio (COMP47700)",
-        "credits": 5
+        "name": "Multi-Agent Systems (COMP41400)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
         "name": "Generative AI: Language Models (COMP47980)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
+      },
+      {
+        "name": "Speech and Audio (COMP47700)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
+      },
+      {
+        "name": "Human Computer Interaction (COMP30960)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
       },
       {
         "name": "Artificial Intelligence & Ethics (IS40970)",
-        "credits": 5
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2"
+      },
+      {
+        "name": "AI and Society (SOC41130)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "2"
+      },
+      {
+        "name": "Decision Analytics (MIS30010)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Foundations of Cognitive Psychology (COMP41990)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 4 module"
       }
     ]
   },
   {
-    "theme": "Computer Engineering",
+    "theme": "Machine Learning and Data Science",
     "courses": [
-      {
-        "name": "Wireless Systems (EEEN40050)",
-        "credits": 5
-      },
-      {
-        "name": "Digital Communications (EEEN40060)",
-        "credits": 5
-      },
-      {
-        "name": "Quantitative Methods for Engineers (STAT40690)",
-        "credits": 5
-      },
-      {
-        "name": "Performance of Computer Systems (COMP40010)",
-        "credits": 5
-      },
-      {
-        "name": "Advances in Wireless Networking (COMP40660)",
-        "credits": 5
-      },
-      {
-        "name": "Digital & Embedded Systems (EEEN40280)",
-        "credits": 5
-      }
-    ]
-  },
-  {
-    "theme": "Computers and Society",
-    "courses": [
-      {
-        "name": "Enterprise, Innovation & Entrepreneurship (COMP30390)",
-        "credits": 5
-      },
-      {
-        "name": "Social Simulation: Methods and Models (SOC40640)",
-        "credits": 10
-      },
-      {
-        "name": "Enviro-Tech Boot Camp (COMP30840)",
-        "credits": 5
-      },
-      {
-        "name": "Ethical Hacking (COMP47860)",
-        "credits": 5
-      },
-      {
-        "name": "Digital Media Ethics (IS30370)",
-        "credits": 5
-      },
-      {
-        "name": "Digital Storytelling (IS30380)",
-        "credits": 5
-      },
-      {
-        "name": "Digital Libraries (IS40560)",
-        "credits": 5
-      },
-      {
-        "name": "Social Networks Online and Off (IS41510)",
-        "credits": 10
-      }
-    ]
-  },
-  {
-    "theme": "Data Manipulation and Visualisation",
-    "courses": [
-      {
-        "name": "Information Visualisation (COMP40610)",
-        "credits": 5
-      },
-      {
-        "name": "Augmented and Virtual Reality (COMP47930)",
-        "credits": 5
-      },
-      {
-        "name": "GIS Principles and Applications (GEOG40820)",
-        "credits": 10
-      },
-      {
-        "name": "Spatial Information Systems (COMP30110)",
-        "credits": 5
-      },
-      {
-        "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
-        "credits": 10
-      },
-      {
-        "name": "Information Visualisation (blended delivery) (COMP47970)",
-        "credits": 5
-      }
-    ]
-  },
-  {
-    "theme": "Prediction and Learning with Data",
-    "courses": [
-      {
-        "name": "Data Mining (COMP40370)",
-        "credits": 5
-      },
-      {
-        "name": "Connectionist Computing (COMP41390)",
-        "credits": 5
-      },
-      {
-        "name": "Text Analytics (COMP41730)",
-        "credits": 5
-      },
-      {
-        "name": "Machine Learning (COMP47460)",
-        "credits": 5
-      },
       {
         "name": "Machine Learning w/ Python (COMP47750)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "1, 2"
       },
       {
-        "name": "Optimisation (COMP47790)",
-        "credits": 5
+        "name": "Machine Learning (blended delivery) (COMP47460)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
-        "name": "Intro. to Quantum Computing (EEEN40680)",
-        "credits": 5
-      },
-      {
-        "name": "Recommender Systems & Collective Intelligence (COMP31010)",
-        "credits": 5
-      },
-      {
-        "name": "Advanced Machine Learning (COMP47590)",
-        "credits": 5
-      },
-      {
-        "name": "Deep Learning (COMP47650)",
-        "credits": 5
-      },
-      {
-        "name": "Quantum Machine Learning (COMP47950)",
-        "credits": 5
-      },
-      {
-        "name": "Machine Learning w/ Python (online) (COMP47990)",
-        "credits": 5
-      },
-      {
-        "name": "Statistical Machine Learning (STAT30270)",
-        "credits": 5
-      }
-    ]
-  },
-  {
-    "theme": "Data Science Programming",
-    "courses": [
-      {
-        "name": "Data Programming with R (STAT30340)",
-        "credits": 5
-      },
-      {
-        "name": "Data Science in Python (COMP41680)",
-        "credits": 5
+        "name": "Data Science in Python (mixed delivery) (COMP47670)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1, 2"
       },
       {
         "name": "Big Data Programming (COMP47470)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "1, 2"
       },
       {
-        "name": "Data Science in Python (COMP47670)",
-        "credits": 5
-      }
-    ]
-  },
-  {
-    "theme": "Distributed Computing",
-    "courses": [
-      {
-        "name": "Networks and Internet Systems (COMP30040)",
-        "credits": 5
+        "name": "Optimisation (COMP47790)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       },
       {
-        "name": "Parallel Computing (COMP30250)",
-        "credits": 5
+        "name": "Machine Learning w/ Python (online) (COMP47990)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       },
       {
-        "name": "Distributed Systems (COMP41720)",
-        "credits": 5
+        "name": "Advanced Machine Learning (COMP47590)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2",
+        "comments": "Module has programming prerequisites"
       },
       {
-        "name": "Cloud Computing (COMP47780)",
-        "credits": 10
-      }
-    ]
-  },
-  {
-    "theme": "Mathematics and Statistics",
-    "courses": [
-      {
-        "name": "Information Theory (COMP30690)",
-        "credits": 5
+        "name": "Deep Learning (COMP47650)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2",
+        "comments": "Prerequisites: statistics & calculus"
       },
       {
-        "name": "Formal Foundations 3 (COMP31020)",
-        "credits": 5
+        "name": "Intro. to Quantum Computing (EEEN40680)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)"
       },
       {
-        "name": "Partial Differential Equations (ACM30220)",
-        "credits": 5
+        "name": "Information Visualisation (COMP40610)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
       },
       {
-        "name": "Numerical Algorithms (ACM40290)",
-        "credits": 5
+        "name": "Data Mining (COMP40370)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Connectionist Computing (COMP41390)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "GIS Principles and Applications (GEOG40820)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "1"
       },
       {
         "name": "Monte Carlo Inference (STAT40400)",
-        "credits": 5
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
       },
       {
         "name": "Time Series Analysis (STAT40700)",
-        "credits": 5
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Data Programming with R (STAT30340)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Level 3 module; Approval required"
+      },
+      {
+        "name": "Introduction to Data Analytics (online) (STAT40720)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Data Programming with R (online) (STAT40730)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Data Programming with Python (online) (STAT40800)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Quantitative Methods for Engineers (STAT40690)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Spatial Information Systems (COMP30110)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Quantum Machine Learning (COMP47950)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Prerequisite: EEEN40680 (Intro. to Quantum Computing)"
+      },
+      {
+        "name": "Information Visualisation (blended delivery) (COMP47970)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2"
+      },
+      {
+        "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "2"
+      },
+      {
+        "name": "Bioinformatics (COMP40400)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2"
       },
       {
         "name": "Multivariate Analysis (STAT40150)",
-        "credits": 5
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Multivariate Analysis (online) (STAT40740)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Statistical Machine Learning (STAT30270)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 3 module; Approval required"
+      },
+      {
+        "name": "Statistical Machine Learning (online) (STAT40750)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Approval required"
+      }
+    ]
+  },
+  {
+    "theme": "Networks and Distributed Computing",
+    "courses": [
+      {
+        "name": "Blockchain & Decentralisation (COMP41770)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Cloud Computing (COMP47780)",
+        "credits": 10,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Distributed Systems (COMP41720)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Performance of Computer Systems (COMP40010)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
+      },
+      {
+        "name": "Advances in Wireless Networking (COMP40660)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
+      },
+      {
+        "name": "Big Data Programming (COMP47470)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1, 2"
+      },
+      {
+        "name": "Networks and Internet Systems (COMP30040)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Multi-Agent Systems (COMP41400)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "High Performance Computing (COMP40730)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Approval required"
+      },
+      {
+        "name": "Parallel Computing (COMP30250)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Numerical Algorithms (ACM40290)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Intro. to Quantum Computing (EEEN40680)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1",
+        "comments": "Must be taken as a pre-requisite for COMP47950 (see below)"
+      },
+      {
+        "name": "Wireless Systems (EEEN40050)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Digital Communications (EEEN40060)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Social Networks Online and Off (IS41510)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "2"
       }
     ]
   },
@@ -275,57 +370,157 @@
     "theme": "Software Engineering",
     "courses": [
       {
-        "name": "Java Programming (COMP20300)",
-        "credits": 5
-      },
-      {
         "name": "Software Engineering (COMP41670)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "1",
+        "comments": "Prerequisite: object-oriented programming knowledge"
       },
       {
-        "name": "Game Development (COMP30540)",
-        "credits": 5
+        "name": "Exploring Ruby (COMP47530)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
       },
       {
-        "name": "Contemporary Software Development (COMP47480)",
-        "credits": 5
+        "name": "Distributed Systems (COMP41720)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Ethical Hacking (COMP47860)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       },
       {
         "name": "Advanced Data Structures in Java (online) (COMP47500)",
-        "credits": 10
+        "credits": 10,
+        "kind": "core",
+        "semester": "2"
+      },
+      {
+        "name": "Augmented and Virtual Reality (COMP47930)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Object-Oriented Programming (COMP20350)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "1"
+      },
+      {
+        "name": "Introduction to Relational Databases and SQL Programming (COMP40725)",
+        "credits": 10,
+        "kind": "optional",
+        "semester": "2"
+      },
+      {
+        "name": "Recommender Systems (COMP31010)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 3 module; Module has programming prerequisites"
+      },
+      {
+        "name": "Game Development (COMP30540)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Digital & Embedded Systems (EEEN40280)",
+        "credits": 5,
+        "kind": "optional",
+        "semester": "2"
       }
     ]
   },
   {
-    "theme": "Miscellaneous",
+    "theme": "Information and Communication Sciences, and Languages",
     "courses": [
       {
         "name": "Information Security (COMP30940)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "1",
+        "comments": "Level 3 module; note, this is a prerequisite for COMP41960 (see below)"
       },
       {
-        "name": "Blockchain & Decentralisation (COMP41770)",
-        "credits": 5
+        "name": "Information Theory (COMP30690)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1",
+        "comments": "Level 3 module"
       },
       {
-        "name": "Bioinformatics (COMP40400)",
-        "credits": 5
+        "name": "Enterprise, Innovation & Entrepreneurship (COMP30390)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Information Visualisation (COMP40610)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Technical Communication (online) (MEEN40820)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "1",
+        "comments": "See MEEN40670 below."
+      },
+      {
+        "name": "Social Simulation: Methods and Models (SOC40640)",
+        "credits": 10,
+        "kind": "core",
+        "semester": "1"
+      },
+      {
+        "name": "Information Visualisation (blended delivery) (COMP47970)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       },
       {
         "name": "Advanced Information Security (COMP41960)",
-        "credits": 5
-      },
-      {
-        "name": "Leading Teams in the Scientific Enterprise (BMOL30100)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "2",
+        "comments": "Prerequisite: COMP30940 (see above)"
       },
       {
         "name": "Technical Communication (MEEN40670)",
-        "credits": 5
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       },
       {
-        "name": "Decision Analytics (MIS30010)",
-        "credits": 5
+        "name": "Digital Media Ethics (IS30370)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Digital Storytelling (IS30380)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2",
+        "comments": "Level 3 module"
+      },
+      {
+        "name": "Digital Libraries (IS40560)",
+        "credits": 5,
+        "kind": "core",
+        "semester": "2"
       }
     ]
   }

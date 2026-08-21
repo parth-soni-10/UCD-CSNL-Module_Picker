@@ -359,10 +359,10 @@ function render() {
     .map((code) => ({ code }));
   if (extraCourses.length) themes.push({ name: "My Modules", courses: extraCourses });
 
-  let shown = 0;
+  const shownCodes = new Set();
   for (const themeObj of themes) {
     if (themeObj.courses.length === 0) continue;
-    shown += themeObj.courses.length;
+    for (const c of themeObj.courses) shownCodes.add(c.code);
 
     const section = document.createElement("div");
     section.className = "theme";
@@ -381,10 +381,10 @@ function render() {
     list.appendChild(section);
   }
 
-  if (shown === 0) {
+  if (shownCodes.size === 0) {
     list.innerHTML = `<p class="empty">No modules found matching “${esc(term)}”.</p>`;
   }
-  els.moduleCount.textContent = `${shown} modules`;
+  els.moduleCount.textContent = `${shownCodes.size} modules`;
 }
 
 function liveTitle(code) {
@@ -401,8 +401,12 @@ function renderCourseCard(c) {
   card.dataset.code = c.code;
 
   const badges = [];
-  if (data && data.semester) {
-    badges.push(data.semester === "1, 2" ? "Both semesters" : "Semester " + data.semester);
+  if (c.kind === "core" || c.kind === "optional") {
+    badges.push({ text: c.kind === "core" ? "Core" : "Optional", cls: c.kind });
+  }
+  const semester = c.semester || (data && data.semester);
+  if (semester) {
+    badges.push(semester === "1, 2" ? "Both semesters" : "Semester " + semester);
   }
   if (c.credits) badges.push(`${c.credits} cr`);
   if (data && data.found && data.year) {
@@ -418,7 +422,7 @@ function renderCourseCard(c) {
       <div>
         <h3><a class="module-link" href="${UCD_MODULE_BASE}${esc(c.code)}" target="_blank" rel="noopener" title="View ${esc(c.code)} on ucd.ie">${esc(liveTitle(c.code))}</a></h3>
         <div class="badges">
-          ${badges.map((b) => `<span class="badge${data && data.found ? " live" : ""}">${esc(b)}</span>`).join("")}
+          ${badges.map((b) => `<span class="badge${b.cls ? " " + esc(b.cls) : ""}${data && data.found ? " live" : ""}">${esc(b.text !== undefined ? b.text : b)}</span>`).join("")}
         </div>
       </div>
       <div class="card-code-col">
@@ -426,6 +430,7 @@ function renderCourseCard(c) {
         ${c.extra ? `<button class="remove-extra-btn" data-code="${esc(c.code)}" title="Remove from list" aria-label="Remove ${esc(c.code)} from list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` : ""}
       </div>
     </div>
+    ${c.comments ? `<div class="card-note" title="From the UCD CSNL streams page">${esc(c.comments)}</div>` : ""}
     <div class="offerings" data-code="${esc(c.code)}"></div>
   `;
 
