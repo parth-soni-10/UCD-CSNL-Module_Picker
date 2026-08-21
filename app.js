@@ -336,6 +336,12 @@ function refreshUI() {
 function render() {
   const term = els.search.value.toLowerCase().trim();
   const list = els.courseList;
+  // remember which themes are expanded so re-renders (selection changes,
+  // timing fetch progress) don't collapse them
+  const expanded = new Set();
+  for (const t of list.querySelectorAll(".theme-toggle:not(.collapsed)")) {
+    expanded.add(t.querySelector("span").childNodes[0].textContent.trim());
+  }
   list.innerHTML = "";
 
   const themes = catalogue.map((t) => ({
@@ -367,14 +373,15 @@ function render() {
     const section = document.createElement("div");
     section.className = "theme";
     if (themeObj.lazy) section.dataset.lazy = "1";
+    const isExpanded = expanded.has(themeObj.name);
     section.innerHTML = `
-      <button class="theme-toggle collapsed">
+      <button class="theme-toggle${isExpanded ? "" : " collapsed"}">
         <span>${esc(themeObj.name)}<span class="theme-count">${themeObj.courses.length}</span></span>
         <span class="chev" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </span>
       </button>
-      <div class="theme-body hidden"></div>
+      <div class="theme-body${isExpanded ? "" : " hidden"}"></div>
     `;
     const body = section.querySelector(".theme-body");
     for (const c of themeObj.courses) body.appendChild(renderCourseCard(c));
