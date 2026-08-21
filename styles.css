@@ -222,7 +222,6 @@ body {
 .theme-toggle,
 .offering,
 .retry-module,
-.remove-extra-btn,
 .summary-item .s-x {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -829,29 +828,10 @@ body {
   border: 1px solid var(--danger-border);
 }
 
-.remove-extra-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-3);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.remove-extra-btn svg {
-  width: 12px;
-  height: 12px;
-  display: block;
-}
-
-.remove-extra-btn:hover {
-  color: var(--danger);
-  background: var(--danger-soft);
+/* brief highlight when jumping to a module via the code box */
+.course-card.flash {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* -------------------------------------------------------------- offerings */

@@ -478,8 +478,8 @@ function allCodes() {
 function moduleInfo(code) {
   for (const t of catalogue)
     for (const c of t.courses) if (c.code === code) return c;
-  // user-added module: no curated metadata, everything comes from UCD
-  return { code, title: (live.get(code) || {}).title || code, credits: null, extra: true };
+  // defensive fallback — the picker only offers CSNL modules
+  return { code, title: (live.get(code) || {}).title || code, credits: null };
 }
 
 function refreshUI() {
@@ -537,17 +537,6 @@ function render() {
         c.code.toLowerCase().includes(term)
     ),
   }));
-  const extraCourses = extraCodes
-    .filter((code) => !curatedCodes().includes(code))
-    .filter(
-      (code) =>
-        !term ||
-        liveTitle(code).toLowerCase().includes(term) ||
-        code.toLowerCase().includes(term)
-    )
-    .map((code) => ({ code, extra: true }));
-  if (extraCourses.length) themes.push({ name: "My Modules", courses: extraCourses });
-
   const shownCodes = new Set();
   for (const themeObj of themes) {
     if (themeObj.courses.length === 0) continue;
@@ -631,7 +620,6 @@ function renderCourseCard(c) {
       </div>
       <div class="card-code-col">
         <span class="badge">${esc(c.code)}</span>
-        ${c.extra ? `<button class="remove-extra-btn" data-code="${esc(c.code)}" title="Remove from list" aria-label="Remove ${esc(c.code)} from list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>` : ""}
       </div>
     </div>
     ${c.description ? `<p class="card-desc">${esc(c.description)}</p>` : ""}
@@ -1172,36 +1160,41 @@ function showAddCodeError(msg) {
   els.addCodeError.hidden = !msg;
 }
 
-async function addModuleByCode(rawCode) {
+// Every CSNL module is already listed, so a valid code just jumps to its card.
+function revealModule(code) {
+  els.search.value = "";
+  render();
+  syncUrl();
+  const card = document.querySelector(`.course-card[data-code="${CSS.escape(code)}"]`);
+  if (!card) return;
+  const toggle = card.closest(".theme") && card.closest(".theme").querySelector(".theme-toggle");
+  if (toggle) {
+    toggle.classList.remove("collapsed");
+    toggle.nextElementSibling.classList.remove("hidden");
+  }
+  card.classList.add("flash");
+  setTimeout(() => card.classList.remove("flash"), 1500);
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function addModuleByCode(rawCode) {
   const code = String(rawCode || "").trim().toUpperCase();
   if (!/^[A-Z]{2,5}\d{3,6}$/.test(code)) {
     showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code — try e.g. COMP30960`);
     els.addCodeInput.focus();
     return;
   }
-  if (!extraCodes.includes(code) && !curatedCodes().includes(code)) {
-    extraCodes.push(code);
-    persistExtraCodes();
-    els.addCodeInput.value = "";
-    // fetch just this module live, then re-render
-    setLoadingStatus(`Fetching ${code} from UCD…`);
-    try {
-      const json = await fetchBatch([code], false);
-      for (const [c, d] of Object.entries(json.results || {})) {
-        live.set(c, { ...d, fetchedAt: json.generatedAt });
-      }
-    } catch (e) {
-      // mark the card as failed (with Retry) instead of leaving it spinning
-      live.set(code, { found: false, reason: `Fetch error: ${e.message}`, failed: true });
-      showAddCodeError(`Couldn't fetch ${code} — check the code and retry on its card.`);
-    }
-    updateStatus();
-    refreshUI();
-    saveTimingsCache([code]);
-  } else {
-    els.addCodeInput.value = "";
-    refreshUI();
+  if (!curatedCodes().includes(code)) {
+    // the picker only offers — and only fetches — modules from the CSNL list
+    showAddCodeError(
+      `${code} isn't on the CSNL module list — only modules from UCD's CSNL streams page can be added.`
+    );
+    els.addCodeInput.focus();
+    return;
   }
+  els.addCodeInput.value = "";
+  showAddCodeError("");
+  revealModule(code);
 }
 
 els.addCodeBtn.addEventListener("click", () => addModuleByCode(els.addCodeInput.value));
@@ -1252,22 +1245,23 @@ els.suggestForm.addEventListener("submit", async (e) => {
 // hide the success note again once the visitor starts typing a new one
 els.suggestForm.addEventListener("input", () => els.suggestDone.classList.add("hidden"));
 
-els.courseList.addEventListener("click", (e) => {
-  const btn = e.target.closest(".remove-extra-btn");
-  if (!btn) return;
-  const code = btn.dataset.code;
-  if (!confirm(`Remove ${code} from your module list? Its selected classes are removed too.`)) return;
-  extraCodes = extraCodes.filter((c) => c !== code);
-  persistExtraCodes();
-  // drop its selected classes too
-  for (const name of Object.keys(selection)) {
-    selection[name] = selection[name].filter((s) => s.code !== code);
+// The picker only offers modules from the CSNL streams list — drop anything
+// else (codes added before this restriction, stale cache entries, selections)
+// so no non-CSNL module is ever fetched or shown.
+function purgeNonCsnl() {
+  const csnl = new Set(curatedCodes());
+  const kept = extraCodes.filter((c) => csnl.has(c));
+  if (kept.length !== extraCodes.length) {
+    extraCodes = kept;
+    persistExtraCodes();
   }
-  live.delete(code);
+  for (const name of Object.keys(selection)) {
+    const sel = selection[name].filter((s) => csnl.has(s.code));
+    if (sel.length !== selection[name].length) selection[name] = sel;
+  }
+  for (const code of [...live.keys()]) if (!csnl.has(code)) live.delete(code);
   saveState();
-  refreshUI();
-  saveTimingsCache();
-});
+}
 
 // ---------------------------------------------------------------------------
 // boot
@@ -1340,6 +1334,7 @@ function startAutoRefresh() {
   // Restore saved timetables from the browser cache so the page is usable
   // instantly on repeat visits, then refresh from UCD in the background.
   const cachedCount = loadTimingsCache();
+  purgeNonCsnl();
   refreshUI();
   if (cachedCount > 0) {
     els.bootSub.textContent = `Restored ${cachedCount} saved timetables — refreshing from UCD…`;
