@@ -350,6 +350,18 @@ body {
   height: 13px;
 }
 
+.print-btn-glyph {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+
+.print-btn-glyph svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* ---------------------------------------------------------- progress bar */
 .fetch-progress {
   max-width: 1280px;
@@ -1092,6 +1104,11 @@ body {
 
 /* ---------------------------------------------------------- timetable grid */
 .timetable-wrap {
+  /* grid metrics in px, read by app.js for event positioning and overridden
+     by the print stylesheet so the printed grid stays smaller */
+  --hour-h: 62;
+  --head-h: 44;
+  --time-w: 58;
   position: relative;
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -1101,8 +1118,8 @@ body {
 
 .timetable-grid {
   display: grid;
-  grid-template-columns: 58px repeat(5, minmax(150px, 1fr));
-  grid-template-rows: 44px repeat(12, 62px);
+  grid-template-columns: calc(var(--time-w) * 1px) repeat(5, minmax(150px, 1fr));
+  grid-template-rows: calc(var(--head-h) * 1px) repeat(12, calc(var(--hour-h) * 1px));
   min-width: 640px;
 }
 
@@ -1426,5 +1443,140 @@ body {
   }
   .status-pill {
     max-width: 240px;
+  }
+}
+
+/* ------------------------------------------------------------- printing */
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  /* only the timetable survives */
+  .topbar,
+  .col-modules,
+  .col-side,
+  .fetch-progress,
+  .boot-screen,
+  .footnote {
+    display: none !important;
+  }
+
+  .layout {
+    display: block;
+    max-width: none;
+    padding: 0;
+  }
+
+  .col-timetable {
+    display: block;
+  }
+
+  .panel {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  #print-btn {
+    display: none !important;
+  }
+
+  /* compact grid that still fits one page; app.js re-reads these metrics */
+  .timetable-wrap {
+    --hour-h: 40;
+    --head-h: 30;
+    --time-w: 46;
+    overflow: visible;
+    border: 1px solid #c9ccd4;
+    border-radius: 8px;
+  }
+
+  .timetable-grid {
+    min-width: 0;
+  }
+
+  .grid-cell,
+  .time-slot,
+  .day-header,
+  .timetable-event,
+  .timetable-event.clash,
+  .clash-warning {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .day-header {
+    background: #eef0f4;
+    color: #1c1e24;
+  }
+
+  /* print header + module legend */
+  .pi-title {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #111;
+  }
+
+  .pi-sub {
+    font-size: 11.5px;
+    color: #555c66;
+    margin: 2px 0 10px;
+  }
+
+  .pi-modules {
+    margin-top: 12px;
+    border-top: 1px solid #c9ccd4;
+    padding-top: 8px;
+  }
+
+  .pi-mod {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 10.5px;
+    padding: 1.5px 0;
+  }
+
+  .pi-code {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: #111;
+    min-width: 84px;
+  }
+
+  .pi-name {
+    color: #333;
+  }
+
+  .pi-cred {
+    color: #555;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .pi-total {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #111;
+  }
+
+  .pi-modules .muted {
+    color: #666;
   }
 }

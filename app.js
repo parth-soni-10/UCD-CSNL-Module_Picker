@@ -10,9 +10,22 @@ const PARALLEL_BATCHES = 4; // function calls run at once
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 const DAY_INDEX = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 };
 const HOUR_START = 8;
-const HOUR_HEIGHT = 62; // px per hour, matches .timetable-grid rows
-const GRID_HEADER_H = 44; // px, matches .timetable-grid header row
-const TIME_COL_W = 58; // px, matches the time column width
+// Grid metrics live as CSS custom properties on .timetable-wrap (screen
+// values here are fallbacks); the print stylesheet overrides them and
+// app.js re-reads them on beforeprint so events stay aligned.
+const FALLBACK_METRICS = { hourH: 62, headH: 44, timeW: 58 };
+function gridMetrics() {
+  const s = getComputedStyle(els.timetableWrap);
+  const num = (name, fb) => {
+    const v = parseFloat(s.getPropertyValue(name));
+    return Number.isFinite(v) && v > 0 ? v : fb;
+  };
+  return {
+    hourH: num("--hour-h", FALLBACK_METRICS.hourH),
+    headH: num("--head-h", FALLBACK_METRICS.headH),
+    timeW: num("--time-w", FALLBACK_METRICS.timeW),
+  };
+}
 
 const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
@@ -57,6 +70,9 @@ const els = {
   timetableEvents: document.getElementById("timetable-events"),
   timetableWrap: document.querySelector(".timetable-wrap"),
   clashWarning: document.getElementById("clash-warning"),
+  printBtn: document.getElementById("print-btn"),
+  printHeader: document.getElementById("print-header"),
+  printModules: document.getElementById("print-modules"),
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
   themeToggle: document.getElementById("theme-toggle"),
@@ -459,6 +475,34 @@ function refreshUI() {
   renderSummary();
   renderSwitcher();
   renderTimetable();
+  renderPrintInfo();
+}
+
+// Fills the print-only header and module legend (visible only in print).
+function renderPrintInfo() {
+  const today = new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const sem = getCurrentSemester();
+  els.printHeader.innerHTML = `
+    <div class="pi-title">CSNL Module Picker — ${esc(activeTimetable)}</div>
+    <div class="pi-sub">${today}${sem ? ` · Semester ${sem}` : ""}</div>
+  `;
+  const codes = [...new Set(currentSelection().map((s) => s.code))];
+  let credits = 0;
+  const rows = [];
+  for (const code of codes) {
+    const info = moduleInfo(code);
+    if (info && info.credits) credits += info.credits;
+    rows.push(`<div class="pi-mod"><span class="pi-code">${esc(code)}</span><span class="pi-name">${esc(info.title)}</span><span class="pi-cred">${info.credits ? info.credits + " cr" : ""}</span></div>`);
+  }
+  els.printModules.innerHTML =
+    rows.join("") +
+    (rows.length
+      ? `<div class="pi-total">Total: ${credits} credits</div>`
+      : `<p class="muted">Nothing selected yet.</p>`);
 }
 
 function render() {
@@ -744,10 +788,11 @@ function renderTimetable() {
     const cls = data.classes.find((x) => offeringKey(x) === s.offeringKey);
     if (!cls) continue;
 
+    const m = gridMetrics();
     const start = timeToMinutes(cls.startTime);
     const end = timeToMinutes(cls.endTime);
-    const top = (start / 60 - HOUR_START) * HOUR_HEIGHT + GRID_HEADER_H;
-    const height = ((end - start) / 60) * HOUR_HEIGHT;
+    const top = (start / 60 - HOUR_START) * m.hourH + m.headH;
+    const height = ((end - start) / 60) * m.hourH;
     const dayIndex = DAY_INDEX[cls.day];
     if (!dayIndex) continue;
 
@@ -755,8 +800,8 @@ function renderTimetable() {
     el.className = "timetable-event";
     el.style.top = `${top}px`;
     el.style.height = `${Math.max(height, 24)}px`;
-    el.style.left = `calc(${TIME_COL_W}px + ${dayIndex - 1} * ((100% - ${TIME_COL_W}px) / 5) + 3px)`;
-    el.style.width = `calc((100% - ${TIME_COL_W}px) / 5 - 6px)`;
+    el.style.left = `calc(${m.timeW}px + ${dayIndex - 1} * ((100% - ${m.timeW}px) / 5) + 3px)`;
+    el.style.width = `calc((100% - ${m.timeW}px) / 5 - 6px)`;
     el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
@@ -1061,6 +1106,12 @@ els.refreshBtn.addEventListener("click", () => {
   setLoadingStatus("Refreshing timings from UCD…");
   fetchAllTimings(true).catch((e) => setErrorStatus(`Refresh failed: ${e.message}`));
 });
+
+els.printBtn.addEventListener("click", () => window.print());
+// Re-render the events with the print stylesheet's compact grid metrics
+// (read from the CSS variables), then restore the screen layout.
+window.addEventListener("beforeprint", () => renderTimetable());
+window.addEventListener("afterprint", () => renderTimetable());
 
 function persistExtraCodes() {
   localStorage.setItem(LS_EXTRA, JSON.stringify(extraCodes));
