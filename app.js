@@ -590,6 +590,17 @@ function titleMatches(title, term) {
   return false;
 }
 
+// Does this module match the search term? Checks the live title, the code,
+// the UCD description, and the stream page's comments — the same token+
+// acronym matching used for titles, so "machine learning" and "ml" both hit.
+function courseMatches(c, term) {
+  if (titleMatches(liveTitle(c.code), term)) return true;
+  if (c.code.toLowerCase().includes(term)) return true;
+  return [c.description, c.comments]
+    .filter(Boolean)
+    .some((text) => titleMatches(text, term));
+}
+
 function render() {
   const term = els.search.value.toLowerCase().trim();
   const list = els.courseList;
@@ -601,12 +612,16 @@ function render() {
   }
   list.innerHTML = "";
 
-  const themes = catalogue.map((t) => ({
-    name: t.theme,
-    courses: t.courses.filter(
-      (c) => !term || titleMatches(liveTitle(c.code), term) || c.code.toLowerCase().includes(term)
-    ),
-  }));
+  const themes = catalogue.map((t) => {
+    // a stream-name match shows the whole stream
+    const streamMatch = term && titleMatches(t.theme, term);
+    return {
+      name: t.theme,
+      courses: streamMatch
+        ? t.courses
+        : t.courses.filter((c) => !term || courseMatches(c, term)),
+    };
+  });
   const shownCodes = new Set();
   for (const themeObj of themes) {
     if (themeObj.courses.length === 0) continue;
