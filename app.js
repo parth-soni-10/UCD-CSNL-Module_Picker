@@ -29,6 +29,7 @@ const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
 let extraCodes = []; // user-added module codes (persisted; timings always live)
+let semesterFilter = "all"; // "all" | "1" | "2"
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -57,6 +58,7 @@ const els = {
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
   themeToggle: document.getElementById("theme-toggle"),
+  semesterFilter: document.getElementById("semester-filter"),
   bootScreen: document.getElementById("boot-screen"),
   bootFill: document.getElementById("boot-fill"),
   bootCountText: document.getElementById("boot-count-text"),
@@ -185,6 +187,27 @@ function hueFor(code) {
   let hash = 0;
   for (const ch of code) hash = ch.charCodeAt(0) + ((hash << 5) - hash);
   return Math.abs(hash) % 360;
+}
+
+// ---------------------------------------------------------------------------
+// semester awareness
+// ---------------------------------------------------------------------------
+
+// UCD's academic year: Semester 1 (Autumn) = Aug-Dec, Semester 2 (Spring) = Jan-May
+function getCurrentSemester() {
+  const month = new Date().getMonth(); // 0-indexed
+  // Aug(7) - Dec(11) = Semester 1
+  // Jan(0) - May(4) = Semester 2
+  // Jun(5) - Jul(6) = break (return null)
+  if (month >= 7 || month <= 4) return month >= 7 ? "1" : "2";
+  return null; // summer break
+}
+
+function semesterMatchesFilter(moduleSemester) {
+  if (semesterFilter === "all") return true;
+  if (!moduleSemester) return true; // no semester info, show it
+  // moduleSemester can be "1", "2", or "1, 2"
+  return moduleSemester.includes(semesterFilter);
 }
 
 // ---------------------------------------------------------------------------
@@ -335,7 +358,9 @@ function updateStatus() {
   const time = ts.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   els.statusPill.classList.remove("loading", "error");
   const pending = total - liveCount - noTtCount;
+  const currentSem = getCurrentSemester();
   let status = `Live UCD timings · ${liveCount}/${total} modules`;
+  if (currentSem) status += ` · Semester ${currentSem} now`;
   if (noTtCount) status += ` · ${noTtCount} no timetable yet`;
   if (pending > 0) status += ` · ${pending} pending`;
   status += ` · updated ${time}`;
@@ -397,18 +422,20 @@ function render() {
     name: t.theme,
     courses: t.courses.filter(
       (c) =>
-        !term ||
+        (!term ||
         liveTitle(c.code).toLowerCase().includes(term) ||
-        c.code.toLowerCase().includes(term)
+        c.code.toLowerCase().includes(term)) &&
+        semesterMatchesFilter(c.semester)
     ),
   }));
   const extraCourses = extraCodes
     .filter((code) => !curatedCodes().includes(code))
     .filter(
       (code) =>
-        !term ||
+        (!term ||
         liveTitle(code).toLowerCase().includes(term) ||
-        code.toLowerCase().includes(term)
+        code.toLowerCase().includes(term)) &&
+        semesterMatchesFilter(moduleInfo(code).semester)
     )
     .map((code) => ({ code, extra: true }));
   if (extraCourses.length) themes.push({ name: "My Modules", courses: extraCourses });
@@ -453,6 +480,13 @@ function renderCourseCard(c) {
   const card = document.createElement("div");
   card.className = "course-card";
   card.dataset.code = c.code;
+
+  // highlight if module matches current semester
+  const currentSem = getCurrentSemester();
+  const moduleSem = c.semester || (data && data.semester);
+  if (currentSem && moduleSem && moduleSem.includes(currentSem)) {
+    card.classList.add("current-semester");
+  }
 
   const badges = [];
   if (c.kind === "core" || c.kind === "optional") {
@@ -705,6 +739,17 @@ function renderSwitcher() {
 // ---------------------------------------------------------------------------
 
 els.search.addEventListener("input", render);
+
+// semester filter buttons
+if (els.semesterFilter) {
+  els.semesterFilter.addEventListener("click", (e) => {
+    const btn = e.target.closest(".semester-btn");
+    if (!btn) return;
+    semesterFilter = btn.dataset.semester;
+    els.semesterFilter.querySelectorAll(".semester-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    render();
+  });
+}
 
 els.courseList.addEventListener("change", (e) => {
   if (e.target.type === "checkbox" && e.target.dataset.code) {
