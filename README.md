@@ -48,8 +48,8 @@ production exactly. Node 18+ is required; there are no dependencies.
 
 No build step. Either:
 
-1. **Drag & drop**: upload the `csnl-module-picker` folder at
-   https://app.netlify.com/drop (functions included).
+1. **Drag & drop**: upload this folder at https://app.netlify.com/drop
+   (functions included).
 2. **Git**: push to a repo and connect it to Netlify — no build command,
    publish directory `.`, Node 18+.
 
