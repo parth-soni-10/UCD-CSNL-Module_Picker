@@ -86,6 +86,8 @@ const els = {
   planResults: document.getElementById("plan-results"),
   suggestForm: document.getElementById("suggest-form"),
   suggestSubmit: document.getElementById("suggest-submit"),
+  suggestName: document.getElementById("suggest-name"),
+  suggestEmail: document.getElementById("suggest-email"),
   suggestText: document.getElementById("suggest-text"),
   suggestError: document.getElementById("suggest-error"),
   suggestDone: document.getElementById("suggest-done"),
@@ -1434,6 +1436,13 @@ els.suggestForm.addEventListener("submit", async (e) => {
     els.suggestError.textContent = "Write a suggestion before sending.";
     els.suggestError.hidden = false;
     els.suggestText.focus();
+    return;
+  }
+  const email = els.suggestEmail.value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    els.suggestError.textContent = "That email address doesn't look right — leave it blank if you'd rather not share it.";
+    els.suggestError.hidden = false;
+    els.suggestEmail.focus();
     return;
   }
   els.suggestError.hidden = true;

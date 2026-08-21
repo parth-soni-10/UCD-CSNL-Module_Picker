@@ -200,6 +200,7 @@
             method="POST"
             data-netlify="true"
             netlify-honeypot="bot-field"
+            novalidate
           >
             <input type="hidden" name="form-name" value="suggestions" />
             <p class="hidden" aria-hidden="true">
@@ -215,6 +216,16 @@
               autocomplete="name"
               placeholder="Your name"
             />
+            <label class="suggest-label" for="suggest-email">Email <span class="muted">(optional — so we can tell you once it's done)</span></label>
+            <input
+              id="suggest-email"
+              name="email"
+              class="input"
+              type="email"
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@example.com"
+            />
             <label class="suggest-label" for="suggest-text">Suggestion</label>
             <textarea
               id="suggest-text"
@@ -225,7 +236,7 @@
             ></textarea>
             <div id="suggest-error" class="add-code-error" role="alert" hidden></div>
             <button id="suggest-submit" class="btn btn-primary" type="submit">Send suggestion</button>
-            <p id="suggest-done" class="suggest-done hidden" role="status">Thanks — your suggestion is on its way.</p>
+            <p id="suggest-done" class="suggest-done hidden" role="status">Thanks — your suggestion is on its way. If you left an email, you'll hear back once it's addressed.</p>
           </form>
         </div>
       </aside>

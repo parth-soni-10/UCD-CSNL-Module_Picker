@@ -63,7 +63,8 @@ const server = http.createServer(async (req, res) => {
     req.on("data", (chunk) => (body += chunk));
     req.on("end", () => {
       const data = new URLSearchParams(body);
-      console.log(`[suggestion] ${data.get("name") || "anonymous"}: ${data.get("suggestion") || "(empty)"}`);
+      const email = data.get("email") || "no email";
+      console.log(`[suggestion] ${data.get("name") || "anonymous"} (${email}): ${data.get("suggestion") || "(empty)"}`);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true, dev: true }));
     });
