@@ -12,8 +12,8 @@ across future academic years:
 | Module title | **Live** — UCD |
 | Academic year (auto-picks the latest published) | **Live** — UCD |
 | Trimester / semester (Autumn, Spring, or both) | **Live** — UCD |
-| Module code list (default view) | Curated `modules.json` (the themes) + **add any code live at runtime** |
-| Credits | Curated `modules.json` (UCD exposes no public credits API) |
+| Module code list (default view) | Curated, **auto-refreshed every 1 August** via `/catalogue` + **add any code live at runtime** |
+| Credits | Curated (UCD exposes no public credits API), refreshed with the list on 1 August |
 
 There are **no hardcoded timings anywhere**. When UCD updates a schedule —
 or publishes next year's timetable — the picker shows it automatically.
@@ -32,6 +32,32 @@ Modules with no timetable yet show UCD's own reason ("currently not timetabled",
 4. Use the **"Add any UCD module code"** box to pull in modules that aren't in
    the default list — the code is remembered, but its timings are always
    re-fetched live.
+
+## Automatic yearly refresh (1 August)
+
+UCD publishes the next academic year's module set around the start of August.
+The module list updates itself every **1 August**, no code change needed:
+
+- A **scheduled function** (`refresh-catalogue`) runs at `00:00 UTC` on
+  **1 August** and re-scrapes the module list from the CSNL module-picker site
+  (override the source with the `MODULE_SOURCE_URL` env var).
+- The catalogue is served to the frontend by `/catalogue`, which stores the
+  refreshed list in **Netlify Blobs**. If the scheduled run is ever missed, the
+  first page load on/after 1 August regenerates it automatically (the year
+  stamp on the stored list is compared against the current date).
+- If the source site is down or unparseable, the site falls back to the
+  committed `modules.json` — timings for every existing module are still
+  fetched live from UCD, so nothing breaks.
+- Timings, titles, trimesters and the auto-picked latest academic year were
+  already live per module, so the refresh only concerns which modules appear
+  and their credits.
+
+Manually regenerate the committed list anytime:
+
+```bash
+node tools/extract-modules.js                              # from the snapshot
+MODULE_SOURCE_URL=https://csnl-module-picker.onrender.com/ node tools/extract-modules.js
+```
 
 ## Run locally
 
@@ -58,17 +84,21 @@ No build step. Either:
 | File | Purpose |
 | --- | --- |
 | `index.html` / `styles.css` / `app.js` | The site |
-| `modules.json` | Curated default module list (name + credits only — **no timings**) |
+| `modules.json` | Curated default module list (name + credits only — **no timings**); fallback for `/catalogue` |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
-| `server.js` | Zero-dependency local server |
-| `netlify.toml` | Netlify config (publish `.`, functions dir) |
+| `netlify/functions/catalogue.js` | Auto-refreshing module list service (Netlify Blobs + fallback) |
+| `netlify/functions/refresh-catalogue.js` | Scheduled 1-August refresh (cron in `netlify.toml`) |
+| `server.js` | Zero-dependency local server (mounts both functions) |
+| `netlify.toml` | Netlify config (publish `.`, functions dir, cron schedule) |
 
 ## Notes
 
-- Not an official UCD service. Data source:
-  https://www.ucd.ie/students/course_search/generalreferencetimetable/
+- Not an official UCD service. Data sources:
+  https://www.ucd.ie/students/course_search/generalreferencetimetable/ (timings)
+  and the CSNL module-picker site (curated module list).
 - Selections, added module codes and timetables are stored in your browser's
   `localStorage`. Selections are matched to classes by their live schedule key,
   so they keep working even after times change.
-- To regenerate `modules.json` from the original site's snapshot:
-  `node tools/extract-modules.js` (run from the repo root).
+- The only runtime dependency is `@netlify/blobs` (used by `/catalogue` on
+  Netlify); Netlify installs it automatically. Locally, `node server.js` works
+  with zero installed dependencies — the catalogue caches in memory instead.

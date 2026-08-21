@@ -8,3 +8,14 @@
 # Cold fetches for a batch of modules can take a while; allow up to 26s.
 [functions.timetable]
   maxDuration = 26
+
+# The catalogue may need to fetch + parse the source site on a new academic
+# year; give it the same headroom.
+[functions.catalogue]
+  maxDuration = 26
+
+# Regenerate the module list on 1 August (UTC) each year, when UCD publishes
+# the next academic year's modules. The GET endpoint self-heals if this is
+# ever missed.
+[functions."refresh-catalogue"]
+  schedule = "0 0 1 8 *"

@@ -12,7 +12,8 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { handler } = require("./netlify/functions/timetable.js");
+const { handler: timetableHandler } = require("./netlify/functions/timetable.js");
+const { handler: catalogueHandler } = require("./netlify/functions/catalogue.js");
 
 const ROOT = __dirname;
 const PORT = parseInt(process.env.PORT || "8787", 10) || 8787;
@@ -30,8 +31,7 @@ const MIME = {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
-  // Timetable function (same path Netlify uses)
-  if (url.pathname === "/.netlify/functions/timetable") {
+  async function serveFunction(handler) {
     try {
       const event = {
         queryStringParameters: Object.fromEntries(url.searchParams.entries()),
@@ -43,6 +43,15 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: String(e && e.message ? e.message : e) }));
     }
+  }
+
+  // Functions mounted at the same paths Netlify uses
+  if (url.pathname === "/.netlify/functions/timetable") {
+    await serveFunction(timetableHandler);
+    return;
+  }
+  if (url.pathname === "/.netlify/functions/catalogue") {
+    await serveFunction(catalogueHandler);
     return;
   }
 
@@ -77,4 +86,5 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Module picker running at http://localhost:${PORT}`);
   console.log(`Timetable function: http://localhost:${PORT}/.netlify/functions/timetable?codes=COMP30960`);
+  console.log(`Catalogue function: http://localhost:${PORT}/.netlify/functions/catalogue`);
 });

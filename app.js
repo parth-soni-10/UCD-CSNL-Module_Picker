@@ -3,6 +3,7 @@
 "use strict";
 
 const FUNCTION_URL = "/.netlify/functions/timetable";
+const CATALOGUE_URL = "/.netlify/functions/catalogue";
 const BATCH_SIZE = 14; // modules per function call
 const PARALLEL_BATCHES = 2; // function calls run at once
 // UCD's timetable uses Tue/Thu abbreviations
@@ -750,8 +751,23 @@ function renderAll() {
   initTheme();
   setAppInert(true);
   try {
-    const res = await fetch("modules.json");
-    const data = await res.json();
+    // Prefer the catalogue service (it auto-refreshes the module list each
+    // 1 August); fall back to the committed modules.json if it's unavailable.
+    let data = null;
+    try {
+      const res = await fetch(CATALOGUE_URL);
+      if (res.ok) {
+        const json = await res.json();
+        data = Array.isArray(json) ? json : json.themes;
+      }
+    } catch (e) {
+      /* fall through to modules.json */
+    }
+    if (!data) {
+      const res = await fetch("modules.json");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    }
     for (const t of data) {
       const courses = t.courses.map((c) => ({ ...c, ...parseName(c.name) }));
       catalogue.push({ theme: t.theme, courses });
