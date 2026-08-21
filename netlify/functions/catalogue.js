@@ -36,7 +36,7 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const VERSION = 2;
+const VERSION = 3;
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 const FETCH_TIMEOUT_MS = 20000;
@@ -122,10 +122,32 @@ function codeFromName(name) {
   return m ? m[1].trim() : name;
 }
 
+// Programmes run by the School of Computer Science other than CSNL (BSc/MSc
+// Computer Science and friends): BDIC (offshore "J" variants), the MSc
+// Conversion, the Data Science variants and the MSc Forensic Computing &
+// Cybercrime Investigation. Their modules are not options a CSNL student
+// picks, so they stay out of the auto theme.
+const NOT_CSNL_TITLE =
+  /\(conv\)|conversion|\bds\b|\(phd\)|research and scientific communication|forens|investigat|malwar|cybercrime|fraud|financial crime|cell site|osint|threat intelligence|digital evidence|law enforcement|online child|voip and wireless|linux for investigators|programming for investigators|data & database|live data|incident response|cyber risk|leadership in security|trends in cybersecurity|exploitation|cybersecurity case study/i;
+
+// Capstone / non-timetabled "modules" that aren't pickable classes.
+const CAPSTONE_TITLE =
+  /dissertation|\bproject\b|internship|practicum|final year|\bfyp\b|case stud(y|ies)|summer school|credit recognition/i;
+
+function isCsnlModule(code, u) {
+  if (u.school !== "S012") return false; // School of Computer Science only
+  if (u.level !== "3" && u.level !== "4") return false; // match the curated profile
+  if (/[0-9]J$/.test(code)) return false; // BDIC / offshore variants
+  const title = u.title;
+  if (NOT_CSNL_TITLE.test(title)) return false;
+  if (CAPSTONE_TITLE.test(title)) return false;
+  return true;
+}
+
 // Merges the curated seed with UCD's catalogue: refreshes credits and
-// auto-discovers School of Computer Science modules (levels 3-4, matching the
-// curated profile) into a lazy "More UCD Modules" theme. Cross-school modules
-// in the curated themes stay curated without expanding their whole schools.
+// auto-discovers CSNL-relevant School of Computer Science modules (levels
+// 3-4) into a lazy "More UCD Modules" theme. Cross-school modules in the
+// curated themes stay curated without expanding their whole schools.
 function buildCatalogue(curated, ucd) {
   const curatedCodes = new Set();
   for (const t of curated) for (const c of t.courses) curatedCodes.add(codeFromName(c.name));
@@ -140,9 +162,8 @@ function buildCatalogue(curated, ucd) {
 
   const auto = [];
   for (const [code, u] of ucd.byCode) {
-    if (u.school !== "S012") continue; // School of Computer Science
-    if (u.level !== "3" && u.level !== "4") continue; // match the curated profile
     if (curatedCodes.has(code)) continue;
+    if (!isCsnlModule(code, u)) continue;
     auto.push({ name: `${u.title} (${code})`, credits: u.credits });
   }
   auto.sort((a, b) => a.name.localeCompare(b.name));
