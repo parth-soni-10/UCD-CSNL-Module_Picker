@@ -464,6 +464,21 @@ function curatedCodes() {
   return [...new Set(codes)];
 }
 
+let csnlSet = null;
+function csnlCodes() {
+  if (!csnlSet) csnlSet = new Set(curatedCodes());
+  return csnlSet;
+}
+
+// Descriptions are UCD's own text and may reference modules outside the CSNL
+// list (prerequisites etc). The site only offers CSNL modules, so scrub those
+// mentions at the display boundary too.
+function scrubNonCsnl(text) {
+  return String(text).replace(/\b[A-Z]{2,5}\d{3,6}\b/g, (m) =>
+    csnlCodes().has(m.toUpperCase()) ? m : "a related module"
+  );
+}
+
 function moduleInfo(code) {
   for (const t of catalogue)
     for (const c of t.courses) if (c.code === code) return c;
@@ -624,7 +639,7 @@ function renderCourseCard(c) {
         <span class="badge">${esc(c.code)}</span>
       </div>
     </div>
-    ${c.description ? `<p class="card-desc">${esc(c.description)}</p>` : ""}
+    ${c.description ? `<p class="card-desc">${esc(scrubNonCsnl(c.description))}</p>` : ""}
     ${c.comments ? `<div class="card-note" title="From the UCD CSNL streams page">${esc(c.comments)}</div>` : ""}
     <div class="offerings" data-code="${esc(c.code)}"></div>
   `;

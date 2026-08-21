@@ -38,7 +38,7 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const VERSION = 5; // bumped when the stored catalogue shape changes
+const VERSION = 6; // bumped when the stored catalogue shape changes
 const NL_STREAMS_URL = "https://www.ucd.ie/cs/study/postgraduate/nlstreams/";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
@@ -228,15 +228,24 @@ async function fetchUcdCatalogue() {
   return { termYear: termYear || currentCatalogueYear(), byCode };
 }
 
+// UCD's own descriptors sometimes reference module codes outside the CSNL
+// list (e.g. prerequisites). The site only offers CSNL modules, so scrub
+// those mentions to keep non-CSNL code strings off the page.
+const CODE_RE = /\b[A-Z]{2,5}\d{3,6}\b/g;
+function scrubNonCsnl(text, csnl) {
+  return String(text).replace(CODE_RE, (m) => (csnl.has(m.toUpperCase()) ? m : "a related module"));
+}
+
 // Adds each module's short description (from the generic catalogue) to the
 // stream courses. Best-effort: modules without a published descriptor keep
 // none, and the frontend simply doesn't show one.
 function attachDescriptions(themes, byCode) {
   if (!byCode) return themes;
+  const csnl = new Set(themes.flatMap((t) => t.courses.map((c) => codeFromName(c.name))));
   for (const t of themes) {
     for (const c of t.courses) {
       const entry = byCode.get(codeFromName(c.name));
-      if (entry && entry.description) c.description = entry.description;
+      if (entry && entry.description) c.description = scrubNonCsnl(entry.description, csnl);
     }
   }
   return themes;
@@ -261,12 +270,13 @@ function codeFromName(name) {
 // Merges the committed seed with UCD's generic catalogue, refreshing credits
 // and attaching descriptions.
 function buildFromGenericCatalogue(curated, ucd) {
+  const csnl = new Set(curated.flatMap((t) => t.courses.map((c) => codeFromName(c.name))));
   const themes = curated.map((t) => ({
     theme: t.theme,
     courses: t.courses.map((c) => {
       const u = ucd.byCode.get(codeFromName(c.name));
       const course = { name: c.name, credits: u && u.credits != null ? u.credits : c.credits };
-      if (u && u.description) course.description = u.description;
+      if (u && u.description) course.description = scrubNonCsnl(u.description, csnl);
       return course;
     }),
   }));

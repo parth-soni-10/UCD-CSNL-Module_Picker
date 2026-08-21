@@ -133,7 +133,7 @@
         "kind": "core",
         "semester": "2",
         "comments": "Module has programming prerequisites",
-        "description": "COMP47590 is an advanced module on Machine Learning that builds on the core concepts covered in COMP47490 or COMP47460. Either COMP47490 or COMP47460 is a prerequisite for this module. This module covers advanced, state of the art topics in machine learning in areas such as deep..."
+        "description": "COMP47590 is an advanced module on Machine Learning that builds on the core concepts covered in a related module or COMP47460. Either a related module or COMP47460 is a prerequisite for this module. This module covers advanced, state of the art topics in machine learning in areas such as deep..."
       },
       {
         "name": "Deep Learning (COMP47650)",

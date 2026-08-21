@@ -146,11 +146,18 @@ function parseNlStreams(html) {
         const d = r[1].match(/<div class="col-12 d-none d-sm-inline">([\s\S]*)$/);
         if (d) byCode.set(cm[1], cleanCell(d[1]));
       }
+      // scrub non-CSNL module codes from UCD's description text (e.g.
+      // prerequisite mentions) — the site only offers CSNL modules
+      const csnl = new Set(
+        out.flatMap((t) => t.courses.map((c) => String(c.name).match(/\(([^)]+)\)\s*$/)[1].toUpperCase()))
+      );
+      const scrub = (text) =>
+        String(text).replace(/\b[A-Z]{2,5}\d{3,6}\b/g, (m) => (csnl.has(m.toUpperCase()) ? m : "a related module"));
       for (const t of out) {
         for (const c of t.courses) {
           const code = String(c.name).match(/\(([^)]+)\)\s*$/);
           const desc = code && byCode.get(code[1].trim());
-          if (desc) c.description = desc;
+          if (desc) c.description = scrub(desc);
         }
       }
     }
