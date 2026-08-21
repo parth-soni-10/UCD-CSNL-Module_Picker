@@ -78,6 +78,7 @@ const els = {
   printModules: document.getElementById("print-modules"),
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
+  addCodeError: document.getElementById("add-code-error"),
   themeToggle: document.getElementById("theme-toggle"),
   planTarget: document.getElementById("plan-target"),
   planSemester: document.getElementById("plan-semester"),
@@ -1094,6 +1095,7 @@ els.timetableSwitcher.addEventListener("change", (e) => {
 
 els.deleteTimetableBtn.addEventListener("click", () => {
   if (Object.keys(selection).length <= 1) return;
+  if (!confirm(`Delete “${activeTimetable}” and its selection? This can't be undone.`)) return;
   delete selection[activeTimetable];
   activeTimetable = Object.keys(selection)[0];
   saveState();
@@ -1101,6 +1103,9 @@ els.deleteTimetableBtn.addEventListener("click", () => {
 });
 
 els.clearBtn.addEventListener("click", () => {
+  const n = currentSelection().length;
+  if (n === 0) return;
+  if (!confirm(`Clear all ${n} selected classes from “${activeTimetable}”? This can't be undone.`)) return;
   selection[activeTimetable] = [];
   saveState();
   refreshUI();
@@ -1121,10 +1126,17 @@ function persistExtraCodes() {
   localStorage.setItem(LS_EXTRA, JSON.stringify(extraCodes));
 }
 
+// Inline error next to the add-by-code field (kept in sync with aria-describedby).
+function showAddCodeError(msg) {
+  els.addCodeError.textContent = msg || "";
+  els.addCodeError.hidden = !msg;
+}
+
 async function addModuleByCode(rawCode) {
   const code = String(rawCode || "").trim().toUpperCase();
   if (!/^[A-Z]{2,5}\d{3,6}$/.test(code)) {
-    setErrorStatus(`“${esc(rawCode || "")}” doesn't look like a module code (e.g. COMP30960)`);
+    showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code — try e.g. COMP30960`);
+    els.addCodeInput.focus();
     return;
   }
   if (!extraCodes.includes(code) && !curatedCodes().includes(code)) {
@@ -1139,7 +1151,9 @@ async function addModuleByCode(rawCode) {
         live.set(c, { ...d, fetchedAt: json.generatedAt });
       }
     } catch (e) {
-      setErrorStatus(`Could not fetch ${code}: ${e.message}`);
+      // mark the card as failed (with Retry) instead of leaving it spinning
+      live.set(code, { found: false, reason: `Fetch error: ${e.message}`, failed: true });
+      showAddCodeError(`Couldn't fetch ${code} — check the code and retry on its card.`);
     }
     updateStatus();
     refreshUI();
@@ -1154,6 +1168,7 @@ els.addCodeBtn.addEventListener("click", () => addModuleByCode(els.addCodeInput.
 els.addCodeInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") addModuleByCode(els.addCodeInput.value);
 });
+els.addCodeInput.addEventListener("input", () => showAddCodeError(""));
 
 els.courseList.addEventListener("click", (e) => {
   const retry = e.target.closest(".retry-module");
@@ -1167,6 +1182,7 @@ els.courseList.addEventListener("click", (e) => {
   const btn = e.target.closest(".remove-extra-btn");
   if (!btn) return;
   const code = btn.dataset.code;
+  if (!confirm(`Remove ${code} from your module list? Its selected classes are removed too.`)) return;
   extraCodes = extraCodes.filter((c) => c !== code);
   persistExtraCodes();
   // drop its selected classes too

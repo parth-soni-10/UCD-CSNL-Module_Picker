@@ -3,10 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
     <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
     <!-- Full-screen loader: visible from first paint until live timings arrive -->
     <div id="boot-screen" class="boot-screen" aria-busy="true">
       <div class="boot-card">
@@ -31,7 +35,7 @@
         <div class="topbar-actions">
           <div id="status-pill" class="status-pill">
             <span id="status-dot" class="dot"></span>
-            <span id="status-text">Loading timetables</span>
+            <span id="status-text" aria-live="polite">Loading timetables</span>
           </div>
           <button
             id="theme-toggle"
@@ -66,35 +70,42 @@
 
     <div id="fetch-progress" class="fetch-progress hidden">
       <div class="fetch-progress-bar"><div id="fetch-progress-fill" class="fetch-progress-fill"></div></div>
-      <div id="fetch-progress-text" class="fetch-progress-text">Fetching live timetables from UCD, 0/70</div>
+      <div id="fetch-progress-text" class="fetch-progress-text" aria-live="polite">Fetching live timetables from UCD, 0/70</div>
     </div>
 
-    <main class="layout">
+    <main class="layout" id="main-content">
       <!-- Module catalogue -->
       <section class="col-modules">
         <div class="panel">
           <div class="panel-head">
             <h2>Available Modules</h2>
-            <span id="module-count" class="muted">0 modules</span>
+            <span id="module-count" class="muted" aria-live="polite">0 modules</span>
           </div>
           <input
             type="search"
             id="search"
+            name="search"
             class="search"
             placeholder="Search by module name or code"
             autocomplete="off"
+            spellcheck="false"
             aria-label="Search modules"
           />
           <div class="row add-code-row">
             <input
               id="add-code-input"
+              name="module-code"
               class="input grow"
               placeholder="Add any UCD module code, e.g. COMP30960"
               autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
               aria-label="Add a UCD module by code"
+              aria-describedby="add-code-error"
             />
             <button id="add-code-btn" class="btn btn-secondary" title="Fetch this module's live timetable from UCD">Add</button>
           </div>
+          <p id="add-code-error" class="add-code-error" role="alert" hidden></p>
           <p class="add-code-hint">Module list, timings and offerings are fetched live from UCD on every load.</p>
           <div id="course-list" class="course-list"></div>
         </div>
@@ -106,13 +117,13 @@
         <div class="panel">
           <div class="panel-head">
             <h2>Selection</h2>
-            <span id="total-credits" class="credits-badge">0 credits</span>
+            <span id="total-credits" class="credits-badge" aria-live="polite">0 credits</span>
           </div>
-          <div id="summary-list" class="summary-list"></div>
+          <div id="summary-list" class="summary-list" aria-live="polite"></div>
           <div class="timetable-tools">
             <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
             <div class="row">
-              <input id="new-timetable-name" class="input grow" placeholder="New timetable name" aria-label="New timetable name" />
+              <input id="new-timetable-name" name="timetable-name" class="input grow" placeholder="New timetable name" autocomplete="off" aria-label="New timetable name" />
               <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable" aria-label="Add timetable">+</button>
             </div>
             <div class="row">
@@ -131,12 +142,15 @@
           <div class="row plan-controls">
             <input
               id="plan-target"
+              name="plan-target"
               class="input plan-target"
               type="number"
+              inputmode="numeric"
               min="5"
               max="120"
               step="5"
               placeholder="Target credits"
+              autocomplete="off"
               aria-label="Target credit total"
             />
             <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan">
@@ -149,7 +163,7 @@
           <div class="row">
             <button id="plan-btn" class="btn btn-primary grow">Find clash-free plans</button>
           </div>
-          <div id="plan-results" class="plan-results"></div>
+          <div id="plan-results" class="plan-results" aria-live="polite"></div>
         </div>
       </aside>
 

@@ -50,6 +50,7 @@
 
 /* ------------------------------------------------------------- theme tokens */
 :root {
+  color-scheme: light;
   --bg: #f4f5f7;
   --surface: #ffffff;
   --surface-2: #f1f2f5;
@@ -83,6 +84,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #101216;
   --surface: #171a20;
   --surface-2: #1d2128;
@@ -117,6 +119,7 @@
 /* no-JS fallback: honour the OS preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
+    color-scheme: dark;
     --bg: #101216;
     --surface: #171a20;
     --surface-2: #1d2128;
@@ -156,6 +159,16 @@ body {
   padding: 0;
 }
 
+/* headings and the main landmark keep clear of the sticky header when
+   jumped to (skip link, fragment links) */
+h1,
+h2,
+h3,
+#main-content {
+  scroll-margin-top: 84px;
+  text-wrap: balance;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -180,6 +193,39 @@ body {
   outline: none;
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring);
   border-radius: 6px;
+}
+
+/* skip link: off-screen until focused (keyboard users) */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 12px;
+  z-index: 200;
+  transform: translateY(-150%);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 9px 16px;
+  border-radius: 0 0 10px 10px;
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* tap targets: no double-tap zoom delay, no flash highlight on mobile */
+.btn,
+.icon-btn,
+.theme-toggle,
+.offering,
+.retry-module,
+.remove-extra-btn,
+.summary-item .s-x {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ---------------------------------------------------------------- header */
@@ -508,6 +554,13 @@ body {
 
 .add-code-row {
   margin-bottom: 6px;
+}
+
+.add-code-error {
+  margin: 4px 2px 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--danger);
 }
 
 .add-code-hint {
