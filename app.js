@@ -138,7 +138,7 @@ function offeringKey(cls) {
 
 function parseName(name) {
   // the module code is the LAST parenthetical group, e.g.
-  // "Introduction to Cognitive Science (Graduate) (COMP47230)" -> COMP47230
+  // "Advanced Machine Learning (COMP47590)" -> COMP47590
   const m = [...name.matchAll(/\(([^)]+)\)/g)].pop();
   const code = m ? m[1].trim() : name;
   const title = name.replace(/\s*\([^)]*\)\s*$/g, "").trim();
