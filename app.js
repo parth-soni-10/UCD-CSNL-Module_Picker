@@ -56,6 +56,7 @@ const els = {
   deleteTimetableBtn: document.getElementById("delete-timetable-btn"),
   timetableGrid: document.getElementById("timetable-grid"),
   timetableEvents: document.getElementById("timetable-events"),
+  timetableWrap: document.querySelector(".timetable-wrap"),
   clashWarning: document.getElementById("clash-warning"),
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
@@ -673,6 +674,28 @@ function createGrid() {
   }
 }
 
+// Hover tooltip for a timetable event: module metadata + class details.
+function evTooltipMarkup(info, data, cls, code) {
+  const badges = [];
+  if (info.kind === "core" || info.kind === "optional") {
+    badges.push(`<span class="tt-badge ${esc(info.kind)}">${info.kind === "core" ? "Core" : "Optional"}</span>`);
+  }
+  if (info.credits) badges.push(`<span class="tt-badge">${info.credits} cr</span>`);
+  const sem = info.semester || (data && data.semester);
+  if (sem) badges.push(`<span class="tt-badge">Sem ${sem.replace(",", "+")}</span>`);
+  const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}–${cls.weeks[cls.weeks.length - 1]}` : "";
+  return `
+    <div class="ev-tooltip" role="tooltip">
+      <div class="tt-title">${esc(info.title)} <span class="mono">${esc(code)}</span></div>
+      <div class="tt-sub">${data && data.year ? esc(data.year) + " · " : ""}${esc(cls.typeLabel)} · ${esc(cls.day)} ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
+      <div class="tt-divider"></div>
+      ${badges.length ? `<div class="tt-row">${badges.join("")}</div>` : ""}
+      ${weeks ? `<div class="tt-row">${esc(weeks)}</div>` : ""}
+      ${cls.location ? `<div class="tt-row">📍 ${esc(cls.location)}</div>` : ""}
+      ${cls.offering ? `<div class="tt-row">Offering ${esc(cls.offering)} · CRN ${esc(cls.crn || "—")}</div>` : ""}
+    </div>`;
+}
+
 function renderTimetable() {
   els.timetableEvents.innerHTML = "";
   let hasClash = false;
@@ -702,7 +725,25 @@ function renderTimetable() {
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
       <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
+      ${evTooltipMarkup(info, data, cls, s.code)}
     `;
+    const tip = el.querySelector(".ev-tooltip");
+    if (tip) {
+      el.addEventListener("mouseenter", () => {
+        // flip above/below so the tooltip isn't clipped at the grid edges
+        const wrap = els.timetableWrap.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        tip.style.top = "";
+        tip.style.bottom = "";
+        if (rect.top - wrap.top < 160) {
+          tip.style.top = "calc(100% + 8px)";
+        } else {
+          tip.style.bottom = "calc(100% + 8px)";
+        }
+        tip.classList.add("show");
+      });
+      el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+    }
     events.push({ el, cls });
   }
 
