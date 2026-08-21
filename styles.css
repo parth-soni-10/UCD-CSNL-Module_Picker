@@ -1658,16 +1658,171 @@ body {
   }
 }
 
+/* ------------------------------------------------------------- mobile */
+@media (max-width: 960px) {
+  .layout {
+    padding: 14px;
+  }
+}
+
 @media (max-width: 640px) {
-  .topbar-inner,
+  .topbar-inner {
+    padding: 10px 14px;
+    gap: 10px;
+  }
   .layout {
     padding: 12px;
+    gap: 14px;
+  }
+
+  /* two-row topbar: brand on top, actions underneath */
+  .topbar-inner {
+    flex-direction: column;
+    align-items: stretch;
   }
   .brand p {
     display: none;
   }
+  .brand h1 {
+    font-size: 15px;
+  }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    font-size: 13px;
+    border-radius: 9px;
+  }
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .status-pill {
-    max-width: 240px;
+    max-width: none;
+    flex: 1;
+    min-width: 0;
+    font-size: 11.5px;
+    padding: 6px 10px;
+  }
+  .status-pill #status-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* on the smallest screens the pill gets the room and the refresh button
+     shows just its icon glyph (the label is a bare text node, so hiding the
+     button's font-size collapses it without touching the svg) */
+  @media (max-width: 420px) {
+    #refresh-btn {
+      font-size: 0;
+      padding: 10px 12px;
+    }
+    #refresh-btn .refresh-btn-glyph svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  /* roomier touch targets */
+  .btn {
+    padding: 10px 14px;
+    font-size: 13.5px;
+    min-height: 40px;
+  }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .panel {
+    padding: 14px;
+    border-radius: 14px;
+  }
+  .theme-toggle {
+    padding: 14px 16px;
+    font-size: 14.5px;
+  }
+  .theme-body {
+    padding: 2px 14px 14px;
+  }
+  .course-card {
+    padding: 14px;
+  }
+  .offering {
+    padding: 11px 12px;
+  }
+  .offering input[type="checkbox"] {
+    width: 19px;
+    height: 19px;
+  }
+  .summary-item {
+    padding: 9px 2px;
+  }
+  .summary-item .s-x {
+    padding: 8px;
+  }
+  .summary-item .s-x svg {
+    width: 16px;
+    height: 16px;
+  }
+  .input,
+  .search {
+    padding: 11px 12px;
+    font-size: 16px; /* >=16px stops iOS zoom-on-focus */
+  }
+
+  /* panel heads: let the meta chips wrap under the title on narrow screens */
+  .panel-head {
+    flex-wrap: wrap;
+  }
+  .panel-head h2 {
+    min-width: 0;
+  }
+  .panel-head-meta {
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  /* plan controls stack on narrow screens */
+  .plan-controls {
+    flex-wrap: wrap;
+  }
+  .plan-target {
+    width: 100%;
+  }
+  .plan-sem {
+    flex: 1;
+  }
+
+  /* keep the timetable readable while scrolling horizontally */
+  .timetable-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+  }
+  .day-header {
+    scroll-snap-align: start;
+  }
+  .timetable-grid {
+    min-width: 620px;
+  }
+
+  .fetch-progress {
+    padding: 0 14px;
+  }
+  .boot-card {
+    max-width: 280px;
+  }
+  .footnote {
+    padding: 0 4px;
+  }
+
+  /* notched phones: keep content clear of the bottom home indicator */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .topbar {
+    padding-top: env(safe-area-inset-top);
   }
 }
 

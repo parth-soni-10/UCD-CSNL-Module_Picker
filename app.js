@@ -880,7 +880,7 @@ function renderTimetable() {
     `;
     const tip = el.querySelector(".ev-tooltip");
     if (tip) {
-      el.addEventListener("mouseenter", () => {
+      const placeTip = () => {
         // flip above/below so the tooltip isn't clipped at the grid edges
         const wrap = els.timetableWrap.getBoundingClientRect();
         const rect = el.getBoundingClientRect();
@@ -891,9 +891,26 @@ function renderTimetable() {
         } else {
           tip.style.bottom = "calc(100% + 8px)";
         }
-        tip.classList.add("show");
-      });
-      el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+      };
+      if (window.matchMedia("(pointer: coarse)").matches) {
+        // Touch has no hover — a tap toggles the tooltip (tap elsewhere closes).
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (tip.classList.contains("show")) {
+            tip.classList.remove("show");
+          } else {
+            document.querySelectorAll(".ev-tooltip.show").forEach((t) => t.classList.remove("show"));
+            placeTip();
+            tip.classList.add("show");
+          }
+        });
+      } else {
+        el.addEventListener("mouseenter", () => {
+          placeTip();
+          tip.classList.add("show");
+        });
+        el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+      }
     }
     events.push({ el, cls });
   }
@@ -911,6 +928,12 @@ function renderTimetable() {
   els.clashWarning.classList.toggle("hidden", !hasClash);
   for (const ev of events) els.timetableEvents.appendChild(ev.el);
 }
+
+// Close any open event tooltip when tapping elsewhere on the page.
+document.addEventListener("click", (e) => {
+  if (e.target.closest(".timetable-event")) return;
+  document.querySelectorAll(".ev-tooltip.show").forEach((t) => t.classList.remove("show"));
+});
 
 // ---------------------------------------------------------------------------
 // URL state: reflect the view (?q=search & ?t=timetable & ?s=selection) so a
