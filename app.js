@@ -418,7 +418,7 @@ function render() {
         liveTitle(code).toLowerCase().includes(term) ||
         code.toLowerCase().includes(term)
     )
-    .map((code) => ({ code }));
+    .map((code) => ({ code, extra: true }));
   if (extraCourses.length) themes.push({ name: "My Modules", courses: extraCourses });
 
   const shownCodes = new Set();
@@ -667,11 +667,26 @@ function renderTimetable() {
       const e1 = timeToMinutes(a.endTime);
       const s2 = timeToMinutes(b.startTime);
       const e2 = timeToMinutes(b.endTime);
-      if (Math.max(s1, s2) < Math.min(e1, e2)) {
-        hasClash = true;
-        events[i].el.classList.add("clash");
-        events[j].el.classList.add("clash");
+      if (Math.max(s1, s2) >= Math.min(e1, e2)) continue; // times don't overlap
+      // Only a real clash if the classes actually run in overlapping weeks
+      // (e.g. a Semester 1 Mon 16:00 class and a Semester 2 Mon 15:00 class
+      // are fine — they never run at the same time). If either side has no
+      // week data, fall back to treating it as a clash.
+      const wa = a.weeks && a.weeks.length ? a.weeks : null;
+      const wb = b.weeks && b.weeks.length ? b.weeks : null;
+      if (wa && wb) {
+        let weekOverlap = false;
+        for (const w of wa) {
+          if (wb.includes(w)) {
+            weekOverlap = true;
+            break;
+          }
+        }
+        if (!weekOverlap) continue;
       }
+      hasClash = true;
+      events[i].el.classList.add("clash");
+      events[j].el.classList.add("clash");
     }
   }
 
