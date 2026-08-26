@@ -281,14 +281,6 @@
         "description": "Multivariate analysis considers many response variables simultaneously. This module will cover many of the common techniques used to analyze multivariate data: clustering techniques, classification techniques, ordination techniques such as principal components analysis and graphi..."
       },
       {
-        "name": "Multivariate Analysis (online) (STAT40740)",
-        "credits": 5,
-        "kind": "optional",
-        "semester": "2",
-        "comments": "Approval required",
-        "description": "This module will cover many common statistical techniques used to analyse high dimensional data. Topics include: clustering techniques; classification techniques; ordination techniques such as principal components analysis; and graphical techniques such as multidimensional scalin..."
-      },
-      {
         "name": "Statistical Machine Learning (STAT30270)",
         "credits": 5,
         "kind": "optional",
@@ -365,14 +357,6 @@
         "kind": "optional",
         "semester": "1",
         "description": "This module aims to introduce students to the concept of multi-agent systems. The course commences with a eview of the fundamental concepts that underpin agent-based systems,.Thereafter a number of topics will be covered including inter alia: agent reasoning technologies, agent ..."
-      },
-      {
-        "name": "High Performance Computing (COMP40730)",
-        "credits": 10,
-        "kind": "optional",
-        "semester": "1",
-        "comments": "Approval required",
-        "description": "This module is suitable for students who are experienced programmers, with knowledge of the C/C++ programming languages. The aim of this module is to introduce students to design and development of parallel programs for different parallel architectures. There is a particular emph..."
       },
       {
         "name": "Parallel Computing (COMP30250)",

@@ -45,6 +45,7 @@ const catalogue = []; // [{ theme, courses: [{ title, code, credits, kind, semes
 const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
+let timingFilter = "all"; // "all" | "live" | "none" | "failed" — module-list filter
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -54,6 +55,7 @@ const els = {
   courseList: document.getElementById("course-list"),
   search: document.getElementById("search"),
   moduleCount: document.getElementById("module-count"),
+  timingSummary: document.getElementById("timing-summary"),
   csnlBadge: document.getElementById("csnl-badge"),
   statusPill: document.getElementById("status-pill"),
   statusText: document.getElementById("status-text"),
@@ -124,7 +126,7 @@ function finishBoot() {
 function failBoot(message) {
   els.bootSub.textContent = message;
   els.bootCountText.classList.add("error");
-  els.bootCountText.textContent = "Timings unavailable — retry";
+  els.bootCountText.textContent = "Timings unavailable. Retry";
   els.bootRetry.classList.remove("hidden");
   els.bootScreen.setAttribute("aria-busy", "false");
   setAppInert(false);
@@ -174,7 +176,29 @@ function saveState() {
 // The full `live` payloads are cached in localStorage so a returning visit
 // renders instantly from the saved timetables, then refreshes in the
 // background from UCD (stale-while-revalidate). Nothing here ever replaces
-// the live fetch — the cache only makes the first paint immediate.
+// the live fetch — the cache only makes the first paint immediate, and a
+// cached timetable from any OTHER academic year is never restored (it would
+// be stale).
+
+// The academic year the site plans for (matches the proxy and catalogue):
+// it advances on 1 August, when UCD publishes the next year's module set.
+function currentCatalogueYear() {
+  const now = new Date();
+  return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+}
+function targetYearString() {
+  const y = (catalogueMeta && catalogueMeta.year) || currentCatalogueYear();
+  return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+}
+
+// A cached timetable is usable for the first paint only if it belongs to the
+// current target year. "No timetable" entries carry no classes and stay (the
+// live refresh replaces them once UCD publishes a schedule).
+function cacheEntryUsable(data) {
+  if (!data || typeof data !== "object") return false;
+  if (!data.classes || !Array.isArray(data.classes) || !data.classes.length) return true;
+  return !!data.year && data.year === targetYearString();
+}
 
 function loadTimingsCache() {
   try {
@@ -183,10 +207,21 @@ function loadTimingsCache() {
     const { results } = JSON.parse(raw);
     if (!results || typeof results !== "object") return 0;
     let n = 0;
+    let dropped = 0;
     for (const [code, data] of Object.entries(results)) {
-      if (data && typeof data === "object") {
+      if (cacheEntryUsable(data)) {
         live.set(code, normalizeTimetable(data));
         n++;
+      } else {
+        dropped++;
+        delete results[code]; // scrub stale-year entries so they can't resurface
+      }
+    }
+    if (dropped) {
+      try {
+        localStorage.setItem(LS_TIMINGS, JSON.stringify({ savedAt: Date.now(), results }));
+      } catch (e) {
+        /* best-effort scrub */
       }
     }
     return n;
@@ -360,16 +395,16 @@ function friendlyFailure(reason) {
   const m = r.match(/HTTP (\d{3})/);
   if (m) {
     const code = parseInt(m[1], 10);
-    if (code === 429) return "UCD is rate-limiting requests — wait a moment and retry";
-    if (code === 408 || code === 504) return "UCD's timetable service timed out — retry";
-    if (code >= 500) return `UCD's timetable service returned an error (HTTP ${code}) — retry`;
-    return `UCD rejected the request (HTTP ${code}) — retry`;
+    if (code === 429) return "UCD is rate-limiting requests. Wait a moment and retry";
+    if (code === 408 || code === 504) return "UCD's timetable service timed out. Retry";
+    if (code >= 500) return `UCD's timetable service returned an error (HTTP ${code}). Retry`;
+    return `UCD rejected the request (HTTP ${code}). Retry`;
   }
   if (/failed to fetch|networkerror|load failed|net::/i.test(r)) {
-    return "No response from UCD — check your internet connection, or UCD may be down — retry";
+    return "No response from UCD. Check your internet connection, or UCD may be down. Retry";
   }
-  if (/abort|timeout/i.test(r)) return "The request timed out — retry";
-  return r || "Unknown error — retry";
+  if (/abort|timeout/i.test(r)) return "The request timed out. Retry";
+  return r || "Unknown error. Retry";
 }
 
 // Re-fetch a single module that failed to load, bypassing the server cache.
@@ -475,6 +510,47 @@ function setStatusText(text) {
   }
 }
 
+// Per-module timetable status: "live" (published classes), "none" (UCD
+// hasn't published a timetable), "failed" (the fetch itself errored), or
+// "pending" (still loading). Drives the timing-summary chips and filter.
+function moduleStatus(code) {
+  const d = live.get(code);
+  if (!d) return "pending";
+  if (d.failed) return "failed";
+  if (d.found !== undefined && (d.found === false || !d.classes || d.classes.length === 0)) return "none";
+  if (d.found === true && d.classes && d.classes.length) return "live";
+  return "pending";
+}
+
+function timingStats() {
+  const stats = { live: 0, none: 0, failed: 0, pending: 0, total: curatedCodes().length };
+  for (const code of curatedCodes()) stats[moduleStatus(code)]++;
+  return stats;
+}
+
+// At-a-glance per-module status: how many modules have a live timetable,
+// how many UCD hasn't published yet, how many failed to load. The chips are
+// also the list filters (click a chip to show only those modules).
+function renderTimingSummary() {
+  const el = els.timingSummary;
+  if (!el) return;
+  const stats = timingStats();
+  const year = targetYearString();
+  for (const chip of el.querySelectorAll("[data-ts]")) {
+    const name = chip.dataset.ts;
+    chip.classList.toggle("active", timingFilter === name);
+    chip.setAttribute("aria-pressed", String(timingFilter === name));
+    chip.querySelector(".ts-count").textContent = name === "all" ? stats.total : stats[name];
+    if (name === "live") {
+      chip.title = `Modules with a published ${year} timetable (click to show only these)`;
+    }
+    if (name === "failed") {
+      // only worth showing the chip once something actually failed
+      chip.classList.toggle("hidden", stats.failed === 0 && timingFilter !== "failed");
+    }
+  }
+}
+
 function updateStatus() {
   const liveCount = [...live.entries()]
     .filter(([code, d]) => d.found && d.classes && d.classes.length)
@@ -528,7 +604,7 @@ function updateCsnlBadge() {
   } else {
     els.csnlBadge.classList.add("warn");
     els.csnlBadge.title =
-      "Could not re-verify against UCD's CSNL page on this load — showing the last known list. Only CSNL modules are offered.";
+      "Could not re-verify against UCD's CSNL page on this load. Showing the last known list. Only CSNL modules are offered.";
   }
 }
 
@@ -569,6 +645,7 @@ function refreshUI() {
   renderPolicyWarning();
   renderTotalWarning();
   renderPrintInfo();
+  renderTimingSummary();
 }
 
 // Fills the print-only header and module legend (visible only in print).
@@ -580,7 +657,7 @@ function renderPrintInfo() {
   });
   const sem = getCurrentSemester();
   els.printHeader.innerHTML = `
-    <div class="pi-title">CSNL Module Picker — ${esc(activeTimetable)}</div>
+    <div class="pi-title">CSNL Module Picker · ${esc(activeTimetable)}</div>
     <div class="pi-sub">${today}${sem ? ` · Semester ${sem}` : ""}</div>
   `;
   const codes = [...new Set(currentSelection().map((s) => s.code))];
@@ -638,12 +715,14 @@ function render() {
   const themes = catalogue.map((t) => {
     // a stream-name match shows the whole stream
     const streamMatch = term && titleMatches(t.theme, term);
-    return {
-      name: t.theme,
-      courses: streamMatch
-        ? t.courses
-        : t.courses.filter((c) => !term || courseMatches(c, term)),
-    };
+    let courses = streamMatch
+      ? t.courses
+      : t.courses.filter((c) => !term || courseMatches(c, term));
+    // the timing-summary chips filter to a status (live / not published / failed)
+    if (timingFilter !== "all") {
+      courses = courses.filter((c) => moduleStatus(c.code) === timingFilter);
+    }
+    return { name: t.theme, courses };
   });
   const shownCodes = new Set();
   const over = overLimitModules();
@@ -653,9 +732,10 @@ function render() {
 
     const section = document.createElement("div");
     section.className = "theme";
-    const isExpanded = expanded.has(themeObj.name);
+    // a status filter is meant for scanning — show the matching themes expanded
+    const isExpanded = timingFilter !== "all" || expanded.has(themeObj.name);
     section.innerHTML = `
-      <button class="theme-toggle${isExpanded ? "" : " collapsed"}">
+      <button class="theme-toggle${isExpanded ? "" : " collapsed"}" aria-expanded="${isExpanded}">
         <span>${esc(themeObj.name)}<span class="theme-count">${themeObj.courses.length}</span></span>
         <span class="chev" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
@@ -669,7 +749,16 @@ function render() {
   }
 
   if (shownCodes.size === 0) {
-    list.innerHTML = `<p class="empty">No modules found matching “${esc(term)}”.</p>`;
+    if (timingFilter !== "all") {
+      const msgs = {
+        live: "No modules with a published timetable match your search.",
+        none: "No modules without a published timetable. UCD has scheduled everything it lists.",
+        failed: "No modules failed to load.",
+      };
+      list.innerHTML = `<p class="empty">${msgs[timingFilter]}</p>`;
+    } else {
+      list.innerHTML = `<p class="empty">No modules found matching “${esc(term)}”.</p>`;
+    }
   }
   els.moduleCount.textContent = `${shownCodes.size} modules`;
 }
@@ -733,7 +822,7 @@ function renderCourseCard(c, over) {
 
   const overBadge =
     over && (over.level3.has(c.code) || over.nonComp.has(c.code))
-      ? `<span class="badge over-limit-badge" title="This module pushes your selection over the CSNL credit limits — consider swapping it out.">⚠ Over limit</span>`
+      ? `<span class="badge over-limit-badge" title="This module pushes your selection over the CSNL credit limits. Consider swapping it out.">⚠ Over limit</span>`
       : "";
 
   card.innerHTML = `
@@ -759,17 +848,17 @@ function renderCourseCard(c, over) {
     offeringsEl.innerHTML = `<div class="note loading">Loading live timetable…</div>`;
   } else if (data.failed) {
     // the fetch itself failed (network/UCD down) — explain why and offer a retry
-    offeringsEl.innerHTML = `<div class="note warn fail">Couldn't load this timetable — ${esc(friendlyFailure(data.reason))}. <button class="retry-module" data-code="${esc(c.code)}">Retry</button></div>`;
+    offeringsEl.innerHTML = `<div class="note warn fail">Couldn't load this timetable. ${esc(friendlyFailure(data.reason))} <button class="retry-module" data-code="${esc(c.code)}">Retry</button></div>`;
   } else if (data.found === false || !data.classes || data.classes.length === 0) {
     const note = data.scheduleNote || data.reason || "No classes scheduled";
-    offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet — ${esc(note)}.</div>`;
+    offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet. ${esc(note)}.</div>`;
   } else {
     for (const cls of data.classes) {
       const key = offeringKey(cls);
       const checked = currentSelection().some(
         (s) => s.code === c.code && s.offeringKey === key
       );
-      const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}–${cls.weeks[cls.weeks.length - 1]}` : "";
+      const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}-${cls.weeks[cls.weeks.length - 1]}` : "";
       const loc = cls.location ? ` · ${esc(cls.location)}` : "";
       const div = document.createElement("label");
       div.className = "offering" + (checked ? " checked" : "");
@@ -777,7 +866,7 @@ function renderCourseCard(c, over) {
         <input type="checkbox" ${checked ? "checked" : ""} data-code="${esc(c.code)}" data-key="${esc(key)}" />
         <div class="off-main">
           <div class="off-type">${esc(cls.typeLabel)} ${cls.offering ? "· Offering " + esc(cls.offering) : ""}</div>
-          <div class="off-time">${esc(cls.day)} ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
+          <div class="off-time">${esc(cls.day)} ${esc(cls.startTime)}-${esc(cls.endTime)}</div>
           <div class="off-meta">${weeks}${loc}</div>
         </div>
       `;
@@ -847,7 +936,7 @@ function renderSummary() {
   }
 
   if (sel.length === 0) {
-    list.innerHTML = `<p class="muted" style="margin:4px 2px 12px">Nothing selected yet — tick classes in the module list.</p>`;
+    list.innerHTML = `<p class="muted" style="margin:4px 2px 12px">Nothing selected yet. Tick classes in the module list.</p>`;
   }
   els.totalCredits.textContent = `${credits} credits`;
   renderCreditsBreakdown();
@@ -927,16 +1016,16 @@ function evTooltipMarkup(info, data, cls, code) {
   if (info.credits) badges.push(`<span class="tt-badge">${info.credits} cr</span>`);
   const sem = info.semester || (data && data.semester);
   if (sem) badges.push(`<span class="tt-badge">Sem ${sem.replace(",", "+")}</span>`);
-  const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}–${cls.weeks[cls.weeks.length - 1]}` : "";
+  const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}-${cls.weeks[cls.weeks.length - 1]}` : "";
   return `
     <div class="ev-tooltip" role="tooltip">
       <div class="tt-title">${esc(info.title)} <span class="mono">${esc(code)}</span></div>
-      <div class="tt-sub">${data && data.year ? esc(data.year) + " · " : ""}${esc(cls.typeLabel)} · ${esc(cls.day)} ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
+      <div class="tt-sub">${data && data.year ? esc(data.year) + " · " : ""}${esc(cls.typeLabel)} ${esc(cls.day)} ${esc(cls.startTime)}-${esc(cls.endTime)}</div>
       <div class="tt-divider"></div>
       ${badges.length ? `<div class="tt-row">${badges.join("")}</div>` : ""}
       ${weeks ? `<div class="tt-row">${esc(weeks)}</div>` : ""}
-      ${cls.location ? `<div class="tt-row">📍 ${esc(cls.location)}</div>` : ""}
-      ${cls.offering ? `<div class="tt-row">Offering ${esc(cls.offering)} · CRN ${esc(cls.crn || "—")}</div>` : ""}
+      ${cls.location ? `<div class="tt-row">Location: ${esc(cls.location)}</div>` : ""}
+      ${cls.offering ? `<div class="tt-row">Offering ${esc(cls.offering)} · CRN ${esc(cls.crn || "-")}</div>` : ""}
     </div>`;
 }
 
@@ -962,6 +1051,7 @@ function renderTimetable() {
 
     const el = document.createElement("div");
     el.className = "timetable-event";
+    el.tabIndex = 0;
     el.style.top = `${top}px`;
     el.style.height = `${Math.max(height, 24)}px`;
     el.style.left = `calc(${m.timeW}px + ${dayIndex - 1} * ((100% - ${m.timeW}px) / 5) + 3px)`;
@@ -969,7 +1059,7 @@ function renderTimetable() {
     el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
-      <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}–${esc(cls.endTime)}</div>
+      <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}-${esc(cls.endTime)}</div>
       ${evTooltipMarkup(info, data, cls, s.code)}
     `;
     const tip = el.querySelector(".ev-tooltip");
@@ -1004,6 +1094,11 @@ function renderTimetable() {
           tip.classList.add("show");
         });
         el.addEventListener("mouseleave", () => tip.classList.remove("show"));
+        el.addEventListener("focus", () => {
+          placeTip();
+          tip.classList.add("show");
+        });
+        el.addEventListener("blur", () => tip.classList.remove("show"));
       }
     }
     events.push({ el, cls });
@@ -1151,12 +1246,12 @@ function renderPolicyWarning() {
     }
   }
   const chip = (m) =>
-    `<span class="policy-mod" title="${esc(m.title)}">${esc(m.code)}${m.level ? " · L" + m.level : ""} · ${m.credits} cr</span>`;
+    `<span class="policy-mod" title="${esc(m.title)}">${esc(m.code)}${m.level ? " L" + m.level : ""} · ${m.credits} cr</span>`;
   const rules = [];
   if (l3Total > POLICY_MAX_LEVEL3) {
     rules.push(
       `<div class="policy-rule">` +
-        `<strong>Level 3 or below: ${l3Total} / ${POLICY_MAX_LEVEL3} credits</strong> — ${l3Total - POLICY_MAX_LEVEL3} over the limit` +
+        `<strong>Level 3 or below: ${l3Total} / ${POLICY_MAX_LEVEL3} credits</strong>, ${l3Total - POLICY_MAX_LEVEL3} over the limit` +
         `<div class="policy-mods">${level3.map(chip).join("")}</div>` +
         `</div>`
     );
@@ -1164,7 +1259,7 @@ function renderPolicyWarning() {
   if (ncTotal > POLICY_MAX_NON_COMP) {
     rules.push(
       `<div class="policy-rule">` +
-        `<strong>Non-COMP modules: ${ncTotal} / ${POLICY_MAX_NON_COMP} credits</strong> — ${ncTotal - POLICY_MAX_NON_COMP} over the limit` +
+        `<strong>Non-COMP modules: ${ncTotal} / ${POLICY_MAX_NON_COMP} credits</strong>, ${ncTotal - POLICY_MAX_NON_COMP} over the limit` +
         `<div class="policy-mods">${nonComp.map(chip).join("")}</div>` +
         `</div>`
     );
@@ -1217,11 +1312,11 @@ function renderTotalWarning() {
   }
   if (under) {
     el.innerHTML =
-      `<div class="tw-head">You're at ${total} credits — under the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
-      `<div class="tw-note">A full CSNL year is about ${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis). You're ${TOTAL_YEAR_TARGET - total} short — keep adding modules to stay on track.</div>`;
+      `<div class="tw-head">You're at ${total} credits. Under the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
+      `<div class="tw-note">A full CSNL year is about ${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis). You're ${TOTAL_YEAR_TARGET - total} short. Keep adding modules to stay on track.</div>`;
   } else if (over) {
     el.innerHTML =
-      `<div class="tw-head">You're at ${total} credits — ${total - TOTAL_YEAR_TARGET} over the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
+      `<div class="tw-head">You're at ${total} credits, ${total - TOTAL_YEAR_TARGET} over the ~${TOTAL_YEAR_TARGET}-credit year target.</div>` +
       `<div class="tw-note">A full CSNL year is about ${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis). Consider trimming your selection to keep the workload manageable.</div>`;
   }
 }
@@ -1306,7 +1401,9 @@ function clashFreeAssignment(mods) {
 }
 
 const PLAN_RESULTS = 6;
-const PLAN_MAX_COMBOS = 6000;
+const PLAN_MAX_COMBOS = 4000; // DFS budget per randomized restart
+const PLAN_RESTARTS = 6; // DFS restarts with shuffled pool orders
+const PLAN_GREEDY = 900; // randomized greedy constructions (finds large plans)
 
 // A suggested plan must be valid under the CSNL programme rules (same limits
 // enforced by the policy warning), so applying it never lands the student in
@@ -1321,49 +1418,131 @@ function planViolatesPolicy(modules) {
   return l3 > POLICY_MAX_LEVEL3 || nonComp > POLICY_MAX_NON_COMP;
 }
 
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Suggests combinations of modules whose live timetables can coexist, close
+// to a target credit total. Combines an exhaustive DFS (several randomized
+// pool orders) with randomized greedy constructions, so it finds small
+// near-exact plans AND large full-year plans the DFS alone would never reach
+// within its node budget. Every returned plan is verified clash-free via
+// clashFreeAssignment (the same check "Use this plan" relies on).
 function findPlans(target, sem) {
   const pool = planPool(sem);
   if (pool.length < 2) return [];
-  pool.sort((a, b) => b.credits - a.credits);
 
-  // suffix sums for credit-bound pruning
-  const suffixMax = new Array(pool.length + 1).fill(0);
-  for (let i = pool.length - 1; i >= 0; i--) suffixMax[i] = suffixMax[i + 1] + pool[i].credits;
-
-  const results = [];
-  const combo = [];
-  let explored = 0;
   const tolerance = 5; // accept totals within ±5 credits of the target
+  const found = new Map(); // sorted code list -> plan (dedupe across passes)
 
-  function search(startIdx, total) {
-    if (explored >= PLAN_MAX_COMBOS) return;
-    explored++;
-    if (combo.length >= 2) {
-      const diff = Math.abs(total - target);
-      if (diff <= tolerance && !planViolatesPolicy(combo) && clashFreeAssignment(combo)) {
-        results.push({ modules: combo.slice(), total, diff });
-      }
-    }
-    for (let i = startIdx; i < pool.length; i++) {
-      const m = pool[i];
-      if (total + m.credits > target + tolerance) continue; // don't overshoot
-      if (total + suffixMax[i] < target - tolerance) break; // can't reach the target
-      let ok = true;
-      for (const cm of combo) {
-        if (!modulesCompatible(cm, m)) {
-          ok = false;
-          break;
-        }
-      }
-      if (!ok) continue;
-      combo.push(m);
-      search(i + 1, total + m.credits);
-      combo.pop();
+  // Pairwise compatibility matrix, computed once and shared by every pass.
+  const n = pool.length;
+  const compatMat = Array.from({ length: n }, () => new Array(n).fill(false));
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      compatMat[i][j] = compatMat[j][i] = modulesCompatible(pool[i], pool[j]);
     }
   }
 
-  search(0, 0);
-  results.sort((a, b) => a.diff - b.diff || a.modules.length - b.modules.length);
+  // clashFreeAssignment is the expensive check, so it runs at most once per
+  // unique module set: dedupe first, then memoize the result.
+  const cfaMemo = new Map(); // sorted code key -> clash-free or not
+  const addPlan = (mods) => {
+    if (mods.length < 2) return;
+    const total = mods.reduce((s, m) => s + m.credits, 0);
+    if (Math.abs(total - target) > tolerance) return;
+    if (planViolatesPolicy(mods)) return;
+    const key = mods.map((m) => m.code).sort().join(",");
+    if (found.has(key)) return;
+    if (!cfaMemo.has(key)) cfaMemo.set(key, !!clashFreeAssignment(mods));
+    if (!cfaMemo.get(key)) return;
+    found.set(key, { modules: mods.slice(), total, diff: Math.abs(total - target) });
+  };
+
+  // For big targets the exhaustive DFS floods its budget with mid-range
+  // combos (each needing the expensive clash check); the randomized greedy
+  // pass reliably builds those full-year plans on its own. The DFS stays for
+  // small/medium targets where it finds exact matches cheaply.
+  const useDfs = target <= 45;
+
+  for (let r = 0; r < PLAN_RESTARTS; r++) {
+    if (found.size >= PLAN_RESULTS) break; // enough plans — stop searching
+    // The first pass keeps the credit-descending order (deterministic and
+    // well-pruned); later passes shuffle so different regions of the search
+    // space get explored and hard-to-reach plans are found.
+    const order =
+      r === 0 ? [...pool].sort((a, b) => b.credits - a.credits) : shuffle([...pool]);
+
+    // 1) exhaustive DFS over this order, with suffix-sum credit pruning
+    if (useDfs) {
+      const suffixMax = new Array(order.length + 1).fill(0);
+      for (let i = order.length - 1; i >= 0; i--) suffixMax[i] = suffixMax[i + 1] + order[i].credits;
+      const combo = [];
+      let explored = 0;
+
+      function search(startIdx, total) {
+        if (found.size >= PLAN_RESULTS) return;
+        if (explored >= PLAN_MAX_COMBOS) return;
+        explored++;
+        if (combo.length >= 2 && Math.abs(total - target) <= tolerance) {
+          addPlan(combo);
+        }
+        for (let i = startIdx; i < order.length; i++) {
+          const m = order[i];
+          if (total + m.credits > target + tolerance) continue; // don't overshoot
+          if (total + suffixMax[i] < target - tolerance) break; // can't reach the target
+          let ok = true;
+          for (const cm of combo) {
+            if (!compatMat[pool.indexOf(cm)][pool.indexOf(m)]) {
+              ok = false;
+              break;
+            }
+          }
+          if (!ok) continue;
+          combo.push(m);
+          search(i + 1, total + m.credits);
+          combo.pop();
+        }
+      }
+
+      search(0, 0);
+    }
+
+    // 2) randomized greedy constructions — keeps adding compatible modules in
+    //    a shuffled order, which reliably builds the big full-year plans.
+    //    The fill cap is jittered between the target and target+tolerance so
+    //    some attempts land exactly on the target (diff 0) rather than always
+    //    at the top of the tolerance band.
+    for (let a = 0; a < Math.ceil(PLAN_GREEDY / PLAN_RESTARTS); a++) {
+      if (found.size >= PLAN_RESULTS) break;
+      const ord = shuffle([...pool]);
+      const cap = target + tolerance - Math.floor(Math.random() * (tolerance + 1));
+      const g = [];
+      let gt = 0;
+      for (const m of ord) {
+        if (gt + m.credits > cap) continue;
+        let ok = true;
+        for (const cm of g) {
+          if (!compatMat[pool.indexOf(cm)][pool.indexOf(m)]) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        g.push(m);
+        gt += m.credits;
+      }
+      addPlan(g);
+    }
+  }
+
+  const results = [...found.values()].sort(
+    (a, b) => a.diff - b.diff || a.modules.length - b.modules.length
+  );
   return results.slice(0, PLAN_RESULTS);
 }
 
@@ -1378,7 +1557,7 @@ function renderPlans() {
     return;
   }
   if (live.size < curatedCodes().length) {
-    resultsEl.innerHTML = `<p class="muted">Timings are still loading — try again in a moment.</p>`;
+    resultsEl.innerHTML = `<p class="muted">Timings are still loading. Try again in a moment.</p>`;
     return;
   }
 
@@ -1450,6 +1629,17 @@ els.planResults.addEventListener("click", (e) => {
 // events
 // ---------------------------------------------------------------------------
 
+// Timing-summary chips double as list filters: click to show only modules
+// with a timetable / without one / that failed; click again to clear.
+els.timingSummary.addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-ts]");
+  if (!chip) return;
+  const f = chip.dataset.ts;
+  timingFilter = timingFilter === f ? "all" : f;
+  render();
+  renderTimingSummary();
+});
+
 els.search.addEventListener("input", () => {
   render();
   syncUrl();
@@ -1469,10 +1659,12 @@ els.courseList.addEventListener("click", (e) => {
     for (const t of document.querySelectorAll(".theme-toggle")) {
       if (t !== toggle) {
         t.classList.add("collapsed");
+        t.setAttribute("aria-expanded", "false");
         t.nextElementSibling.classList.add("hidden");
       }
     }
     toggle.classList.toggle("collapsed", !collapsed);
+    toggle.setAttribute("aria-expanded", String(collapsed));
     body.classList.toggle("hidden", !collapsed);
   }
 });
@@ -1553,6 +1745,7 @@ function revealModule(code) {
   const toggle = card.closest(".theme") && card.closest(".theme").querySelector(".theme-toggle");
   if (toggle) {
     toggle.classList.remove("collapsed");
+    toggle.setAttribute("aria-expanded", "true");
     toggle.nextElementSibling.classList.remove("hidden");
   }
   card.classList.add("flash");
@@ -1564,14 +1757,14 @@ function addModuleByCode(rawCode) {
   const code = String(rawCode || "").trim().toUpperCase();
   if (!code) return; // empty field — nothing to do
   if (!/^[A-Z]{2,5}\d{3,6}$/.test(code)) {
-    showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code — try e.g. COMP30960`);
+    showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code. Try e.g. COMP30960`);
     els.addCodeInput.focus();
     return;
   }
   if (!curatedCodes().includes(code)) {
     // the picker only offers — and only fetches — modules from the CSNL list
     showAddCodeError(
-      `${code} isn't on the CSNL module list — only modules from UCD's CSNL streams page can be added.`
+      `${code} isn't on the CSNL module list. Only modules from UCD's CSNL streams page can be added.`
     );
     els.addCodeInput.focus();
     return;
@@ -1608,7 +1801,7 @@ els.suggestForm.addEventListener("submit", async (e) => {
   }
   const email = els.suggestEmail.value.trim();
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    els.suggestError.textContent = "That email address doesn't look right — leave it blank if you'd rather not share it.";
+    els.suggestError.textContent = "That email address doesn't look right. Leave it blank if you'd rather not share it.";
     els.suggestError.hidden = false;
     els.suggestEmail.focus();
     return;
@@ -1632,7 +1825,7 @@ els.suggestForm.addEventListener("submit", async (e) => {
     els.suggestDone.classList.remove("hidden");
   } catch (err) {
     console.error("Suggestion submit failed:", err);
-    els.suggestError.textContent = "Couldn't send your suggestion — check your connection and try again.";
+    els.suggestError.textContent = "Couldn't send your suggestion. Check your connection and try again.";
     els.suggestError.hidden = false;
   } finally {
     els.suggestSubmit.disabled = false;
@@ -1741,7 +1934,7 @@ function startAutoRefresh() {
   purgeNonCsnl();
   refreshUI();
   if (cachedCount > 0) {
-    els.bootSub.textContent = `Restored ${cachedCount} saved timetables — refreshing from UCD…`;
+    els.bootSub.textContent = `Restored ${cachedCount} saved timetables. Refreshing from UCD…`;
     els.bootCountText.textContent = `${cachedCount} cached modules`;
     els.bootFill.style.width = "100%";
     els.bootPercent.textContent = "100%";

@@ -18,7 +18,10 @@ across future academic years:
 There are **no hardcoded timings anywhere**. When UCD updates a schedule —
 or publishes next year's timetable — the picker shows it automatically.
 Modules with no timetable yet show UCD's own reason ("currently not timetabled",
-"no schedule details available") instead of stale data.
+"no schedule details available") instead of stale data: **only the target
+academic year's timetable is ever served** (the year the site is planning for,
+which advances on 1 August). If UCD has published the year entry but not the
+schedule, the module shows "no timetable" rather than last year's times.
 
 ## How it works
 
@@ -60,6 +63,12 @@ on three levels, with no code change:
   committed `modules.json` — per-module timings are still fetched live from
   UCD, so nothing breaks.
 
+  The timetable proxy's allowlist — which codes it will fetch — is rebuilt
+  from this same live catalogue (cached in memory for a few minutes), so a
+  module UCD adds to the NL page is offered by the site *and* fetchable
+  immediately; the committed `modules.json` only serves as the offline
+  fallback if the catalogue can't be reached.
+
 Timings, titles, trimesters and the auto-picked latest academic year are
 fetched live per module on every page load, so the yearly refresh only needs
 UCD to have published the new list once.
@@ -87,6 +96,26 @@ node server.js
 # → http://localhost:8787
 ```
 
+## Test against the live UCD data
+
+```bash
+node tools/test-timetables.js [--fresh]   # server must be running
+```
+
+Fetches the catalogue and every module's timetable through the local proxy,
+then runs the same logic the frontend uses against **every combination**:
+
+- data quality (target year only, clean term codes/CRNs, sane times/weeks);
+- **every module pair** — which pairs can never be taken together (no
+  clash-free assignment exists) and which modules' own classes overlap;
+- the **clash-free plan builder** for 30/60/90-credit targets in every
+  semester — every suggested plan is re-verified as genuinely clash-free and
+  within the CSNL credit rules.
+
+Use `--fresh` to bypass the proxy's 30-minute cache and pull straight from
+UCD. Any problem is listed in the output and the run ends with a
+`RESULT: ALL CHECKS PASSED` / `RESULT: FAILURES FOUND` line.
+
 `server.js` serves the static site and mounts the timetable proxy at the same
 URL Netlify uses (`/.netlify/functions/timetable`), so local behaviour matches
 production exactly. Node 18+ is required; there are no dependencies.
@@ -106,6 +135,7 @@ No build step. Either:
 | --- | --- |
 | `index.html` / `styles.css` / `app.js` | The site |
 | `modules.json` | Fallback module list (streams, credits, semester, comments — **no timings**), regenerated from the CSNL page; last-resort fallback for `/catalogue` |
+| `tools/test-timetables.js` | Test harness — fetches every live timetable and checks data quality, every module pair for clashes, and the clash-free plan builder |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
 | `netlify/functions/catalogue.js` | Auto-refreshing module list service (Netlify Blobs + fallback) |
 | `netlify/functions/refresh-catalogue.js` | Scheduled daily catalogue check (cron in `netlify.toml`) |

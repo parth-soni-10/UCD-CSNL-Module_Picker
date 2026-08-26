@@ -29,15 +29,60 @@ const TYPE_LABELS = {
   WSH: "Workshop",
 };
 
-// The only modules this proxy will fetch: those on UCD's official CSNL
-// streams page (the committed fallback mirrors it). Defense in depth — the
-// frontend already restricts, this closes the API for direct callers.
-const CSNL_CODES = new Set(
+// The academic year the site targets (matches catalogue.js): it advances on
+// 1 August, when UCD publishes the next year's module set. Only timetables
+// for THIS year are ever served — a module whose newest published schedule
+// is older is reported as "not timetabled" rather than showing stale times.
+function currentCatalogueYear() {
+  const now = new Date();
+  return now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+}
+function targetYearString() {
+  const y = currentCatalogueYear();
+  return `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
+}
+
+// Offline fallback for the allowlist: the committed modules.json. The live
+// allowlist is rebuilt from the current catalogue (csnlCodes below) so that
+// modules UCD adds to the NL page are fetchable immediately — this frozen
+// copy only serves when the catalogue can't be reached.
+const FALLBACK_CSNL_CODES = new Set(
   require("../../modules.json")
     .flatMap((t) => t.courses.map((c) => String(c.name).match(/\(([^)]+)\)\s*$/)))
     .map((m) => m && m[1].trim().toUpperCase())
     .filter(Boolean)
 );
+
+function codeFromName(name) {
+  const m = String(name).match(/\(([^)]+)\)\s*$/);
+  return m ? m[1].trim().toUpperCase() : String(name).toUpperCase();
+}
+
+// The only modules this proxy will fetch: those on UCD's official CSNL
+// streams page, AS THE SITE CURRENTLY SERVES THEM (same getCatalogue the
+// /catalogue endpoint uses). UCD edits that list every year and mid-year, so
+// the allowlist is rebuilt from the live catalogue (cached in-memory for a
+// few minutes) rather than frozen to the committed fallback — a module UCD
+// just added appears on the site AND becomes fetchable without any code
+// change. Defense in depth: the frontend already restricts; this closes the
+// API for direct callers.
+const { getCatalogue } = require("./catalogue.js");
+
+let csnlCache = null; // { at, codes }
+async function csnlCodes() {
+  const now = Date.now();
+  if (csnlCache && now - csnlCache.at < 5 * 60 * 1000) return csnlCache.codes;
+  try {
+    const cat = await getCatalogue();
+    const codes = new Set(
+      cat.themes.flatMap((t) => t.courses.map((c) => codeFromName(c.name)))
+    );
+    csnlCache = { at: now, codes };
+    return codes;
+  } catch (e) {
+    return FALLBACK_CSNL_CODES;
+  }
+}
 
 const cache = new Map(); // code -> { fetchedAt, data }
 
@@ -128,8 +173,14 @@ function timePlusMinutes(start, length) {
   return `${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
 }
 
+// Split a multi-value cell like "202501 202600" (UCD lists every academic
+// term a class runs in, <br>-separated) into its individual values.
+function splitCell(v) {
+  return String(v || "").split(/\s+/).filter(Boolean);
+}
+
 // CM801 timetable page -> normalized structure
-function parseTimetable(html, code) {
+function parseTimetable(html, code, year) {
   const out = {
     code,
     trimester: null,
@@ -171,6 +222,22 @@ function parseTimetable(html, code) {
         if (/^\d{2} \w{3} \d{4}$/.test(cells[0])) lastWeekStarting = cells[0];
         const lengthMatch = cells[5].match(/(\d+)/);
         const length = lengthMatch ? parseInt(lengthMatch[1], 10) : 0;
+        // The term and CRN cells can list several academic years (e.g.
+        // "202501 202600" / "28475 16418" when a class runs across years).
+        // Keep only the current page year's term and its matching CRN so
+        // keys, term codes and CRNs stay clean.
+        const terms = splitCell(cells[7]);
+        const crns = splitCell(cells[8]);
+        const yearPrefix = year ? year.split("/")[0] : "";
+        let termCode = terms.length ? terms[terms.length - 1] : "";
+        let crn = crns.length ? crns[crns.length - 1] : "";
+        if (yearPrefix) {
+          const ti = terms.findIndex((t) => t.startsWith(yearPrefix));
+          if (ti >= 0) {
+            termCode = terms[ti];
+            if (crns[ti] !== undefined) crn = crns[ti];
+          }
+        }
         out.classes.push({
           weekStarting: lastWeekStarting,
           weekNumber: cells[1],
@@ -179,8 +246,8 @@ function parseTimetable(html, code) {
           startTime: cells[4],
           lengthMins: length,
           offering: cells[6],
-          termCode: cells[7],
-          crn: cells[8],
+          termCode,
+          crn,
           type: cells[9],
           location: cells[10] || "",
         });
@@ -250,55 +317,51 @@ async function fetchModuleTimetable(code) {
     };
   }
 
-  // 2. pick the row for our exact code (search may return near matches)
-  let row = parsed.rows.find(
+  // 2. pick the row for our exact code. The search can return near matches
+  //    ("IS41510" returns a HIS41510 row), so never accept a different code —
+  //    a module that exists but has no row is simply not timetabled.
+  const row = parsed.rows.find(
     (r) => r.code && r.code.toUpperCase() === code.toUpperCase()
   );
   if (!row) {
-    const rows = parsed.rows.filter((r) => r.code);
-    if (rows.length === 1) row = rows[0];
-  }
-  if (!row) {
     return {
-      found: false,
-      reason: "Module code not in search results",
+      found: true,
       title: parsed.titlesByCode[code] || null,
+      reason: parsed.titlesByCode[code]
+        ? "Module currently not timetabled by UCD"
+        : "Module not found on UCD Hub",
     };
   }
 
-  // 3. try each year that has a timetable link, newest first. UCD often
-  //    creates the year entry before publishing the actual schedule, so the
-  //    latest year may be empty — fall back to the previous year in that case.
-  const linkedYears = parsed.years
-    .map((y, i) => ({ y, i }))
-    .filter(({ i }) => row.links[i])
-    .sort((a, b) => b.y.localeCompare(a.y));
-
-  if (!linkedYears.length) {
+  // 3. Serve ONLY the target academic year's timetable. UCD creates a year
+  //    entry before publishing its schedule, so an empty (or missing) target
+  //    year is reported as-is — falling back to an older year would show
+  //    stale times that may no longer apply.
+  const year = targetYearString();
+  const yearIdx = parsed.years.indexOf(year);
+  const link = yearIdx >= 0 ? row.links[yearIdx] : null;
+  if (!link) {
     return {
       found: true,
       title: row.title || parsed.titlesByCode[code] || null,
       year: null,
-      reason: "No timetable published",
+      reason: `No timetable published for ${year}`,
     };
   }
 
-  let fallback = null;
-  for (const { y: year, i } of linkedYears) {
-    const launchPath =
-      "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM801&p_parameters=" +
-      row.links[i].split("p_parameters=")[1];
-    const launch = await ucdGet(launchPath);
-    if (launch.status !== 200) continue;
-    const tt = parseTimetable(launch.body, code);
-    tt.found = true;
-    tt.title = row.title || parsed.titlesByCode[code] || null;
-    tt.year = year;
-    tt.semester = deriveSemester(tt.trimesters);
-    if (tt.classes.length > 0) return tt; // real timetable — use it
-    if (!fallback) fallback = tt; // keep first empty result as fallback
+  const launchPath =
+    "W_HU_REPORTING.P_LAUNCH_REPORT?p_report=CM801&p_parameters=" +
+    link.split("p_parameters=")[1];
+  const launch = await ucdGet(launchPath);
+  if (launch.status !== 200) {
+    throw new Error(`UCD timetable failed (HTTP ${launch.status})`);
   }
-  return fallback;
+  const tt = parseTimetable(launch.body, code, year);
+  tt.found = true;
+  tt.title = row.title || parsed.titlesByCode[code] || null;
+  tt.year = year;
+  tt.semester = deriveSemester(tt.trimesters);
+  return tt;
 }
 
 // "Autumn" -> 1, "Spring" -> 2, both -> "1, 2", unknown -> null
@@ -377,9 +440,11 @@ async function handler(event) {
       body: JSON.stringify({ error: "No module codes supplied (?codes=A,B,C)" }),
     };
   }
-  // Reject anything not on the CSNL list without ever touching UCD.
-  const codes = requested.filter((c) => CSNL_CODES.has(c.toUpperCase()));
-  const rejected = requested.filter((c) => !CSNL_CODES.has(c.toUpperCase()));
+  // Reject anything not on the current CSNL list (from the live catalogue;
+  // falls back to the committed list if the catalogue can't be reached).
+  const allow = await csnlCodes();
+  const codes = requested.filter((c) => allow.has(c.toUpperCase()));
+  const rejected = requested.filter((c) => !allow.has(c.toUpperCase()));
   const rejectedResults = Object.fromEntries(
     rejected.map((c) => [
       c.toUpperCase(),

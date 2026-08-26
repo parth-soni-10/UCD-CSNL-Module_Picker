@@ -6,6 +6,8 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
     <title>CSNL Module Picker - Live UCD Timings</title>
+    <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -70,7 +72,7 @@
                 <path d="M8 16H3v5"></path>
               </svg>
             </span>
-            Refresh timings
+            Refresh Timings
           </button>
         </div>
       </div>
@@ -102,7 +104,7 @@
                 href="https://www.ucd.ie/cs/study/postgraduate/nlstreams/"
                 target="_blank"
                 rel="noopener"
-                title="Open UCD's official CSNL module list — verify the offerings yourself"
+                title="Open UCD's official CSNL module list (verify the offerings yourself)"
               >
                 UCD CSNL page
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
@@ -114,7 +116,7 @@
             id="search"
             name="search"
             class="search"
-            placeholder="Search by module name or code"
+            placeholder="Search by module name or code…"
             autocomplete="off"
             spellcheck="false"
             aria-label="Search modules"
@@ -124,7 +126,7 @@
               id="add-code-input"
               name="module-code"
               class="input grow"
-              placeholder="Jump to a module on the CSNL list, e.g. COMP30960"
+              placeholder="Jump to a module on the CSNL list, e.g. COMP30960…"
               autocomplete="off"
               autocapitalize="off"
               spellcheck="false"
@@ -134,7 +136,13 @@
             <button id="add-code-btn" class="btn btn-secondary" title="Fetch this module's live timetable from UCD">Add</button>
           </div>
           <p id="add-code-error" class="add-code-error" role="alert" hidden></p>
-          <p class="add-code-hint">Only modules on UCD's CSNL list are offered — everything is fetched live from UCD on every load.</p>
+          <p class="add-code-hint">Only modules on UCD's CSNL list are offered. Everything is fetched live from UCD on every load.</p>
+          <div id="timing-summary" class="timing-summary" role="group" aria-label="Timetable status">
+            <button type="button" class="ts-chip ts-live" data-ts="live" aria-pressed="false" title="Modules with a published timetable (click to show only these)">With timetable <strong class="ts-count">0</strong></button>
+            <button type="button" class="ts-chip ts-none" data-ts="none" aria-pressed="false" title="Modules UCD hasn't published a timetable for yet (click to show only these)">Not published yet <strong class="ts-count">0</strong></button>
+            <button type="button" class="ts-chip ts-failed hidden" data-ts="failed" aria-pressed="false" title="Modules that failed to load from UCD (click to show only these)">Load failed <strong class="ts-count">0</strong></button>
+            <button type="button" class="ts-chip ts-all active" data-ts="all" aria-pressed="true" title="All modules">All <strong class="ts-count">0</strong></button>
+          </div>
           <div id="course-list" class="course-list"></div>
         </div>
       </section>
@@ -152,12 +160,12 @@
           <div class="timetable-tools">
             <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
             <div class="row">
-              <input id="new-timetable-name" name="timetable-name" class="input grow" placeholder="New timetable name" autocomplete="off" aria-label="New timetable name" />
+              <input id="new-timetable-name" name="timetable-name" class="input grow" placeholder="New timetable name…" autocomplete="off" spellcheck="false" aria-label="New timetable name" />
               <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable" aria-label="Add timetable">+</button>
             </div>
             <div class="row">
-              <button id="clear-btn" class="btn btn-ghost grow">Clear selection</button>
-              <button id="delete-timetable-btn" class="btn btn-danger grow">Delete timetable</button>
+              <button id="clear-btn" class="btn btn-ghost grow">Clear Selection</button>
+              <button id="delete-timetable-btn" class="btn btn-danger grow">Delete Timetable</button>
             </div>
           </div>
         </div>
@@ -178,7 +186,7 @@
               min="5"
               max="120"
               step="5"
-              placeholder="Target credits"
+              placeholder="e.g. 60…"
               autocomplete="off"
               aria-label="Target credit total"
             />
@@ -190,7 +198,7 @@
             </select>
           </div>
           <div class="row">
-            <button id="plan-btn" class="btn btn-primary grow">Find clash-free plans</button>
+            <button id="plan-btn" class="btn btn-primary grow">Find Clash-Free Plans</button>
           </div>
           <div id="plan-results" class="plan-results" aria-live="polite"></div>
         </div>
@@ -221,9 +229,9 @@
               class="input"
               type="text"
               autocomplete="name"
-              placeholder="Your name"
+              placeholder="Your name…"
             />
-            <label class="suggest-label" for="suggest-email">Email <span class="muted">(optional — so we can tell you once it's done)</span></label>
+            <label class="suggest-label" for="suggest-email">Email <span class="muted">(optional, so we can tell you once it's done)</span></label>
             <input
               id="suggest-email"
               name="email"
@@ -231,7 +239,8 @@
               type="email"
               autocomplete="email"
               inputmode="email"
-              placeholder="you@example.com"
+              spellcheck="false"
+              placeholder="you@example.com…"
             />
             <label class="suggest-label" for="suggest-text">Suggestion</label>
             <textarea
@@ -239,11 +248,11 @@
               name="suggestion"
               class="input suggest-text"
               rows="4"
-              placeholder="What should we add or improve?"
+              placeholder="What should we add or improve?…"
             ></textarea>
             <div id="suggest-error" class="add-code-error" role="alert" hidden></div>
-            <button id="suggest-submit" class="btn btn-primary" type="submit">Send suggestion</button>
-            <p id="suggest-done" class="suggest-done hidden" role="status">Thanks — your suggestion is on its way. If you left an email, you'll hear back once it's addressed.</p>
+            <button id="suggest-submit" class="btn btn-primary" type="submit">Send Suggestion</button>
+            <p id="suggest-done" class="suggest-done hidden" role="status">Thanks. Your suggestion is on its way. If you left an email, you'll hear back once it's addressed.</p>
           </form>
         </div>
       </aside>
@@ -270,7 +279,7 @@
             </button>
           </div>
           <div id="print-header" class="print-only"></div>
-          <div id="clash-warning" class="clash-warning hidden">
+          <div id="clash-warning" class="clash-warning hidden" aria-live="polite">
             Warning: you have timetable clashes. Clashing slots are highlighted in red.
           </div>
           <div id="policy-warning" class="policy-warning hidden" role="alert" aria-live="polite"></div>
@@ -287,7 +296,7 @@
           <span>
             Timings fetched live from
             <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
-            on every page load · Not an official UCD service · Built by
+            on every page load. Not an official UCD service. Built by
             <a href="https://parth-portfolio-wb.netlify.app/" target="_blank" rel="noopener">Parth</a>.
           </span>
         </div>
