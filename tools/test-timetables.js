@@ -67,9 +67,22 @@ function timeToMinutes(t) {
 
 // The trimester(s) a class runs in ("1", "2", "1, 2"), set by the proxy from
 // the class's week numbers (UCD: Autumn weeks 1-12, Spring weeks 20-33).
+// Falls back to deriving the term from the weeks themselves (the proxy's own
+// rule: <=12 Autumn, >=13 Spring), which keeps the semester-aware clash rule
+// working even against cached payloads that predate the term field.
 function classTerms(cls) {
-  if (!cls || !cls.term) return [];
-  return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+  if (!cls) return [];
+  if (cls.term) {
+    return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  if (cls.weeks && cls.weeks.length) {
+    const hasAutumn = cls.weeks.some((w) => w <= 12);
+    const hasSpring = cls.weeks.some((w) => w >= 13);
+    if (hasAutumn && hasSpring) return ["1", "2"];
+    if (hasAutumn) return ["1"];
+    if (hasSpring) return ["2"];
+  }
+  return [];
 }
 
 function classesClash(a, b) {
@@ -278,7 +291,7 @@ async function main() {
         .map((s) => s.trim())
         .filter(Boolean);
       if (sem !== "all" && sems.length && !sems.includes(sem)) continue;
-      pool.push({ code: m.code, credits, info: { title: m.title, credits }, data });
+      pool.push({ code: m.code, credits, semester: m.semester || (data && data.semester) || "", info: { title: m.title, credits }, data });
     }
     return pool;
   }
@@ -303,6 +316,12 @@ async function main() {
       const total = mods.reduce((s, m) => s + m.credits, 0);
       if (Math.abs(total - target) > tolerance) return;
       if (planViolatesPolicy(mods)) return;
+      // A "Both semesters" plan must actually span both (mirrors app.js).
+      if (sem === "all") {
+        const hasS1 = mods.some((m) => String(m.semester || "").includes("1"));
+        const hasS2 = mods.some((m) => String(m.semester || "").includes("2"));
+        if (!hasS1 || !hasS2) return;
+      }
       const key = mods.map((m) => m.code).sort().join(",");
       if (found.has(key)) return;
       if (!cfaMemo.has(key)) cfaMemo.set(key, !!clashFreeAssignment(mods));
@@ -370,12 +389,20 @@ async function main() {
         console.log(`  ${label}: no plans found (${elapsed}ms) — not a failure, but flag if plans are expected`);
         continue;
       }
-      // verify every plan is genuinely clash-free AND policy-clean
+      // verify every plan is genuinely clash-free AND policy-clean (and, for
+      // the "all" target, that it actually spans both semesters)
       let ok = true;
       for (const plan of plans) {
         const mods = plan.modules.map((m) => ({ code: m.code, data: m.data }));
         if (!clashFreeAssignment(mods)) { ok = false; planFails++; }
         if (planViolatesPolicy(plan.modules)) { ok = false; planFails++; }
+        if (sem === "all") {
+          const sems = plan.modules.map((m) => String(m.semester || ""));
+          if (!sems.some((s) => s.includes("1")) || !sems.some((s) => s.includes("2"))) {
+            ok = false;
+            planFails++;
+          }
+        }
       }
       console.log(`  ${label}: ${plans.length} plan(s) in ${elapsed}ms — ${ok ? "OK, all genuinely clash-free and policy-clean" : "FAIL (contains a clashing or policy-violating plan)"}`);
       for (const p of plans.slice(0, 2)) {
@@ -408,6 +435,28 @@ async function main() {
     }
   }
   if (!crossSem) console.log("  OK — classes in different semesters are never reported as clashing.");
+
+  // 5b. Same check with the proxy's term field stripped: browsers that cached
+  // timings before the term field existed must behave identically, because
+  // classTerms() re-derives the semester from the week numbers.
+  let staleCrossSem = 0;
+  for (let i = 0; i < allClasses.length; i++) {
+    for (let j = i + 1; j < allClasses.length; j++) {
+      const A = allClasses[i];
+      const B = allClasses[j];
+      if (A.code === B.code) continue;
+      const a = { ...A.cls, term: undefined };
+      const b = { ...B.cls, term: undefined };
+      const ta = classTerms(a);
+      const tb = classTerms(b);
+      if (!ta.length || !tb.length) continue;
+      if (!ta.some((t) => tb.includes(t)) && classesClash(a, b)) staleCrossSem++;
+    }
+  }
+  if (!staleCrossSem)
+    console.log("  OK — same result with cached payloads that lack the term field (weeks fallback).");
+  else
+    console.log(`  FAIL — ${staleCrossSem} cross-semester false clashes when the term field is missing.`);
 
   // ---- summary
   console.log("\n================ SUMMARY ================");

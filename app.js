@@ -380,10 +380,23 @@ function esc(s) {
 
 // The trimester(s) a class runs in ("1", "2", "1, 2"), set by the proxy from
 // the class's week numbers (UCD: Autumn weeks 1-12, Spring weeks 20-33).
-// Empty when the term can't be determined.
+// Empty when the term can't be determined. Classes cached by an older app
+// version predate the proxy's term field; they always carry weeks, so derive
+// the same terms the proxy would (<=12 Autumn, >=13 Spring). Without this,
+// stale caches silently undo the semester-aware clash rule.
 function classTerms(cls) {
-  if (!cls || !cls.term) return [];
-  return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+  if (!cls) return [];
+  if (cls.term) {
+    return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  if (cls.weeks && cls.weeks.length) {
+    const hasAutumn = cls.weeks.some((w) => w <= 12);
+    const hasSpring = cls.weeks.some((w) => w >= 13);
+    if (hasAutumn && hasSpring) return ["1", "2"];
+    if (hasAutumn) return ["1"];
+    if (hasSpring) return ["2"];
+  }
+  return [];
 }
 
 // Do two class rows actually run at the same time? Same day + overlapping
@@ -1015,6 +1028,14 @@ function renderCreditsBreakdown() {
 
 function createGrid() {
   els.timetableGrid.innerHTML = "";
+  // The event layer lives inside the grid (not the wrap) so its percentage
+  // positions resolve against the real grid width; rebuild it here because
+  // the innerHTML wipe above removes the copy from index.html.
+  const evLayer = document.createElement("div");
+  evLayer.id = "timetable-events";
+  evLayer.className = "timetable-events";
+  els.timetableGrid.appendChild(evLayer);
+  els.timetableEvents = evLayer;
   const todayName = DAY_NAMES[new Date().getDay()];
   DAYS.forEach((day, i) => {
     const h = document.createElement("div");
@@ -1119,8 +1140,6 @@ function renderTimetable() {
     el.tabIndex = 0;
     el.style.top = `${top}px`;
     el.style.height = `${Math.max(height, 24)}px`;
-    el.style.left = `calc(${m.timeW}px + ${dayIndex - 1} * ((100% - ${m.timeW}px) / 5) + 3px)`;
-    el.style.width = `calc((100% - ${m.timeW}px) / 5 - 6px)`;
     el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
@@ -1166,19 +1185,111 @@ function renderTimetable() {
         el.addEventListener("blur", () => tip.classList.remove("show"));
       }
     }
-    events.push({ el, cls });
+    events.push({ el, cls, code: s.code, dayIndex, start, end, order: events.length });
   }
 
+  // Same-slot events (same day + overlapping time) used to stack pixel-perfectly
+  // on top of each other: only the topmost card was visible or tappable, so a
+  // cross-semester pair sharing a slot read as a single broken or conflicting
+  // block — especially on a phone. Split every overlapping cluster into lanes
+  // so each class is separately visible, tappable and tagged (S1)/(S2).
+  const m = gridMetrics();
+  const colW = `((100% - ${m.timeW}px) / 5)`;
+  const byDay = new Map();
+  for (const ev of events) {
+    if (!byDay.has(ev.dayIndex)) byDay.set(ev.dayIndex, []);
+    byDay.get(ev.dayIndex).push(ev);
+  }
+  for (const dayEvents of byDay.values()) {
+    // Cluster events connected by time overlap, so lanes never mix unrelated
+    // clusters and non-overlapping neighbours keep the full column width.
+    const parent = dayEvents.map((_, i) => i);
+    const find = (x) => {
+      while (parent[x] !== x) {
+        parent[x] = parent[parent[x]];
+        x = parent[x];
+      }
+      return x;
+    };
+    for (let i = 0; i < dayEvents.length; i++) {
+      for (let j = i + 1; j < dayEvents.length; j++) {
+        if (
+          Math.max(dayEvents[i].start, dayEvents[j].start) <
+          Math.min(dayEvents[i].end, dayEvents[j].end)
+        ) {
+          parent[find(j)] = find(i);
+        }
+      }
+    }
+    const groups = new Map();
+    for (let i = 0; i < dayEvents.length; i++) {
+      const r = find(i);
+      if (!groups.has(r)) groups.set(r, []);
+      groups.get(r).push(dayEvents[i]);
+    }
+    for (const group of groups.values()) {
+      group.sort((a, b) => a.start - b.start || b.end - a.end || a.order - b.order);
+      const lanes = []; // lanes[i] = end (minutes) of the last event in lane i
+      for (const ev of group) {
+        let lane = -1;
+        for (let i = 0; i < lanes.length; i++) {
+          if (lanes[i] <= ev.start) {
+            lane = i;
+            break;
+          }
+        }
+        if (lane === -1) {
+          lane = lanes.length;
+          lanes.push(0);
+        }
+        lanes[lane] = ev.end;
+        ev.lane = lane;
+      }
+      const laneCount = lanes.length;
+      for (const ev of group) ev.laneCount = laneCount;
+    }
+  }
+  for (const ev of events) {
+    const laneW = ev.laneCount > 1 ? `(${colW} / ${ev.laneCount})` : colW;
+    const lane = ev.lane === undefined ? 0 : ev.lane;
+    ev.el.style.left =
+      `calc(${m.timeW}px + ${ev.dayIndex - 1} * ${colW} + ${lane} * ${laneW} + 3px)`;
+    ev.el.style.width = `calc(${laneW} - 6px)`;
+  }
+  // Same-module rows that clash are alternative groups of one class (e.g. two
+  // practical groups at the same slot) — a user error, not a real conflict, so
+  // name them in the warning instead of leaving a generic red banner.
+  const selfClashes = new Map(); // code -> Set of "TYPE day start-end" labels
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
       if (classesClash(events[i].cls, events[j].cls)) {
         hasClash = true;
         events[i].el.classList.add("clash");
         events[j].el.classList.add("clash");
+        if (events[i].code === events[j].code) {
+          const c = events[i].cls;
+          const label = `${c.typeLabel} ${c.day} ${c.startTime}-${c.endTime}`;
+          if (!selfClashes.has(events[i].code)) selfClashes.set(events[i].code, new Set());
+          selfClashes.get(events[i].code).add(label);
+        }
       }
     }
   }
 
+  let clashNote = "";
+  if (selfClashes.size) {
+    clashNote =
+      " " +
+      [...selfClashes.entries()]
+        .map(
+          ([code, labels]) =>
+            `${code}: clashing alternative rows (${[...labels].join(", ")}). Tick only one`
+        )
+        .join(" ");
+  }
+  els.clashWarning.textContent = hasClash
+    ? `Warning: you have timetable clashes. Clashing slots are highlighted in red.${clashNote}`
+    : "";
   els.clashWarning.classList.toggle("hidden", !hasClash);
   for (const ev of events) els.timetableEvents.appendChild(ev.el);
   if (els.timetableEmpty) {
@@ -1449,7 +1560,7 @@ function planPool(sem) {
     if (!credits) continue;
     const sems = planModuleSemesters(info, data);
     if (sem !== "all" && sems.length && !sems.includes(sem)) continue;
-    pool.push({ code, credits, info, data });
+    pool.push({ code, credits, sems, info, data });
   }
   return pool;
 }
@@ -1543,6 +1654,13 @@ function findPlans(target, sem) {
     const total = mods.reduce((s, m) => s + m.credits, 0);
     if (Math.abs(total - target) > tolerance) return;
     if (planViolatesPolicy(mods)) return;
+    // A "Both semesters" plan must actually span both: an all-Autumn or
+    // all-Spring combo is a single-semester plan and doesn't match the label.
+    if (sem === "all") {
+      const hasS1 = mods.some((m) => m.sems.includes("1"));
+      const hasS2 = mods.some((m) => m.sems.includes("2"));
+      if (!hasS1 || !hasS2) return;
+    }
     const key = mods.map((m) => m.code).sort().join(",");
     if (found.has(key)) return;
     if (!cfaMemo.has(key)) cfaMemo.set(key, !!clashFreeAssignment(mods));

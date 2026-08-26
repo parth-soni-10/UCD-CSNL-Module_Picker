@@ -1506,8 +1506,15 @@ body {
 }
 
 .timetable-grid {
+  /* position: relative anchors the absolutely-positioned event layer to the
+     grid itself, so event percentages resolve against the real grid width
+     (which overflows the wrap on narrow screens) instead of the wrap. */
+  position: relative;
   display: grid;
-  grid-template-columns: calc(var(--time-w) * 1px) repeat(5, minmax(150px, 1fr));
+  /* min 96px lets the columns shrink to fit the min-width grid on phones;
+     a 150px floor made the tracks overflow the grid element and pushed every
+     event into the wrong day column on mobile. */
+  grid-template-columns: calc(var(--time-w) * 1px) repeat(5, minmax(96px, 1fr));
   grid-template-rows: calc(var(--head-h) * 1px) repeat(12, calc(var(--hour-h) * 1px));
   min-width: 640px;
 }
