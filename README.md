@@ -108,6 +108,8 @@ then runs the same logic the frontend uses against **every combination**:
 - data quality (target year only, clean term codes/CRNs, sane times/weeks);
 - **every module pair** — which pairs can never be taken together (no
   clash-free assignment exists) and which modules' own classes overlap;
+- **cross-semester separation** — classes in different semesters (Autumn
+  weeks 1-12 vs Spring weeks 20-33) are never reported as clashing;
 - the **clash-free plan builder** for 30/60/90-credit targets in every
   semester — every suggested plan is re-verified as genuinely clash-free and
   within the CSNL credit rules.
@@ -115,6 +117,12 @@ then runs the same logic the frontend uses against **every combination**:
 Use `--fresh` to bypass the proxy's 30-minute cache and pull straight from
 UCD. Any problem is listed in the output and the run ends with a
 `RESULT: ALL CHECKS PASSED` / `RESULT: FAILURES FOUND` line.
+
+The weekly timetable has an **All / Autumn / Spring selector** above the grid:
+clash detection runs over the visible semester only, so a Spring module and an
+Autumn module that happen to share a day/time slot are never mistaken for a
+clash. The choice is remembered and reflected in the URL (`?tm=`) and the
+print header.
 
 `server.js` serves the static site and mounts the timetable proxy at the same
 URL Netlify uses (`/.netlify/functions/timetable`), so local behaviour matches

@@ -279,6 +279,11 @@
             </button>
           </div>
           <div id="print-header" class="print-only"></div>
+          <div id="sem-selector" class="sem-selector" role="group" aria-label="Which semester the timetable shows">
+            <button type="button" class="sem-chip active" data-sem="all" aria-pressed="true" title="Show classes from both semesters">All</button>
+            <button type="button" class="sem-chip" data-sem="1" aria-pressed="false" title="Show only Semester 1 (Autumn) classes">Autumn</button>
+            <button type="button" class="sem-chip" data-sem="2" aria-pressed="false" title="Show only Semester 2 (Spring) classes">Spring</button>
+          </div>
           <div id="clash-warning" class="clash-warning hidden" aria-live="polite">
             Warning: you have timetable clashes. Clashing slots are highlighted in red.
           </div>
@@ -287,6 +292,7 @@
           <div class="timetable-wrap">
             <div id="timetable-grid" class="timetable-grid"></div>
             <div id="timetable-events" class="timetable-events"></div>
+            <div id="timetable-empty" class="timetable-empty hidden" role="status"></div>
           </div>
           <div id="print-modules" class="print-only pi-modules"></div>
         </div>

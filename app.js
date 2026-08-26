@@ -34,6 +34,7 @@ const LS_SELECTION = "csnlPicker:selection:v1";
 const LS_ACTIVE = "csnlPicker:active:v1";
 const LS_THEME = "csnlPicker:theme:v1";
 const LS_TIMINGS = "csnlPicker:timings:v1"; // browser cache of fetched UCD timings
+const LS_VIEW_TERM = "csnlPicker:viewTerm:v1";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -46,6 +47,7 @@ const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
 let timingFilter = "all"; // "all" | "live" | "none" | "failed" — module-list filter
+let viewTerm = "all"; // "all" | "1" | "2" — which semester the weekly grid shows
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -74,6 +76,8 @@ const els = {
   timetableGrid: document.getElementById("timetable-grid"),
   timetableEvents: document.getElementById("timetable-events"),
   timetableWrap: document.querySelector(".timetable-wrap"),
+  semSelector: document.getElementById("sem-selector"),
+  timetableEmpty: document.getElementById("timetable-empty"),
   clashWarning: document.getElementById("clash-warning"),
   policyWarning: document.getElementById("policy-warning"),
   totalWarning: document.getElementById("total-warning"),
@@ -161,6 +165,12 @@ function loadState() {
   try {
     const a = localStorage.getItem(LS_ACTIVE);
     if (a) activeTimetable = a;
+  } catch (e) {
+    /* ignore */
+  }
+  try {
+    const v = localStorage.getItem(LS_VIEW_TERM);
+    if (v === "1" || v === "2" || v === "all") viewTerm = v;
   } catch (e) {
     /* ignore */
   }
@@ -254,10 +264,19 @@ function normalizeTimetable(data) {
       continue;
     }
     g.weeks = [...new Set(g.weeks.concat(cls.weeks))].sort((a, b) => a - b);
+    g.term = unionTerms(g, cls);
     if (normDate(cls.firstDate) < normDate(g.firstDate)) g.firstDate = cls.firstDate;
     if (normDate(cls.lastDate) > normDate(g.lastDate)) g.lastDate = cls.lastDate;
   }
   return { ...data, classes: [...byKey.values()] };
+}
+
+// Merge two classes' semester info (e.g. a lecture that runs in Autumn and
+// in Spring under the same offering key becomes "1, 2").
+function unionTerms(a, b) {
+  const set = new Set(classTerms(a).concat(classTerms(b)));
+  if (!set.size) return null;
+  return [...set].sort().join(", ");
 }
 
 function saveTimingsCache() {
@@ -359,12 +378,26 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
+// The trimester(s) a class runs in ("1", "2", "1, 2"), set by the proxy from
+// the class's week numbers (UCD: Autumn weeks 1-12, Spring weeks 20-33).
+// Empty when the term can't be determined.
+function classTerms(cls) {
+  if (!cls || !cls.term) return [];
+  return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 // Do two class rows actually run at the same time? Same day + overlapping
 // times + overlapping weeks. If either side lacks week data, fall back to
 // treating an overlapping time as a clash. Shared by the timetable renderer
 // and the clash-free plan builder, so both use identical rules.
 function classesClash(a, b) {
   if (!a || !b || a.day !== b.day) return false;
+  // Classes in disjoint trimesters can never run at the same time (Autumn
+  // weeks 1-12 vs Spring weeks 20-33 share no week), so they never clash —
+  // this also covers the case where one side has no week data to compare.
+  const ta = classTerms(a);
+  const tb = classTerms(b);
+  if (ta.length && tb.length && !ta.some((t) => tb.includes(t))) return false;
   const s1 = timeToMinutes(a.startTime);
   const e1 = timeToMinutes(a.endTime);
   const s2 = timeToMinutes(b.startTime);
@@ -655,10 +688,10 @@ function renderPrintInfo() {
     month: "long",
     day: "numeric",
   });
-  const sem = getCurrentSemester();
+  const sem = viewTerm !== "all" ? viewTerm : getCurrentSemester();
   els.printHeader.innerHTML = `
     <div class="pi-title">CSNL Module Picker · ${esc(activeTimetable)}</div>
-    <div class="pi-sub">${today}${sem ? ` · Semester ${sem}` : ""}</div>
+    <div class="pi-sub">${today}${sem ? ` · Semester ${sem} view` : ""}</div>
   `;
   const codes = [...new Set(currentSelection().map((s) => s.code))];
   let credits = 0;
@@ -1029,9 +1062,37 @@ function evTooltipMarkup(info, data, cls, code) {
     </div>`;
 }
 
+// Does a class belong in the currently selected semester view? Classes with
+// an unknown term are shown in every view so they can never silently vanish.
+function classInView(cls) {
+  if (viewTerm === "all") return true;
+  const t = classTerms(cls);
+  if (!t.length) return true;
+  return t.includes(viewTerm);
+}
+
+// Tiny "S1 / S2 / S1+S2" tag for the all-semesters view, so same-time slots
+// from different semesters read as separate rather than as a clash.
+function semTag(cls) {
+  const t = classTerms(cls);
+  if (t.length === 2) return " (S1+S2)";
+  if (t.length === 1) return ` (S${t[0]})`;
+  return "";
+}
+
+function renderSemSelector() {
+  if (!els.semSelector) return;
+  for (const chip of els.semSelector.querySelectorAll("[data-sem]")) {
+    const active = chip.dataset.sem === viewTerm;
+    chip.classList.toggle("active", active);
+    chip.setAttribute("aria-pressed", String(active));
+  }
+}
+
 function renderTimetable() {
   els.timetableEvents.innerHTML = "";
   let hasClash = false;
+  let hiddenBySem = 0;
   const events = [];
 
   for (const s of currentSelection()) {
@@ -1040,6 +1101,10 @@ function renderTimetable() {
     if (!info || !data || !data.classes) continue;
     const cls = data.classes.find((x) => offeringKey(x) === s.offeringKey);
     if (!cls) continue;
+    if (!classInView(cls)) {
+      hiddenBySem++;
+      continue;
+    }
 
     const m = gridMetrics();
     const start = timeToMinutes(cls.startTime);
@@ -1059,7 +1124,7 @@ function renderTimetable() {
     el.style.setProperty("--ev-hue", hueFor(s.code));
     el.innerHTML = `
       <div class="ev-title">${esc(info.title)}</div>
-      <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}-${esc(cls.endTime)}</div>
+      <div class="ev-time">${esc(cls.typeLabel)} · ${esc(cls.startTime)}-${esc(cls.endTime)}${semTag(cls)}</div>
       ${evTooltipMarkup(info, data, cls, s.code)}
     `;
     const tip = el.querySelector(".ev-tooltip");
@@ -1116,6 +1181,25 @@ function renderTimetable() {
 
   els.clashWarning.classList.toggle("hidden", !hasClash);
   for (const ev of events) els.timetableEvents.appendChild(ev.el);
+  if (els.timetableEmpty) {
+    const selCount = currentSelection().length;
+    els.timetableEmpty.classList.toggle(
+      "hidden",
+      !(selCount > 0 && events.length === 0)
+    );
+    if (hiddenBySem > 0 && events.length > 0) {
+      els.timetableEmpty.classList.remove("hidden");
+      els.timetableEmpty.textContent =
+        `${hiddenBySem} class${hiddenBySem > 1 ? "es" : ""} from the other semester ` +
+        `${hiddenBySem > 1 ? "are" : "is"} hidden in this view.`;
+    } else if (selCount > 0 && events.length === 0) {
+      els.timetableEmpty.textContent =
+        viewTerm === "all"
+          ? "Nothing selected yet, or the selected classes have no published timings."
+          : `No selected classes run in ${viewTerm === "1" ? "Semester 1 (Autumn)" : "Semester 2 (Spring)"}.`;
+    }
+  }
+  renderSemSelector();
 }
 
 // Close any open event tooltip when tapping elsewhere on the page.
@@ -1153,6 +1237,7 @@ function syncUrl() {
   const q = els.search.value.trim();
   if (q) parts.push("q=" + encodeURIComponent(q));
   if (activeTimetable !== "Default Timetable") parts.push("t=" + encodeURIComponent(activeTimetable));
+  if (viewTerm !== "all") parts.push("tm=" + viewTerm);
   const sel = currentSelection();
   if (sel.length) parts.push("s=" + encodeSelection(sel));
   const qs = parts.join("&");
@@ -1174,6 +1259,8 @@ function readUrlParams() {
     const sel = decodeSelection(s);
     if (sel.length) selection[activeTimetable] = sel;
   }
+  const tm = params.get("tm");
+  if (tm === "1" || tm === "2" || tm === "all") viewTerm = tm;
 }
 
 // ---------------------------------------------------------------------------
@@ -1628,6 +1715,22 @@ els.planResults.addEventListener("click", (e) => {
 // ---------------------------------------------------------------------------
 // events
 // ---------------------------------------------------------------------------
+
+// Semester selector on the weekly timetable: show Autumn, Spring, or all
+// classes. Clash detection runs over the visible events only, so classes in
+// the other semester can't be misread as colliding.
+els.semSelector.addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-sem]");
+  if (!chip) return;
+  viewTerm = chip.dataset.sem;
+  try {
+    localStorage.setItem(LS_VIEW_TERM, viewTerm);
+  } catch (err) {
+    /* ignore */
+  }
+  syncUrl();
+  refreshUI();
+});
 
 // Timing-summary chips double as list filters: click to show only modules
 // with a timetable / without one / that failed; click again to clear.

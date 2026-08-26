@@ -748,7 +748,8 @@ body {
   margin: 0 0 12px;
 }
 
-.ts-chip {
+.ts-chip,
+.sem-chip {
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
@@ -763,7 +764,8 @@ body {
   transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
-.ts-chip:hover {
+.ts-chip:hover,
+.sem-chip:hover {
   border-color: var(--border-strong);
   color: var(--text);
 }
@@ -783,7 +785,8 @@ body {
   color: var(--danger);
 }
 
-.ts-chip.active {
+.ts-chip.active,
+.sem-chip.active {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
@@ -791,6 +794,14 @@ body {
 
 .ts-chip.active .ts-count {
   color: var(--accent);
+}
+
+/* Semester selector above the weekly timetable grid. */
+.sem-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
 }
 
 .btn {
@@ -1483,6 +1494,15 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
+}
+
+.timetable-empty {
+  margin: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 13px;
 }
 
 .timetable-grid {

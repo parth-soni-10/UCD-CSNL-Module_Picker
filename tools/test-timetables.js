@@ -46,10 +46,18 @@ function normalizeTimetable(data) {
       continue;
     }
     g.weeks = [...new Set(g.weeks.concat(cls.weeks))].sort((a, b) => a - b);
+    g.term = unionTerms(g, cls);
     if (normDate(cls.firstDate) < normDate(g.firstDate)) g.firstDate = cls.firstDate;
     if (normDate(cls.lastDate) > normDate(g.lastDate)) g.lastDate = cls.lastDate;
   }
   return { ...data, classes: [...byKey.values()] };
+}
+
+// Merge two classes' semester info ("1" + "2" -> "1, 2").
+function unionTerms(a, b) {
+  const set = new Set(classTerms(a).concat(classTerms(b)));
+  if (!set.size) return null;
+  return [...set].sort().join(", ");
 }
 
 function timeToMinutes(t) {
@@ -57,8 +65,20 @@ function timeToMinutes(t) {
   return h * 60 + m;
 }
 
+// The trimester(s) a class runs in ("1", "2", "1, 2"), set by the proxy from
+// the class's week numbers (UCD: Autumn weeks 1-12, Spring weeks 20-33).
+function classTerms(cls) {
+  if (!cls || !cls.term) return [];
+  return cls.term.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
 function classesClash(a, b) {
   if (!a || !b || a.day !== b.day) return false;
+  // Classes in disjoint trimesters can never run at the same time (Autumn
+  // weeks 1-12 vs Spring weeks 20-33 share no week), so they never clash.
+  const ta = classTerms(a);
+  const tb = classTerms(b);
+  if (ta.length && tb.length && !ta.some((t) => tb.includes(t))) return false;
   const s1 = timeToMinutes(a.startTime);
   const e1 = timeToMinutes(a.endTime);
   const s2 = timeToMinutes(b.startTime);
@@ -366,6 +386,29 @@ async function main() {
   if (planFails) console.log(`  FAIL — ${planFails} plan(s) were not clash-free`);
   else console.log("  OK — every suggested plan is genuinely clash-free and within CSNL credit rules.");
 
+  // ---- 5. cross-semester separation
+  console.log("\n[5] Cross-semester separation (same slot, different semesters):");
+  const allClasses = [];
+  for (const m of withClasses) {
+    for (const cl of live.get(m.code).classes) allClasses.push({ code: m.code, cls: cl });
+  }
+  let crossSem = 0;
+  for (let i = 0; i < allClasses.length; i++) {
+    for (let j = i + 1; j < allClasses.length; j++) {
+      const A = allClasses[i];
+      const B = allClasses[j];
+      if (A.code === B.code) continue; // a module's own classes are covered in [3]
+      const ta = classTerms(A.cls);
+      const tb = classTerms(B.cls);
+      if (!ta.length || !tb.length) continue;
+      if (!ta.some((t) => tb.includes(t)) && classesClash(A.cls, B.cls)) {
+        crossSem++;
+        console.log(`  - ${A.code} ${A.cls.type} ${A.cls.day} ${A.cls.startTime} (S${ta.join("+")}) × ${B.code} ${B.cls.type} ${B.cls.day} ${B.cls.startTime} (S${tb.join("+")})`);
+      }
+    }
+  }
+  if (!crossSem) console.log("  OK — classes in different semesters are never reported as clashing.");
+
   // ---- summary
   console.log("\n================ SUMMARY ================");
   const noTt = all.filter((m) => !(live.get(m.code) && live.get(m.code).classes && live.get(m.code).classes.length));
@@ -373,9 +416,10 @@ async function main() {
   console.log(`No timetable yet: ${noTt.map((m) => m.code).join(", ") || "none"}`);
   console.log(`Impossible pairs: ${impossible.length}`);
   console.log(`Internal clashes: ${internal}`);
+  console.log(`Cross-semester false clashes: ${crossSem}`);
   console.log(`Data-quality problems: ${problems.length}`);
   if (bad.length) console.log(`Fetch errors: ${bad.join(", ")}`);
-  console.log(problems.length || planFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
+  console.log(problems.length || planFails || crossSem ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
 }
 
 main().catch((e) => {

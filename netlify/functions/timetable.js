@@ -282,10 +282,10 @@ function parseTimetable(html, code, year) {
     if (normDate(c.actualDate) < normDate(g.firstDate)) g.firstDate = c.actualDate;
     if (normDate(c.actualDate) > normDate(g.lastDate)) g.lastDate = c.actualDate;
   }
-  out.classes = [...byKey.values()].map((c) => ({
-    ...c,
-    weeks: [...new Set(c.weeks)].sort((a, b) => a - b),
-  }));
+  out.classes = [...byKey.values()].map((c) => {
+    const weeks = [...new Set(c.weeks)].sort((a, b) => a - b);
+    return { ...c, weeks, term: classTerm(weeks, out.trimesters) };
+  });
   out.classes.sort((a, b) => a.day.localeCompare(b.day) || a.startTime.localeCompare(b.startTime));
 
   return out;
@@ -362,6 +362,23 @@ async function fetchModuleTimetable(code) {
   tt.year = year;
   tt.semester = deriveSemester(tt.trimesters);
   return tt;
+}
+
+// Which trimester(s) a class runs in, as "1", "2" or "1, 2" — derived from
+// its week numbers (UCD numbers Autumn weeks 1-12 and Spring weeks 20-33).
+// Falls back to the module's own trimesters when a class has no usable week
+// data. Same-time classes in disjoint trimesters can never actually run at
+// the same time, so consumers use this to keep cross-semester schedules from
+// ever being reported as a clash.
+function classTerm(weeks, trimesters) {
+  if (weeks && weeks.length) {
+    const hasAutumn = weeks.some((w) => w <= 12);
+    const hasSpring = weeks.some((w) => w >= 13);
+    if (hasAutumn && hasSpring) return "1, 2";
+    if (hasAutumn) return "1";
+    if (hasSpring) return "2";
+  }
+  return deriveSemester(trimesters);
 }
 
 // "Autumn" -> 1, "Spring" -> 2, both -> "1, 2", unknown -> null
