@@ -422,6 +422,25 @@ function classesClash(a, b) {
   return true;
 }
 
+// Two rows of the SAME course are "alternative groups" of one session when
+// they share the same day, time slot and type and only differ by offering
+// group (e.g. a practical with two parallel groups, COMP40725 PRA Fri 13:00
+// in two rooms). Students pick one group at registration, so these are
+// mutually-exclusive alternatives, not two sessions to attend together — the
+// weekly grid must never red-flag them as a conflict, or a course looks like
+// it clashes with itself. A genuine same-course conflict differs in day, time
+// or type, so it is never mistaken for an alternative.
+function isAlternativeGroup(a, b) {
+  return (
+    a &&
+    b &&
+    a.type === b.type &&
+    a.day === b.day &&
+    a.startTime === b.startTime &&
+    a.endTime === b.endTime
+  );
+}
+
 // ---------------------------------------------------------------------------
 // fetching live timings
 // ---------------------------------------------------------------------------
@@ -1256,39 +1275,29 @@ function renderTimetable() {
       `calc(${m.timeW}px + ${ev.dayIndex - 1} * ${colW} + ${lane} * ${laneW} + 3px)`;
     ev.el.style.width = `calc(${laneW} - 6px)`;
   }
-  // Same-module rows that clash are alternative groups of one class (e.g. two
-  // practical groups at the same slot) — a user error, not a real conflict, so
-  // name them in the warning instead of leaving a generic red banner.
-  const selfClashes = new Map(); // code -> Set of "TYPE day start-end" labels
+  // Same-module rows that overlap but are alternative groups of one session
+  // (same day/time/type, differing only by offering group, e.g. two parallel
+  // practical groups in different rooms) are mutually-exclusive alternatives,
+  // not a conflict — a course must never show as clashing with itself. Only
+  // flag a same-course pair when it is NOT such an alternative (i.e. two
+  // genuinely different sessions that overlap).
   for (let i = 0; i < events.length; i++) {
     for (let j = i + 1; j < events.length; j++) {
-      if (classesClash(events[i].cls, events[j].cls)) {
-        hasClash = true;
-        events[i].el.classList.add("clash");
-        events[j].el.classList.add("clash");
-        if (events[i].code === events[j].code) {
-          const c = events[i].cls;
-          const label = `${c.typeLabel} ${c.day} ${c.startTime}-${c.endTime}`;
-          if (!selfClashes.has(events[i].code)) selfClashes.set(events[i].code, new Set());
-          selfClashes.get(events[i].code).add(label);
-        }
+      if (!classesClash(events[i].cls, events[j].cls)) continue;
+      if (
+        events[i].code === events[j].code &&
+        isAlternativeGroup(events[i].cls, events[j].cls)
+      ) {
+        continue;
       }
+      hasClash = true;
+      events[i].el.classList.add("clash");
+      events[j].el.classList.add("clash");
     }
   }
 
-  let clashNote = "";
-  if (selfClashes.size) {
-    clashNote =
-      " " +
-      [...selfClashes.entries()]
-        .map(
-          ([code, labels]) =>
-            `${code}: clashing alternative rows (${[...labels].join(", ")}). Tick only one`
-        )
-        .join(" ");
-  }
   els.clashWarning.textContent = hasClash
-    ? `Warning: you have timetable clashes. Clashing slots are highlighted in red.${clashNote}`
+    ? "Warning: you have timetable clashes. Clashing slots are highlighted in red."
     : "";
   els.clashWarning.classList.toggle("hidden", !hasClash);
   for (const ev of events) els.timetableEvents.appendChild(ev.el);

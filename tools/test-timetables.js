@@ -103,6 +103,21 @@ function classesClash(a, b) {
   return true;
 }
 
+// Two rows of the same course that share day/time/type but differ only by
+// offering group are mutually-exclusive alternative groups (one session, e.g.
+// two parallel practical groups in different rooms), not a conflict — the app
+// never red-flags them, so internal-clash checks must apply the same rule.
+function isAlternativeGroup(a, b) {
+  return (
+    a &&
+    b &&
+    a.type === b.type &&
+    a.day === b.day &&
+    a.startTime === b.startTime &&
+    a.endTime === b.endTime
+  );
+}
+
 function moduleLevel(code) {
   const d = (String(code).match(/\d+/) || [""])[0];
   return d ? parseInt(d[0], 10) : 9;
@@ -251,20 +266,22 @@ async function main() {
   if (!impossible.length) console.log("  OK — every pair of modules can coexist in some offering combination.");
 
   // ---- 3. internal clashes within a module's own classes
-  console.log("\n[3] Internal clashes (a module's own classes overlapping):");
+  // Same-course rows that share day/time/type are alternative groups (one
+  // session, pick one group) and are never a conflict — match the app.
+  console.log("\n[3] Internal clashes (a module's own classes overlapping, excluding alternative groups):");
   let internal = 0;
   for (const m of withClasses) {
     const cls = live.get(m.code).classes;
     for (let i = 0; i < cls.length; i++) {
       for (let j = i + 1; j < cls.length; j++) {
-        if (classesClash(cls[i], cls[j])) {
+        if (classesClash(cls[i], cls[j]) && !isAlternativeGroup(cls[i], cls[j])) {
           internal++;
           console.log(`  - ${m.code}: ${cls[i].type} ${cls[i].day} ${cls[i].startTime} × ${cls[j].type} ${cls[j].day} ${cls[j].startTime}`);
         }
       }
     }
   }
-  if (!internal) console.log("  OK — no module has internally clashing classes.");
+  if (!internal) console.log("  OK — no module has a genuine internal conflict (excluding alternative groups).");
 
   // ---- 4. plan builder
   console.log("\n[4] Clash-free plan builder:");
