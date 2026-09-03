@@ -809,7 +809,12 @@ function render() {
       <div class="theme-body${isExpanded ? "" : " hidden"}"></div>
     `;
     const body = section.querySelector(".theme-body");
-    for (const c of themeObj.courses) body.appendChild(renderCourseCard(c, over));
+    let cardIndex = 0;
+    for (const c of themeObj.courses) {
+      const card = renderCourseCard(c, over);
+      card.style.setProperty("--i", cardIndex++);
+      body.appendChild(card);
+    }
     list.appendChild(section);
   }
 
