@@ -91,6 +91,7 @@ const els = {
   planTarget: document.getElementById("plan-target"),
   planSemester: document.getElementById("plan-semester"),
   planBtn: document.getElementById("plan-btn"),
+  planNoExamBtn: document.getElementById("plan-noexam-btn"),
   planResults: document.getElementById("plan-results"),
   suggestForm: document.getElementById("suggest-form"),
   suggestSubmit: document.getElementById("suggest-submit"),
@@ -1549,6 +1550,19 @@ function renderSwitcher() {
 }
 
 // ---------------------------------------------------------------------------
+// exam awareness (for the no-exam plan builder)
+// ---------------------------------------------------------------------------
+
+// UCD publishes final exams as timetable rows typed EXAM or EXM. A module is
+// "exam-free" when none of its live classes is one of those rows.
+const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
+
+function moduleHasExam(data) {
+  if (!data || !Array.isArray(data.classes)) return false;
+  return data.classes.some((c) => EXAM_CLASS_TYPES.has(String(c.type || "").toUpperCase()));
+}
+
+// ---------------------------------------------------------------------------
 // clash-free plan builder
 // ---------------------------------------------------------------------------
 // Suggests combinations of modules whose live timetables can coexist (no
@@ -1563,12 +1577,13 @@ function planModuleSemesters(info, data) {
   return trims.map((t) => (/autumn/i.test(t) ? "1" : /spring/i.test(t) ? "2" : null)).filter(Boolean);
 }
 
-function planPool(sem) {
+function planPool(sem, noExam) {
   // Modules with live classes + known credits, matching the chosen semester
   const pool = [];
   for (const code of curatedCodes()) {
     const data = live.get(code);
     if (!data || !data.found || !data.classes || !data.classes.length) continue;
+    if (noExam && moduleHasExam(data)) continue;
     const info = moduleInfo(code);
     const credits = info && info.credits ? info.credits : 0;
     if (!credits) continue;
@@ -1644,8 +1659,8 @@ function shuffle(arr) {
 // near-exact plans AND large full-year plans the DFS alone would never reach
 // within its node budget. Every returned plan is verified clash-free via
 // clashFreeAssignment (the same check "Use this plan" relies on).
-function findPlans(target, sem) {
-  const pool = planPool(sem);
+function findPlans(target, sem, noExam) {
+  const pool = planPool(sem, noExam);
   if (pool.length < 2) return [];
 
   const tolerance = 5; // accept totals within ±5 credits of the target
@@ -1765,7 +1780,7 @@ function findPlans(target, sem) {
   return results.slice(0, PLAN_RESULTS);
 }
 
-function renderPlans() {
+function renderPlans(noExam) {
   const target = parseInt(els.planTarget.value, 10);
   const semChoice = els.planSemester.value;
   const sem = semChoice === "current" ? getCurrentSemester() || "1" : semChoice;
@@ -1780,15 +1795,16 @@ function renderPlans() {
     return;
   }
 
-  const plans = findPlans(target, sem);
+  const plans = findPlans(target, sem, noExam);
   const semLabel = sem === "1" ? "Semester 1" : sem === "2" ? "Semester 2" : "both semesters";
+  const kindLabel = noExam ? "exam-free clash-free" : "clash-free";
 
   if (!plans.length) {
-    resultsEl.innerHTML = `<p class="muted">No clash-free ${semLabel} combinations found near ${target} credits yet.</p>`;
+    resultsEl.innerHTML = `<p class="muted">No ${kindLabel} ${semLabel} combinations found near ${target} credits yet.${noExam ? " (Excluding modules with a final exam.)" : ""}</p>`;
     return;
   }
 
-  resultsEl.innerHTML = `<p class="plan-results-head">${plans.length} clash-free ${semLabel} plan${plans.length > 1 ? "s" : ""} near ${target} credits:</p>`;
+  resultsEl.innerHTML = `<p class="plan-results-head">${plans.length} ${kindLabel} ${semLabel} plan${plans.length > 1 ? "s" : ""} near ${target} credits:${noExam ? " <span class=\"plan-kind-note\">no final exam</span>" : ""}</p>`;
   for (const plan of plans) {
     const item = document.createElement("div");
     item.className = "plan-item";
@@ -1830,7 +1846,8 @@ function applyPlan(codes) {
   els.planResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-els.planBtn.addEventListener("click", renderPlans);
+els.planBtn.addEventListener("click", () => renderPlans(false));
+els.planNoExamBtn.addEventListener("click", () => renderPlans(true));
 els.planTarget.addEventListener("keydown", (e) => {
   if (e.key === "Enter") renderPlans();
 });

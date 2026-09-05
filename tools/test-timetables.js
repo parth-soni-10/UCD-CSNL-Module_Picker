@@ -123,6 +123,15 @@ function moduleLevel(code) {
   return d ? parseInt(d[0], 10) : 9;
 }
 
+// UCD publishes final exams as timetable rows typed EXAM or EXM (mirrors
+// EXAM_CLASS_TYPES in app.js). A module is "exam-free" when none of its live
+// classes is one of those rows.
+const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
+function moduleHasExam(data) {
+  if (!data || !Array.isArray(data.classes)) return false;
+  return data.classes.some((c) => EXAM_CLASS_TYPES.has(String(c.type || "").toUpperCase()));
+}
+
 // Can these two modules be taken together? There must be a class in each
 // whose schedules don't overlap.
 function modulesCompatible(a, b) {
@@ -296,11 +305,12 @@ async function main() {
     }
     return l3 > POLICY_MAX_LEVEL3 || nonComp > POLICY_MAX_NON_COMP;
   }
-  function planPool(sem) {
+  function planPool(sem, noExam) {
     const pool = [];
     for (const m of all) {
       const data = live.get(m.code);
       if (!data || !data.found || !data.classes || !data.classes.length) continue;
+      if (noExam && moduleHasExam(data)) continue;
       const credits = m.credits || 0;
       if (!credits) continue;
       const sems = String(m.semester || (data && data.semester) || "")
@@ -319,8 +329,8 @@ async function main() {
     }
     return arr;
   }
-  function findPlans(target, sem, maxCombos) {
-    const pool = planPool(sem);
+  function findPlans(target, sem, maxCombos, noExam) {
+    const pool = planPool(sem, noExam);
     if (pool.length < 2) return [];
     const tolerance = 5;
     const found = new Map();
@@ -429,6 +439,43 @@ async function main() {
   }
   if (planFails) console.log(`  FAIL — ${planFails} plan(s) were not clash-free`);
   else console.log("  OK — every suggested plan is genuinely clash-free and within CSNL credit rules.");
+
+  // ---- 4b. no-exam plan builder
+  console.log("\n[4b] No-exam plan builder (EXAM/EXM modules excluded):");
+  const examMods = all.filter((m) => moduleHasExam(live.get(m.code))).map((m) => m.code);
+  console.log(`  modules with a published final exam row: ${examMods.length ? examMods.join(", ") : "(none)"}`);
+  let noExamFails = 0;
+  let noExamPlansTotal = 0;
+  for (const target of [30, 60]) {
+    for (const sem of ["1", "2", "all"]) {
+      const plans = findPlans(target, sem, 4000, true);
+      noExamPlansTotal += plans.length;
+      for (const plan of plans) {
+        const mods = plan.modules.map((m) => ({ code: m.code, data: m.data }));
+        if (!clashFreeAssignment(mods)) { noExamFails++; continue; }
+        for (const m of plan.modules) {
+          if (moduleHasExam(m.data)) {
+            noExamFails++;
+            console.log(`  FAIL — no-exam plan ${target}cr sem=${sem} includes exam module ${m.code}`);
+          }
+        }
+      }
+      console.log(`  ${target}cr sem=${sem}: ${plans.length} exam-free plan(s) — ${plans.length ? "OK" : "(none found)"}`);
+      for (const p of plans.slice(0, 1)) {
+        console.log(`      ${p.total}cr ${p.modules.map((m) => m.code).join(" + ")}`);
+      }
+    }
+  }
+  // every exam module must be genuinely excluded from every no-exam plan
+  for (const sem of ["1", "2", "all"]) {
+    const excluded = planPool(sem, true).map((m) => m.code);
+    for (const code of examMods) {
+      if (excluded.includes(code)) { noExamFails++; console.log(`  FAIL — exam module ${code} still in no-exam pool (sem=${sem})`); }
+    }
+  }
+  if (noExamFails) console.log(`  FAIL — ${noExamFails} no-exam plan problem(s)`);
+  else if (noExamPlansTotal) console.log("  OK — every no-exam plan excludes all EXAM/EXM modules and is genuinely clash-free.");
+  else console.log("  WARN — no exam-free plans found for any target/semester (pool may be too small)");
 
   // ---- 5. cross-semester separation
   console.log("\n[5] Cross-semester separation (same slot, different semesters):");

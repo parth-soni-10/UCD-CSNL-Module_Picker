@@ -27,6 +27,8 @@ const TYPE_LABELS = {
   SEM: "Seminar",
   TST: "Test",
   WSH: "Workshop",
+  EXAM: "Final Exam",
+  EXM: "Final Exam",
 };
 
 // The academic year the site targets (matches catalogue.js): it advances on
