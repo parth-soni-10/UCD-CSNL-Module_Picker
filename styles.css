@@ -781,6 +781,10 @@ body {
   color: var(--ok);
 }
 
+.ts-chip.ts-examfree .ts-count {
+  color: var(--ok);
+}
+
 .ts-chip.ts-failed .ts-count {
   color: var(--danger);
 }

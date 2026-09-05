@@ -46,7 +46,7 @@ const catalogue = []; // [{ theme, courses: [{ title, code, credits, kind, semes
 const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
-let timingFilter = "all"; // "all" | "live" | "none" | "failed" — module-list filter
+let timingFilter = "all"; // "all" | "live" | "none" | "failed" | "examfree" — module-list filter
 let viewTerm = "all"; // "all" | "1" | "2" — which semester the weekly grid shows
 
 // ---------------------------------------------------------------------------
@@ -589,9 +589,16 @@ function moduleStatus(code) {
 }
 
 function timingStats() {
-  const stats = { live: 0, none: 0, failed: 0, pending: 0, total: curatedCodes().length };
+  const stats = { live: 0, none: 0, failed: 0, examfree: 0, pending: 0, total: curatedCodes().length };
   for (const code of curatedCodes()) stats[moduleStatus(code)]++;
   return stats;
+}
+
+// Module is exam-free per the module-page assessment map (or the timetable
+// EXAM/EXM rows when the scrape hasn't settled). Mirrors isExamModule.
+function isExamFreeModule(code) {
+  const data = live.get(code);
+  return examMapLoaded && !(examMap && examMap[code]) && !moduleHasExam(data);
 }
 
 // At-a-glance per-module status: how many modules have a live timetable,
@@ -606,9 +613,19 @@ function renderTimingSummary() {
     const name = chip.dataset.ts;
     chip.classList.toggle("active", timingFilter === name);
     chip.setAttribute("aria-pressed", String(timingFilter === name));
-    chip.querySelector(".ts-count").textContent = name === "all" ? stats.total : stats[name];
+    chip.querySelector(".ts-count").textContent =
+      name === "all" ? stats.total : name === "examfree" ? curatedCodes().filter(isExamFreeModule).length : stats[name];
     if (name === "live") {
       chip.title = `Modules with a published ${year} timetable (click to show only these)`;
+    }
+    if (name === "examfree") {
+      // only meaningful once the exam map has loaded (until then the count
+      // would be misleading), so keep the chip hidden until it settles
+      const ready = examMapLoaded && curatedCodes().filter(isExamFreeModule).length > 0;
+      chip.classList.toggle("hidden", !ready);
+      if (ready) {
+        chip.title = `Modules with no final exam on their UCD module page (click to show only these)`;
+      }
     }
     if (name === "failed") {
       // only worth showing the chip once something actually failed
@@ -784,9 +801,11 @@ function render() {
     let courses = streamMatch
       ? t.courses
       : t.courses.filter((c) => !term || courseMatches(c, term));
-    // the timing-summary chips filter to a status (live / not published / failed)
+    // the timing-summary chips filter to a status (live / not published / failed / exam-free)
     if (timingFilter !== "all") {
-      courses = courses.filter((c) => moduleStatus(c.code) === timingFilter);
+      courses = courses.filter((c) =>
+        timingFilter === "examfree" ? isExamFreeModule(c.code) : moduleStatus(c.code) === timingFilter
+      );
     }
     return { name: t.theme, courses };
   });
@@ -825,6 +844,7 @@ function render() {
         live: "No modules with a published timetable match your search.",
         none: "No modules without a published timetable. UCD has scheduled everything it lists.",
         failed: "No modules failed to load.",
+        examfree: "No exam-free modules match your search.",
       };
       list.innerHTML = `<p class="empty">${msgs[timingFilter]}</p>`;
     } else {
