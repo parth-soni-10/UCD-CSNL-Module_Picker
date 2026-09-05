@@ -14,6 +14,7 @@ const fs = require("fs");
 const path = require("path");
 const { handler: timetableHandler } = require("./netlify/functions/timetable.js");
 const { handler: catalogueHandler } = require("./netlify/functions/catalogue.js");
+const { handler: assessmentsHandler } = require("./netlify/functions/assessments.js");
 
 const ROOT = __dirname;
 const PORT = parseInt(process.env.PORT || "8787", 10) || 8787;
@@ -52,6 +53,10 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname === "/.netlify/functions/catalogue") {
     await serveFunction(catalogueHandler);
+    return;
+  }
+  if (url.pathname === "/.netlify/functions/assessments") {
+    await serveFunction(assessmentsHandler);
     return;
   }
 
@@ -103,4 +108,5 @@ server.listen(PORT, () => {
   console.log(`Module picker running at http://localhost:${PORT}`);
   console.log(`Timetable function: http://localhost:${PORT}/.netlify/functions/timetable?codes=COMP30960`);
   console.log(`Catalogue function: http://localhost:${PORT}/.netlify/functions/catalogue`);
+  console.log(`Assessments function: http://localhost:${PORT}/.netlify/functions/assessments`);
 });

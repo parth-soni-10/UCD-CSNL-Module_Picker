@@ -14,6 +14,11 @@
 [functions.catalogue]
   maxDuration = 26
 
+# The assessment scraper fetches one page per module (~68) on a cold start;
+# give it the same headroom as the other fetching functions.
+[functions.assessments]
+  maxDuration = 26
+
 # Re-read UCD's CSNL streams page daily and update the module list the moment
 # UCD changes it (page_last_update stamp compare; only rewrites on change).
 # This keeps offerings current year-round, not just on the 1-August

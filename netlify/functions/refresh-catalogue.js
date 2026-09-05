@@ -10,8 +10,10 @@
 "use strict";
 
 const { getCatalogue } = require("./catalogue.js");
+const { getAssessments } = require("./assessments.js");
 
 exports.handler = async () => {
+  let catalogueOk = true;
   try {
     // No `force`: the stamp-compare path re-reads the page and only rewrites
     // the blob when UCD has actually changed the module list.
@@ -19,9 +21,25 @@ exports.handler = async () => {
     console.log(
       `Catalogue checked: year=${catalogue.year}, themes=${catalogue.themes.length}, pageUpdated=${catalogue.pageUpdated}, source=${catalogue.source}`
     );
-    return { statusCode: 200, body: "ok" };
   } catch (e) {
+    // Don't return early: the assessment scraper pulls its code list via
+    // getCatalogue (which has its own fallbacks), so a streams-page hiccup
+    // shouldn't leave the exam map stale for another day.
+    catalogueOk = false;
     console.error("Catalogue refresh failed:", e);
-    return { statusCode: 500, body: "failed" };
+  }
+
+  try {
+    // Force a full re-scrape so exam-assessment data stays current even with
+    // zero visitors. Module pages change rarely, but a daily re-check keeps
+    // the no-exam plan builder and Final Exam badges honest.
+    const assessments = await getAssessments({ force: true });
+    console.log(
+      `Assessments refreshed: total=${assessments.total}, ok=${assessments.okCount}, year=${assessments.catalogueYear ?? "?"}`
+    );
+    return { statusCode: catalogueOk ? 200 : 207, body: "ok" };
+  } catch (e) {
+    console.error("Assessments refresh failed:", e);
+    return { statusCode: catalogueOk ? 207 : 500, body: catalogueOk ? "assessments failed" : "failed" };
   }
 };

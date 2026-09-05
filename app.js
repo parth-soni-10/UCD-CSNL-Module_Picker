@@ -891,6 +891,13 @@ function renderCourseCard(c, over) {
   if (failed) badges.push({ text: "Load failed", cls: "fail" });
   if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
+  // "Final Exam" badge from the module pages' assessment tables (see
+  // loadAssessments). Shown only once the map has settled — cards render
+  // before the scrape returns, so late arrivals re-render via refreshUI.
+  if (examMapLoaded && examMap && examMap[c.code]) {
+    badges.push({ text: "Final Exam", cls: "exam" });
+  }
+
   const overBadge =
     over && (over.level3.has(c.code) || over.nonComp.has(c.code))
       ? `<span class="badge over-limit-badge" title="This module pushes your selection over the CSNL credit limits. Consider swapping it out.">⚠ Over limit</span>`
@@ -1093,6 +1100,9 @@ function evTooltipMarkup(info, data, cls, code) {
     badges.push(`<span class="tt-badge ${esc(info.kind)}">${info.kind === "core" ? "Core" : "Optional"}</span>`);
   }
   if (info.credits) badges.push(`<span class="tt-badge">${info.credits} cr</span>`);
+  if (examMapLoaded && examMap && examMap[code]) {
+    badges.push(`<span class="tt-badge exam">Final Exam</span>`);
+  }
   const sem = info.semester || (data && data.semester);
   if (sem) badges.push(`<span class="tt-badge">Sem ${sem.replace(",", "+")}</span>`);
   const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}-${cls.weeks[cls.weeks.length - 1]}` : "";
@@ -1553,13 +1563,93 @@ function renderSwitcher() {
 // exam awareness (for the no-exam plan builder)
 // ---------------------------------------------------------------------------
 
-// UCD publishes final exams as timetable rows typed EXAM or EXM. A module is
-// "exam-free" when none of its live classes is one of those rows.
+// Weak signal: UCD publishes final sittings as timetable rows typed EXAM or
+// EXM — but only for some modules. Others (e.g. GEOG40820) schedule the final
+// exam outside the weekly timetable entirely, so this alone under-counts.
 const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
 
 function moduleHasExam(data) {
   if (!data || !Array.isArray(data.classes)) return false;
   return data.classes.some((c) => EXAM_CLASS_TYPES.has(String(c.type || "").toUpperCase()));
+}
+
+// Authoritative signal: each module's own UCD page (ucd.ie/modules/<CODE>)
+// carries an Assessment Strategy table; a row typed "Exam …" timed "End of
+// trimester" is a final exam, while mid-terms ("Week 9") do not count. The
+// assessments function scrapes all module pages and returns the map.
+const ASSESSMENTS_URL = "/.netlify/functions/assessments";
+const LS_ASSESS = "csnlPicker:assessments:v1";
+const ASSESS_TTL_MS = 24 * 60 * 60 * 1000;
+let examMap = null; // code -> true when the module page lists a final exam
+let examMapLoaded = false; // fetch settled (success or fallback applied)
+
+function loadAssessmentsCache() {
+  try {
+    const raw = localStorage.getItem(LS_ASSESS);
+    if (!raw) return null;
+    const { savedAt, map, catalogueYear } = JSON.parse(raw);
+    if (!map || typeof map !== "object") return null;
+    if (!savedAt || Date.now() - savedAt > ASSESS_TTL_MS) return null;
+    // Yearly rollover: a map saved against last year's catalogue must not
+    // survive into the new academic year (UCD publishes the new module set
+    // around 1 August — the same rule currentCatalogueYear() encodes).
+    if (catalogueYear && catalogueYear !== currentCatalogueYear()) return null;
+    return map;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Loads the exam map: blob-cached server side, localStorage-cached client
+// side. If UCD's module pages are unreachable, degrades gracefully — codes
+// the scraper couldn't answer keep the weaker timetable-row heuristic.
+async function loadAssessments() {
+  const cached = loadAssessmentsCache();
+  if (cached) {
+    examMap = cached;
+    examMapLoaded = true;
+    return;
+  }
+  try {
+    const res = await fetch(ASSESSMENTS_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!json || !json.results || !Object.keys(json.results).length) throw new Error("empty assessment map");
+    const map = {};
+    for (const [code, r] of Object.entries(json.results)) {
+      if (r && r.status === "ok") {
+        if (r.hasFinalExam) map[code] = true;
+      } else if (moduleHasExam(live.get(code))) {
+        map[code] = true; // scraper couldn't read the page — keep the weak signal
+      }
+    }
+    examMap = map;
+    examMapLoaded = true;
+    try {
+      localStorage.setItem(
+        LS_ASSESS,
+        JSON.stringify({ savedAt: Date.now(), map, catalogueYear: currentCatalogueYear() })
+      );
+    } catch (e) {
+      /* private mode / quota — cache is best-effort */
+    }
+  } catch (e) {
+    // Service unavailable: fall back to the timetable-row heuristic so the
+    // button still works (weaker signal, but never blocks the plan builder).
+    const map = {};
+    for (const code of curatedCodes()) {
+      if (moduleHasExam(live.get(code))) map[code] = true;
+    }
+    examMap = map;
+    examMapLoaded = true;
+  }
+}
+
+// Has this module a final exam? Either the module-page assessment table or
+// an EXAM/EXM timetable sitting is enough to count it as having one.
+function isExamModule(code, data) {
+  if (examMap && examMap[code]) return true;
+  return moduleHasExam(data);
 }
 
 // ---------------------------------------------------------------------------
@@ -1583,7 +1673,7 @@ function planPool(sem, noExam) {
   for (const code of curatedCodes()) {
     const data = live.get(code);
     if (!data || !data.found || !data.classes || !data.classes.length) continue;
-    if (noExam && moduleHasExam(data)) continue;
+    if (noExam && isExamModule(code, data)) continue;
     const info = moduleInfo(code);
     const credits = info && info.credits ? info.credits : 0;
     if (!credits) continue;
@@ -1627,7 +1717,8 @@ function clashFreeAssignment(mods) {
   return tryAssign(0) ? chosen : null;
 }
 
-const PLAN_RESULTS = 6;
+const PLAN_BATCH = 6; // plans suggested per search, and added per "Show more" click
+const PLAN_MAX_SHOWN = 240; // stop offering "Show more" after this many unique plans
 const PLAN_MAX_COMBOS = 4000; // DFS budget per randomized restart
 const PLAN_RESTARTS = 6; // DFS restarts with shuffled pool orders
 const PLAN_GREEDY = 900; // randomized greedy constructions (finds large plans)
@@ -1659,7 +1750,13 @@ function shuffle(arr) {
 // near-exact plans AND large full-year plans the DFS alone would never reach
 // within its node budget. Every returned plan is verified clash-free via
 // clashFreeAssignment (the same check "Use this plan" relies on).
-function findPlans(target, sem, noExam) {
+// limit caps how many NEW plans one call returns; skip holds plan keys
+// (sorted code lists) that must not be returned again — the "Show more"
+// button re-searches with the already-shown keys so every click surfaces
+// genuinely different combinations until the search space runs dry.
+function findPlans(target, sem, noExam, limit, skip) {
+  limit = limit || PLAN_BATCH;
+  const known = skip instanceof Set ? skip : new Set();
   const pool = planPool(sem, noExam);
   if (pool.length < 2) return [];
 
@@ -1691,10 +1788,10 @@ function findPlans(target, sem, noExam) {
       if (!hasS1 || !hasS2) return;
     }
     const key = mods.map((m) => m.code).sort().join(",");
-    if (found.has(key)) return;
+    if (found.has(key) || known.has(key)) return;
     if (!cfaMemo.has(key)) cfaMemo.set(key, !!clashFreeAssignment(mods));
     if (!cfaMemo.get(key)) return;
-    found.set(key, { modules: mods.slice(), total, diff: Math.abs(total - target) });
+    found.set(key, { key, modules: mods.slice(), total, diff: Math.abs(total - target) });
   };
 
   // For big targets the exhaustive DFS floods its budget with mid-range
@@ -1704,7 +1801,7 @@ function findPlans(target, sem, noExam) {
   const useDfs = target <= 45;
 
   for (let r = 0; r < PLAN_RESTARTS; r++) {
-    if (found.size >= PLAN_RESULTS) break; // enough plans — stop searching
+    if (found.size >= limit) break; // enough plans — stop searching
     // The first pass keeps the credit-descending order (deterministic and
     // well-pruned); later passes shuffle so different regions of the search
     // space get explored and hard-to-reach plans are found.
@@ -1719,7 +1816,7 @@ function findPlans(target, sem, noExam) {
       let explored = 0;
 
       function search(startIdx, total) {
-        if (found.size >= PLAN_RESULTS) return;
+        if (found.size >= limit) return;
         if (explored >= PLAN_MAX_COMBOS) return;
         explored++;
         if (combo.length >= 2 && Math.abs(total - target) <= tolerance) {
@@ -1752,7 +1849,7 @@ function findPlans(target, sem, noExam) {
     //    some attempts land exactly on the target (diff 0) rather than always
     //    at the top of the tolerance band.
     for (let a = 0; a < Math.ceil(PLAN_GREEDY / PLAN_RESTARTS); a++) {
-      if (found.size >= PLAN_RESULTS) break;
+      if (found.size >= limit) break;
       const ord = shuffle([...pool]);
       const cap = target + tolerance - Math.floor(Math.random() * (tolerance + 1));
       const g = [];
@@ -1777,10 +1874,19 @@ function findPlans(target, sem, noExam) {
   const results = [...found.values()].sort(
     (a, b) => a.diff - b.diff || a.modules.length - b.modules.length
   );
-  return results.slice(0, PLAN_RESULTS);
+  return results.slice(0, limit);
 }
 
-function renderPlans(noExam) {
+// Session state for "Show more plans": remembers the search parameters and
+// every plan already rendered, so each "Show more" click re-searches while
+// skipping duplicates. Any parameter change resets the session.
+let planSession = null;
+
+function planSessionKey(target, sem, noExam) {
+  return `${target}|${sem}|${noExam ? 1 : 0}`;
+}
+
+function renderPlans(noExam, append) {
   const target = parseInt(els.planTarget.value, 10);
   const semChoice = els.planSemester.value;
   const sem = semChoice === "current" ? getCurrentSemester() || "1" : semChoice;
@@ -1788,24 +1894,63 @@ function renderPlans(noExam) {
 
   if (!target || target < 5) {
     resultsEl.innerHTML = `<p class="muted">Enter a target credit total (e.g. 30) to get suggestions.</p>`;
+    planSession = null;
     return;
   }
   if (live.size < curatedCodes().length) {
     resultsEl.innerHTML = `<p class="muted">Timings are still loading. Try again in a moment.</p>`;
+    planSession = null;
     return;
   }
 
-  const plans = findPlans(target, sem, noExam);
+  // New search (or parameters changed since the last one): forget shown plans.
+  const sessionKey = planSessionKey(target, sem, noExam);
+  if (!append || !planSession || planSession.key !== sessionKey) {
+    planSession = { key: sessionKey, shown: new Set() };
+  }
+
+  const plans = findPlans(target, sem, noExam, PLAN_BATCH, planSession.shown);
   const semLabel = sem === "1" ? "Semester 1" : sem === "2" ? "Semester 2" : "both semesters";
   const kindLabel = noExam ? "exam-free clash-free" : "clash-free";
 
-  if (!plans.length) {
+  if (!planSession.shown.size && !plans.length) {
     resultsEl.innerHTML = `<p class="muted">No ${kindLabel} ${semLabel} combinations found near ${target} credits yet.${noExam ? " (Excluding modules with a final exam.)" : ""}</p>`;
+    planSession = null;
     return;
   }
 
-  resultsEl.innerHTML = `<p class="plan-results-head">${plans.length} ${kindLabel} ${semLabel} plan${plans.length > 1 ? "s" : ""} near ${target} credits:${noExam ? " <span class=\"plan-kind-note\">no final exam</span>" : ""}</p>`;
+  // Append mode keeps the already-rendered plans and adds below them.
+  if (!append) resultsEl.innerHTML = "";
+  const moreBtn = resultsEl.querySelector(".plan-more");
+  if (moreBtn) moreBtn.parentElement.remove();
+
+  // Searching for yet another batch after a few hundred unique plans gets
+  // slow (most greedy attempts produce already-shown sets), so stop politely
+  // instead of making the user wait through a doomed search.
+  if (append && planSession.shown.size >= PLAN_MAX_SHOWN) {
+    resultsEl.insertAdjacentHTML(
+      "beforeend",
+      `<p class="muted plan-exhausted">You've seen ${planSession.shown.size} plans — that's plenty. Change the target or semester for different suggestions.</p>`
+    );
+    return;
+  }
+
+  if (!plans.length) {
+    resultsEl.insertAdjacentHTML(
+      "beforeend",
+      `<p class="muted plan-exhausted">That's every ${kindLabel} ${semLabel} combination near ${target} credits I could find.</p>`
+    );
+    return;
+  }
+
+  if (!planSession.shown.size) {
+    resultsEl.insertAdjacentHTML(
+      "beforeend",
+      `<p class="plan-results-head">${kindLabel[0].toUpperCase() + kindLabel.slice(1)} ${semLabel} plans near ${target} credits:${noExam ? " <span class=\"plan-kind-note\">no final exam</span>" : ""}</p>`
+    );
+  }
   for (const plan of plans) {
+    planSession.shown.add(plan.key);
     const item = document.createElement("div");
     item.className = "plan-item";
     const rows = plan.modules
@@ -1825,6 +1970,10 @@ function renderPlans(noExam) {
     `;
     resultsEl.appendChild(item);
   }
+  resultsEl.insertAdjacentHTML(
+    "beforeend",
+    `<div class="row plan-more-row"><button class="btn btn-ghost grow plan-more">Show more plans</button></div>`
+  );
 }
 
 function applyPlan(codes) {
@@ -1847,7 +1996,27 @@ function applyPlan(codes) {
 }
 
 els.planBtn.addEventListener("click", () => renderPlans(false));
-els.planNoExamBtn.addEventListener("click", () => renderPlans(true));
+els.planNoExamBtn.addEventListener("click", async () => {
+  if (!examMapLoaded) {
+    els.planResults.innerHTML = `<p class="muted">Checking UCD module pages for final exams…</p>`;
+    await loadAssessments();
+  }
+  renderPlans(true);
+});
+els.planResults.addEventListener("click", (e) => {
+  const more = e.target.closest(".plan-more");
+  if (more) {
+    // Defer the search a tick so the "Searching…" state paints before the
+    // synchronous solver blocks the tab.
+    more.disabled = true;
+    more.textContent = "Searching…";
+    setTimeout(() => {
+      const noExam = planSession ? planSession.key.endsWith("|1") : false;
+      renderPlans(noExam, true);
+    }, 30);
+    return;
+  }
+});
 els.planTarget.addEventListener("keydown", (e) => {
   if (e.key === "Enter") renderPlans();
 });
@@ -2185,6 +2354,9 @@ function startAutoRefresh() {
   const cachedCount = loadTimingsCache();
   purgeNonCsnl();
   refreshUI();
+  // Pull the module-page exam map without blocking first paint; when it
+  // arrives (or a cached copy exists) refreshUI() adds the Final Exam badges.
+  loadAssessments().then(() => refreshUI()).catch(() => {});
   if (cachedCount > 0) {
     els.bootSub.textContent = `Restored ${cachedCount} saved timetables. Refreshing from UCD…`;
     els.bootCountText.textContent = `${cachedCount} cached modules`;

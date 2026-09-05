@@ -124,12 +124,20 @@ function moduleLevel(code) {
 }
 
 // UCD publishes final exams as timetable rows typed EXAM or EXM (mirrors
-// EXAM_CLASS_TYPES in app.js). A module is "exam-free" when none of its live
-// classes is one of those rows.
+// EXAM_CLASS_TYPES in app.js). The authoritative signal is the module page's
+// assessment table, scraped by the assessments function; the EXAM/EXM rows
+// are OR-ed in by isExamModule below.
 const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
 function moduleHasExam(data) {
   if (!data || !Array.isArray(data.classes)) return false;
   return data.classes.some((c) => EXAM_CLASS_TYPES.has(String(c.type || "").toUpperCase()));
+}
+// code -> true when the module page lists an end-of-trimester exam (loaded
+// from the assessments function in main(); mirrors examMap in app.js).
+const assessmentExamMap = new Map();
+function isExamModule(code, data) {
+  if (assessmentExamMap.get(code)) return true;
+  return moduleHasExam(data);
 }
 
 // Can these two modules be taken together? There must be a class in each
@@ -225,6 +233,20 @@ async function main() {
   const codes = all.map((m) => m.code);
   console.log(`Catalogue: ${codes.length} modules, target year ${cat.year || "?"}`);
 
+  // Exam map from the module pages (assessments function) — same source the
+  // app's no-exam plan builder uses.
+  try {
+    const assess = await getJson(`${BASE}/.netlify/functions/assessments`);
+    for (const [code, r] of Object.entries(assess.results || {})) {
+      if (r && r.status === "ok" && r.hasFinalExam) assessmentExamMap.set(code, true);
+    }
+    console.log(
+      `Assessments: ${Object.keys(assess.results || {}).length} pages read, ${assessmentExamMap.size} with a final exam${assess.stale ? " (STALE)" : ""}`
+    );
+  } catch (e) {
+    console.log(`Assessments: unavailable (${e.message}) — falling back to EXAM/EXM rows only`);
+  }
+
   const results = {};
   const errors = {};
   for (let i = 0; i < codes.length; i += 20) {
@@ -310,7 +332,7 @@ async function main() {
     for (const m of all) {
       const data = live.get(m.code);
       if (!data || !data.found || !data.classes || !data.classes.length) continue;
-      if (noExam && moduleHasExam(data)) continue;
+      if (noExam && isExamModule(m.code, data)) continue;
       const credits = m.credits || 0;
       if (!credits) continue;
       const sems = String(m.semester || (data && data.semester) || "")
@@ -329,7 +351,9 @@ async function main() {
     }
     return arr;
   }
-  function findPlans(target, sem, maxCombos, noExam) {
+  function findPlans(target, sem, maxCombos, noExam, limit, skip) {
+    limit = limit || 6;
+    const known = skip instanceof Set ? skip : new Set();
     const pool = planPool(sem, noExam);
     if (pool.length < 2) return [];
     const tolerance = 5;
@@ -350,13 +374,13 @@ async function main() {
         if (!hasS1 || !hasS2) return;
       }
       const key = mods.map((m) => m.code).sort().join(",");
-      if (found.has(key)) return;
+      if (found.has(key) || known.has(key)) return;
       if (!cfaMemo.has(key)) cfaMemo.set(key, !!clashFreeAssignment(mods));
       if (!cfaMemo.get(key)) return;
       found.set(key, { modules: mods.slice(), total, diff: Math.abs(total - target) });
     }
     for (let r = 0; r < 6; r++) {
-      if (found.size >= 6) break;
+      if (found.size >= limit) break;
       const order = r === 0 ? [...pool].sort((a, b) => b.credits - a.credits) : shuffle([...pool]);
       if (target <= 45) {
         const suffixMax = new Array(order.length + 1).fill(0);
@@ -364,7 +388,7 @@ async function main() {
         const combo = [];
         let explored = 0;
         function search(startIdx, total) {
-          if (found.size >= 6) return;
+          if (found.size >= limit) return;
           if (explored >= maxCombos) return;
           explored++;
           if (combo.length >= 2 && Math.abs(total - target) <= tolerance) addPlan(combo);
@@ -383,7 +407,7 @@ async function main() {
         search(0, 0);
       }
       for (let a = 0; a < Math.ceil(900 / 6); a++) {
-        if (found.size >= 6) break;
+        if (found.size >= limit) break;
         const ord = shuffle([...pool]);
         const cap = target + tolerance - Math.floor(Math.random() * (tolerance + 1));
         const g = [];
@@ -400,7 +424,7 @@ async function main() {
       }
     }
     const results = [...found.values()].sort((a, b) => a.diff - b.diff || a.modules.length - b.modules.length);
-    return results.slice(0, 6);
+    return results.slice(0, limit);
   }
 
   let planFails = 0;
@@ -408,7 +432,7 @@ async function main() {
   for (const target of [30, 60, 90]) {
     for (const sem of ["1", "2", "all"]) {
       const t0 = Date.now();
-      const plans = findPlans(target, sem, 4000);
+      const plans = findPlans(target, sem, 4000, false, 6);
       const elapsed = Date.now() - t0;
       planChecks++;
       const label = `${target}cr sem=${sem}`;
@@ -441,9 +465,9 @@ async function main() {
   else console.log("  OK — every suggested plan is genuinely clash-free and within CSNL credit rules.");
 
   // ---- 4b. no-exam plan builder
-  console.log("\n[4b] No-exam plan builder (EXAM/EXM modules excluded):");
-  const examMods = all.filter((m) => moduleHasExam(live.get(m.code))).map((m) => m.code);
-  console.log(`  modules with a published final exam row: ${examMods.length ? examMods.join(", ") : "(none)"}`);
+  console.log("\n[4b] No-exam plan builder (final-exam modules excluded):");
+  const examMods = all.filter((m) => isExamModule(m.code, live.get(m.code))).map((m) => m.code);
+  console.log(`  modules with a final exam: ${examMods.length ? examMods.join(", ") : "(none)"}`);
   let noExamFails = 0;
   let noExamPlansTotal = 0;
   for (const target of [30, 60]) {
@@ -454,7 +478,7 @@ async function main() {
         const mods = plan.modules.map((m) => ({ code: m.code, data: m.data }));
         if (!clashFreeAssignment(mods)) { noExamFails++; continue; }
         for (const m of plan.modules) {
-          if (moduleHasExam(m.data)) {
+          if (isExamModule(m.code, m.data)) {
             noExamFails++;
             console.log(`  FAIL — no-exam plan ${target}cr sem=${sem} includes exam module ${m.code}`);
           }
@@ -466,15 +490,26 @@ async function main() {
       }
     }
   }
-  // every exam module must be genuinely excluded from every no-exam plan
+  // every exam module must be genuinely excluded from every no-exam pool
   for (const sem of ["1", "2", "all"]) {
     const excluded = planPool(sem, true).map((m) => m.code);
     for (const code of examMods) {
       if (excluded.includes(code)) { noExamFails++; console.log(`  FAIL — exam module ${code} still in no-exam pool (sem=${sem})`); }
     }
   }
+  // GEOG40820 is the user-reported regression: its final exam exists only on
+  // the module page (no EXAM/EXM timetable row), so the assessment scrape
+  // must be what catches it.
+  if (live.get("GEOG40820") && live.get("GEOG40820").classes && live.get("GEOG40820").classes.length) {
+    if (!isExamModule("GEOG40820", live.get("GEOG40820"))) {
+      noExamFails++;
+      console.log("  FAIL — GEOG40820 has a module-page final exam but is not marked as an exam module");
+    } else {
+      console.log("  OK — GEOG40820 correctly excluded via its module-page assessment (regression case)");
+    }
+  }
   if (noExamFails) console.log(`  FAIL — ${noExamFails} no-exam plan problem(s)`);
-  else if (noExamPlansTotal) console.log("  OK — every no-exam plan excludes all EXAM/EXM modules and is genuinely clash-free.");
+  else if (noExamPlansTotal) console.log("  OK — every no-exam plan excludes all final-exam modules and is genuinely clash-free.");
   else console.log("  WARN — no exam-free plans found for any target/semester (pool may be too small)");
 
   // ---- 5. cross-semester separation
@@ -522,6 +557,34 @@ async function main() {
   else
     console.log(`  FAIL — ${staleCrossSem} cross-semester false clashes when the term field is missing.`);
 
+  // ---- 6. "Show more plans" dedupe
+  console.log("\n[6] Show-more dedupe (skip set returns only new plans):");
+  let showMoreFails = 0;
+  for (const sem of ["1", "2", "all"]) {
+    const shown = new Set();
+    let batches = 0;
+    let newPlans = 0;
+    let exhausted = false;
+    for (let round = 0; round < 40; round++) {
+      const batch = findPlans(30, sem, 4000, false, 6, shown);
+      if (!batch.length) { exhausted = batches > 0; break; }
+      batches++;
+      newPlans += batch.length;
+      for (const p of batch) {
+        const key = p.modules.map((m) => m.code).sort().join(",");
+        if (shown.has(key)) {
+          showMoreFails++;
+          console.log(`  FAIL — duplicate plan returned (sem=${sem}): ${key}`);
+        }
+        shown.add(key);
+      }
+      if (batches >= 40) break;
+    }
+    if (showMoreFails) break;
+    console.log(`  sem=${sem}: ${batches} batch(es), ${newPlans} unique plans total${exhausted ? " (search space exhausted)" : ""} — all unique`);
+  }
+  if (!showMoreFails) console.log("  OK — repeated show-more calls never return a plan already shown.");
+
   // ---- summary
   console.log("\n================ SUMMARY ================");
   const noTt = all.filter((m) => !(live.get(m.code) && live.get(m.code).classes && live.get(m.code).classes.length));
@@ -532,7 +595,7 @@ async function main() {
   console.log(`Cross-semester false clashes: ${crossSem}`);
   console.log(`Data-quality problems: ${problems.length}`);
   if (bad.length) console.log(`Fetch errors: ${bad.join(", ")}`);
-  console.log(problems.length || planFails || crossSem ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
+  console.log(problems.length || planFails || crossSem || showMoreFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
 }
 
 main().catch((e) => {
