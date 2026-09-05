@@ -1442,6 +1442,11 @@ body {
   color: var(--ok);
 }
 
+.plan-locate {
+  font-size: 11px;
+  padding: 4px 9px;
+}
+
 .plan-use {
   margin-left: auto;
   padding: 4px 10px;

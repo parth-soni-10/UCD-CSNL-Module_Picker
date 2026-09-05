@@ -1980,11 +1980,13 @@ function renderPlans(noExam, append) {
       plan.diff === 0
         ? `<span class="plan-badge exact">exact</span>`
         : `<span class="plan-badge">±${plan.diff}</span>`;
+    const planCodes = JSON.stringify(plan.modules.map((m) => m.code));
     item.innerHTML = `
       <div class="plan-item-head">
         <strong class="plan-total">${plan.total} credits</strong>
         ${badge}
-        <button class="btn btn-ghost plan-use" data-plan="${esc(JSON.stringify(plan.modules.map((m) => m.code)))}">Use this plan</button>
+        <button class="btn btn-ghost plan-locate" data-plan="${esc(planCodes)}" title="Scroll to these modules in the list">Show in list</button>
+        <button class="btn btn-ghost plan-use" data-plan="${esc(planCodes)}">Use this plan</button>
       </div>
       <div class="plan-mods">${rows}</div>
     `;
@@ -2041,6 +2043,16 @@ els.planTarget.addEventListener("keydown", (e) => {
   if (e.key === "Enter") renderPlans();
 });
 els.planResults.addEventListener("click", (e) => {
+  const locate = e.target.closest(".plan-locate");
+  if (locate) {
+    try {
+      const noExam = planSession ? planSession.key.endsWith("|1") : false;
+      locatePlanModules(JSON.parse(locate.dataset.plan), noExam);
+    } catch (err) {
+      /* ignore malformed plans */
+    }
+    return;
+  }
   const btn = e.target.closest(".plan-use");
   if (!btn) return;
   try {
@@ -2174,6 +2186,38 @@ window.addEventListener("afterprint", () => renderTimetable());
 function showAddCodeError(msg) {
   els.addCodeError.textContent = msg || "";
   els.addCodeError.hidden = !msg;
+}
+
+// From a plan card: bring the plan's modules into view in the module list.
+// No-exam plans land in the Exam-free filter (every plan module is exam-free,
+// so all of them stay visible); regular plans reset to All, since they can
+// include exam modules the Exam-free filter would hide.
+function locatePlanModules(codes, noExam) {
+  timingFilter = noExam ? "examfree" : "all";
+  els.search.value = "";
+  render();
+  renderTimingSummary();
+  const cards = [];
+  for (const code of codes) {
+    const found = document.querySelectorAll(`.course-card[data-code="${CSS.escape(code)}"]`);
+    found.forEach((card) => {
+      const toggle = card.closest(".theme") && card.closest(".theme").querySelector(".theme-toggle");
+      if (toggle) {
+        toggle.classList.remove("collapsed");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.nextElementSibling.classList.remove("hidden");
+      }
+      cards.push(card);
+    });
+  }
+  if (!cards.length) return;
+  cards.forEach((card, i) => {
+    setTimeout(() => {
+      card.classList.add("flash");
+      setTimeout(() => card.classList.remove("flash"), 1500);
+    }, 120 * i);
+  });
+  cards[0].scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // Every CSNL module is already listed, so a valid code just jumps to its card.
