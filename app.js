@@ -823,7 +823,7 @@ function render() {
       <button class="theme-toggle${isExpanded ? "" : " collapsed"}" aria-expanded="${isExpanded}">
         <span>${esc(themeObj.name)}<span class="theme-count">${themeObj.courses.length}</span></span>
         <span class="chev" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </span>
       </button>
       <div class="theme-body${isExpanded ? "" : " hidden"}"></div>

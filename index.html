@@ -9,6 +9,7 @@
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="vibe.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -65,7 +66,7 @@
           </button>
           <button id="refresh-btn" class="btn btn-secondary" title="Fetch the latest timings from UCD right now">
             <span class="refresh-btn-glyph" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
                 <path d="M21 3v5h-5"></path>
                 <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
@@ -273,7 +274,7 @@
               title="Print or save this timetable as a PDF"
             >
               <span class="print-btn-glyph" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M6 9V2h12v7"></path>
                   <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                   <rect x="6" y="14" width="12" height="8"></rect>
@@ -316,5 +317,22 @@
     </main>
 
     <script src="app.js"></script>
+  <!-- Vibe-coding stack strip (shadcn/ui, Aceternity, Magic UI, HyperUI, DaisyUI) -->
+  <aside class="vibe-strip pointer-events-none fixed inset-x-0 bottom-0 z-[80] hidden justify-center pb-3 sm:flex" aria-label="Built with">
+    <div class="pointer-events-auto relative overflow-hidden rounded-full border border-black/10 bg-white/85 px-4 py-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-neutral-900/85">
+      <svg class="pointer-events-none absolute -top-10 left-2 h-24 w-24 opacity-0 motion-safe:animate-[spotlight_3.5s_ease-in_.4s_forwards]" viewBox="0 0 3787 2842" fill="none" aria-hidden="true">
+        <g filter="url(#vibe-strip-spotlight)"><ellipse cx="1924.71" cy="273.501" rx="1924.71" ry="273.501" transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)" fill="#4f46e5" fillOpacity="0.18"></ellipse></g>
+        <defs><filter id="vibe-strip-spotlight" x="0.860352" y="0.838989" width="3785.16" height="2840.26" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB"><feFlood floodOpacity="0" result="BackgroundImageFix"></feFlood><feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"></feBlend><feGaussianBlur stdDeviation="151" result="effect1_foregroundBlur"></feGaussianBlur></filter></defs>
+      </svg>
+      <p class="relative z-[2] flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-neutral-700 dark:text-neutral-300">
+        <span class="hidden sm:inline font-medium">Built with</span>
+        <span class="badge badge-sm badge-outline">shadcn/ui</span>
+        <span class="badge badge-sm badge-outline">Aceternity UI</span>
+        <span class="badge badge-sm badge-outline">Magic UI</span>
+        <span class="badge badge-sm badge-outline">HyperUI</span>
+        <span class="badge badge-sm badge-outline badge-success">DaisyUI</span>
+      </p>
+    </div>
+  </aside>
   </body>
 </html>
