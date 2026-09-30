@@ -1998,6 +1998,220 @@ body {
   margin-top: 4px;
 }
 
+/* ------------------------------------------------- new feature styles */
+
+/* Add-all-core button inside each theme */
+.add-core-btn {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent, #2563eb);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.add-core-btn:hover:not(.done),
+.add-core-btn:focus-visible {
+  background: var(--hover, rgba(37, 99, 235, 0.06));
+  border-color: var(--accent, #2563eb);
+}
+.add-core-btn.done {
+  color: var(--ok);
+  border-style: solid;
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* Prerequisites badge on cards */
+.badge.prereq {
+  color: var(--warn, #b45309);
+  background: var(--warn-soft, rgba(180, 83, 9, 0.1));
+  border: 1px solid var(--warn-border, rgba(180, 83, 9, 0.3));
+  cursor: help;
+}
+
+/* Why a module is (not) exam-free — one quiet line on the card */
+.exam-why {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin: 6px 2px 0;
+}
+
+/* Credit progress bar (Selection panel) */
+.credit-progress {
+  margin: 10px 2px 4px;
+}
+.cp-track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.cp-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent, #2563eb);
+  transition: width 0.4s ease, background 0.3s ease;
+}
+.cp-fill.zone-near {
+  background: var(--ok, #16a34a);
+}
+.cp-fill.zone-good {
+  background: var(--ok, #16a34a);
+}
+.cp-fill.zone-over {
+  background: var(--danger, #dc2626);
+}
+.cp-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 5px;
+}
+
+/* Compare-plans rows */
+.compare-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cmp-head {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+.cmp-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+@media (max-width: 720px) {
+  /* Phone: slot letter + info on the first line, Save/Load/× as a full-width
+     row underneath (the narrow column layout made the buttons unreadably
+     small and the info text cramped). */
+  .cmp-row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .cmp-info {
+    flex: 1 1 calc(100% - 30px);
+  }
+  .cmp-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .cmp-actions .btn {
+    flex: 1;
+    padding: 7px 9px;
+  }
+}
+.cmp-slot {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  width: 20px;
+  text-align: center;
+  color: var(--accent, #2563eb);
+}
+.cmp-info {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.cmp-info em {
+  color: var(--text-3);
+  font-style: normal;
+}
+.cmp-actions {
+  display: flex;
+  gap: 4px;
+}
+.cmp-actions .btn {
+  padding: 4px 9px;
+  font-size: 11.5px;
+}
+
+/* Toast (undo + copy/export feedback) */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translate(-50%, 16px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(92vw, 560px);
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--text-1, inherit);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 90;
+}
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.toast-undo {
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent, #2563eb);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Timetable panel action cluster */
+.tt-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tt-actions #print-btn .print-btn-glyph {
+  display: inline-flex;
+}
+
+/* Data freshness stamp in the footnote */
+.data-freshness {
+  color: var(--text-3);
+  opacity: 0.9;
+}
+.data-freshness::before {
+  content: "— ";
+}
+
+/* Workload badge on plan cards */
+.plan-badge.wl {
+  color: var(--text-2);
+}
+
+/* Exam reason line inside the event tooltip */
+.tt-why {
+  color: var(--text-3);
+  font-size: 11.5px;
+}
+
 /* ------------------------------------------------------------ motion gates */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -2013,6 +2227,40 @@ body {
 @media (max-width: 960px) {
   .layout {
     padding: 14px;
+  }
+
+  /* Sticky mini-toolbar: the status chips stay reachable while scrolling
+     the module list on a phone (the sticky topbar height is measured by
+     app.js into --topbar-h). */
+  .timing-summary {
+    position: sticky;
+    top: calc(var(--topbar-h, 90px) + 8px);
+    z-index: 30;
+    background: var(--surface);
+    padding: 7px 0;
+    margin: 0;
+    box-shadow: 0 8px 10px -12px var(--shadow-color, rgba(0, 0, 0, 0.35));
+  }
+}
+
+@media (max-width: 720px) {
+  /* Long theme labels must never force the panel wider than the phone —
+     they were the source of a 60px horizontal scroll on 390px screens. */
+  .theme-toggle > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .row {
+    min-width: 0;
+  }
+  .row .input {
+    min-width: 0;
+  }
+  .tt-actions .btn {
+    flex: 1 1 auto;
+    padding: 8px 10px;
   }
 }
 

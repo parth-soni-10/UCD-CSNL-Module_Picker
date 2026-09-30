@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
+    <meta
+      name="description"
+      content="Plan your UCD Computer Science (NL) masters year: browse every CSNL module with live clash-free timetables, exam-free filters and a no-exam plan builder. Not an official UCD service."
+    />
+    <meta property="og:title" content="CSNL Module Picker — live UCD timetables" />
+    <meta
+      property="og:description"
+      content="Browse every UCD CSNL module with live clash-free timetables, filter exam-free modules and build a clash-free plan toward the 90-credit year."
+    />
+    <meta property="og:type" content="website" />
     <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
@@ -183,6 +193,7 @@
             <span id="total-credits" class="credits-badge" aria-live="polite">0 credits</span>
           </div>
           <div id="credits-breakdown" class="credits-breakdown" aria-live="polite"></div>
+          <div id="credit-progress" class="credit-progress" aria-live="polite"></div>
           <div id="summary-list" class="summary-list" aria-live="polite"></div>
           <div class="timetable-tools">
             <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
@@ -231,6 +242,15 @@
             <button id="plan-noexam-btn" class="btn btn-ghost grow" title="Only modules with no final exam">Build No-Exam Plan</button>
           </div>
           <div id="plan-results" class="plan-results" aria-live="polite"></div>
+        </div>
+
+        <!-- Compare plans -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Compare Plans</h2>
+            <span id="compare-sel" class="muted">0 selected</span>
+          </div>
+          <div id="compare-panel" class="compare-panel"></div>
         </div>
 
         <!-- Suggestions -->
@@ -292,12 +312,25 @@
         <div class="panel">
           <div class="panel-head">
             <h2>Weekly Timetable</h2>
-            <button
-              id="print-btn"
-              class="btn btn-secondary"
-              type="button"
-              title="Print or save this timetable as a PDF"
-            >
+            <div class="tt-actions">
+              <button
+                id="ics-btn"
+                class="btn btn-secondary"
+                type="button"
+                title="Download the selected classes as an .ics calendar file for Google Calendar / Outlook"
+              >Export .ics</button>
+              <button
+                id="share-btn"
+                class="btn btn-secondary"
+                type="button"
+                title="Copy a link that opens this exact selection"
+              >Share link</button>
+              <button
+                id="print-btn"
+                class="btn btn-secondary"
+                type="button"
+                title="Print or save this timetable as a PDF"
+              >
               <span class="print-btn-glyph" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M6 9V2h12v7"></path>
@@ -307,6 +340,7 @@
               </span>
               Print / PDF
             </button>
+            </div>
           </div>
           <div id="print-header" class="print-only"></div>
           <div id="sem-selector" class="sem-selector" role="group" aria-label="Which semester the timetable shows">
@@ -335,11 +369,13 @@
             <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
             on every page load. Not an official UCD service. Built by
             <a href="https://parth-portfolio-wb.netlify.app/" target="_blank" rel="noopener">Parth</a>.
+            <span id="data-freshness" class="data-freshness"></span>
           </span>
         </div>
       </section>
       </div>
     </main>
 
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script></body>
 </html>

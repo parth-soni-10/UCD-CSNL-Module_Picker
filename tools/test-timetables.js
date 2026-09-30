@@ -423,7 +423,21 @@ async function main() {
         addPlan(g);
       }
     }
-    const results = [...found.values()].sort((a, b) => a.diff - b.diff || a.modules.length - b.modules.length);
+    // Mirror of app.js: order by credit fit, then days on campus, then
+    // sessions, then module count (planWorkload's ranking).
+    const wlScore = (modules) => {
+      const days = new Set();
+      let sessions = 0;
+      for (const m of modules)
+        for (const cls of m.data.classes) {
+          if (DAYS.includes(cls.day)) days.add(cls.day);
+          sessions++;
+        }
+      return days.size * 1000 + sessions;
+    };
+    const results = [...found.values()]
+      .map((p) => ({ ...p, wl: wlScore(p.modules) }))
+      .sort((a, b) => a.diff - b.diff || a.wl - b.wl || a.modules.length - b.modules.length);
     return results.slice(0, limit);
   }
 
@@ -598,6 +612,47 @@ async function main() {
   }
   if (!showMoreFails) console.log("  OK — repeated show-more calls never return a plan already shown.");
 
+  // ---- 6b. workload ranking (mirror of app.js planWorkload ordering)
+  // Plans with equal credit fit must be ordered by fewest distinct days on
+  // campus (then fewer sessions, then fewer modules) — the "2 days/wk beats
+  // 3 days/wk at the same credits" promise the UI badge makes.
+  console.log("\n[6b] Workload ranking (fewest days on campus wins ties):");
+  let wlFails = 0;
+  {
+    const wlDays = (modules) => {
+      const days = new Set();
+      for (const m of modules) for (const cls of m.data.classes) if (DAYS.includes(cls.day)) days.add(cls.day);
+      return days.size;
+    };
+    // Applies to both plan kinds — the no-exam builder shares findPlans and
+    // its ranking, and the UI promises "fewest days on campus first" on both.
+    const checkOrder = (label, plans) => {
+      if (!plans.length) {
+        console.log(`  WARN — no ${label} plans found to workload-check`);
+        return;
+      }
+      for (let i = 1; i < plans.length; i++) {
+        const a = plans[i - 1];
+        const b = plans[i];
+        const da = wlDays(a.modules);
+        const db = wlDays(b.modules);
+        const worse =
+          b.diff < a.diff ||
+          (b.diff === a.diff && db < da) ||
+          (b.diff === a.diff && db === da && b.modules.length < a.modules.length);
+        if (worse) {
+          wlFails++;
+          console.log(`  FAIL — ${label} plan ranking broke the workload order at positions ${i - 1}->${i}`);
+          return;
+        }
+      }
+      const daysList = plans.map((p) => wlDays(p.modules)).join(", ");
+      console.log(`  OK — ${plans.length} ${label} plans ordered by credit fit, then days on campus (${daysList}).`);
+    };
+    checkOrder("regular", findPlans(30, "1", 4000, false, 6, new Set()));
+    checkOrder("no-exam", findPlans(30, "1", 4000, true, 6, new Set()));
+  }
+
   // ---- 7. per-module exam-verdict audit (missed vs correctly excluded)
   // Re-scrapes every catalogue module page independently of the assessments
   // function, derives each verdict with hasFinalExam(), and cross-checks the
@@ -668,7 +723,7 @@ async function main() {
   console.log(`Cross-semester false clashes: ${crossSem}`);
   console.log(`Data-quality problems: ${problems.length}`);
   if (bad.length) console.log(`Fetch errors: ${bad.join(", ")}`);
-  console.log(problems.length || planFails || noExamFails || crossSem || showMoreFails || auditFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
+  console.log(problems.length || planFails || noExamFails || crossSem || showMoreFails || wlFails || auditFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
 }
 
 main().catch((e) => {
