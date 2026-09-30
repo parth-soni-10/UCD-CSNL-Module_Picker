@@ -911,10 +911,11 @@ function renderCourseCard(c, over) {
   if (failed) badges.push({ text: "Load failed", cls: "fail" });
   if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
-  // "Final Exam" badge from the module pages' assessment tables (see
-  // loadAssessments). Shown only once the map has settled — cards render
-  // before the scrape returns, so late arrivals re-render via refreshUI.
-  if (examMapLoaded && examMap && examMap[c.code]) {
+  // "Final Exam" badge — same predicate the exam-free filter uses, so a
+  // module flagged only via its timetable EXAM/EXM sitting (COMP47970) is
+  // badged too. Shown once the map has settled — cards render before the
+  // scrape returns, so late arrivals re-render via refreshUI.
+  if (examMapLoaded && isExamModule(c.code, live.get(c.code))) {
     badges.push({ text: "Final Exam", cls: "exam" });
   }
 
@@ -1120,7 +1121,7 @@ function evTooltipMarkup(info, data, cls, code) {
     badges.push(`<span class="tt-badge ${esc(info.kind)}">${info.kind === "core" ? "Core" : "Optional"}</span>`);
   }
   if (info.credits) badges.push(`<span class="tt-badge">${info.credits} cr</span>`);
-  if (examMapLoaded && examMap && examMap[code]) {
+  if (examMapLoaded && isExamModule(code, data)) {
     badges.push(`<span class="tt-badge exam">Final Exam</span>`);
   }
   const sem = info.semester || (data && data.semester);
@@ -1594,11 +1595,14 @@ function moduleHasExam(data) {
 }
 
 // Authoritative signal: each module's own UCD page (ucd.ie/modules/<CODE>)
-// carries an Assessment Strategy table; a row typed "Exam …" timed "End of
-// trimester" is a final exam, while mid-terms ("Week 9") do not count. The
-// assessments function scrapes all module pages and returns the map.
+// carries an Assessment Strategy table; a row typed "Exam …" is a final exam
+// when it is timed "End of trimester" OR explicitly described as a "final
+// exam", while mid-terms ("Week 9") and low-weight in-term tests do not
+// count. The assessments function scrapes all module pages and returns the
+// map.
 const ASSESSMENTS_URL = "/.netlify/functions/assessments";
-const LS_ASSESS = "csnlPicker:assessments:v1";
+// v3: the "end of trimester OR final exam" wording — invalidates older maps.
+const LS_ASSESS = "csnlPicker:assessments:v3";
 const ASSESS_TTL_MS = 24 * 60 * 60 * 1000;
 let examMap = null; // code -> true when the module page lists a final exam
 let examMapLoaded = false; // fetch settled (success or fallback applied)

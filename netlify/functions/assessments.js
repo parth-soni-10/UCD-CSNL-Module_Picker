@@ -16,9 +16,14 @@
 //   Exam (In-person): 120 minutes final exam   | End of trimester ... 2 hr  | ... | 60
 //
 // A module "has a final exam" when any row's description starts with "Exam"
-// AND its timing says "End of trimester" (or semester). Mid-terms ("Week 9")
-// and other exam-typed components do NOT count — COMP40725's only exam rows
-// are a week-9 mid-term, so it stays exam-free.
+// AND either its timing says "End of trimester" (or semester), or its own
+// description says "final exam". Mid-terms ("Week 9") and other exam-typed
+// in-term tests do NOT count — COMP40725's week-9 mid-term and MIS30010's
+// week-8 in-class test stay exam-free — but UCD does not always time the
+// final sitting "End of trimester": COMP41740 holds a 60% "final exam" in
+// week 12, so the description wording catches it without sweeping in
+// unlabelled week-12 in-class tests (COMP31010, COMP40610) or the exam-
+// period EEEN40680 sitting.
 //
 // Persistence: Netlify Blobs in production, in-memory cache locally. The map
 // is refreshed when older than TTL_MS; the daily refresh-catalogue cron also
@@ -38,7 +43,7 @@ try {
 
 const STORE_NAME = "csnl-assessments";
 const KEY = "map";
-const VERSION = 1;
+const VERSION = 3; // bump invalidates the stored blob when the exam rule changes
 const TTL_MS = 24 * 60 * 60 * 1000; // refresh at most once a day
 const FETCH_TIMEOUT_MS = 20000;
 const CONCURRENCY = 6; // parallel module-page fetches
@@ -93,16 +98,19 @@ function parseAssessment(html) {
   return components;
 }
 
-// A final exam = an exam-typed component sat at the end of the trimester.
-// Mid-terms ("Week 9") and project/assignment rows never match. The timetable
-// feed's EXAM/EXM rows are OR-ed in by the consumer (app.js), since some
-// modules publish a final sitting there without a matching assessment row
-// (COMP47970's week-33 EXM sits after week-12 teaching ends).
+// A final exam = an exam-typed component sat at the end of the trimester —
+// timed "End of trimester/semester", or explicitly described as a "final
+// exam" regardless of timing. Mid-terms ("Week 9") and other in-term exam
+// components never match. The timetable feed's EXAM/EXM rows are OR-ed in by
+// the consumer (app.js), since some modules publish a final sitting there
+// without a matching assessment row (COMP47970's week-33 EXM sits after
+// week-12 teaching ends).
 function hasFinalExam(components) {
   return components.some(
     (c) =>
       /^\s*exam/i.test(c.description || "") &&
-      /end\s+of\s+(the\s+)?(trimester|semester)/i.test(c.timing || "")
+      (/end\s+of\s+(the\s+)?(trimester|semester)/i.test(c.timing || "") ||
+        /\bfinal\s+exam/i.test(c.description || ""))
   );
 }
 

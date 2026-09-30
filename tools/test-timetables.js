@@ -508,6 +508,19 @@ async function main() {
       console.log("  OK — GEOG40820 correctly excluded via its module-page assessment (regression case)");
     }
   }
+  // COMP41740 is the second user-reported regression: its page lists a 60%
+  // "Exam (In-person)" whose description says "final exam" although it's
+  // timed "Week 12" — the wording rule must catch it. COMP40725 (week-9
+  // mid-term) and MIS30010 (week-8 in-class test) must stay exam-free.
+  for (const [code, want] of [["COMP41740", true], ["COMP40725", false], ["MIS30010", false], ["COMP31010", false], ["COMP40610", false], ["EEEN40680", false]]) {
+    if (!live.get(code) || !assessmentExamMap.size) continue; // module or assessments unavailable
+    if (!!assessmentExamMap.get(code) !== want) {
+      noExamFails++;
+      console.log(`  FAIL — ${code} exam verdict is ${!!assessmentExamMap.get(code)}, expected ${want}`);
+    } else {
+      console.log(`  OK — ${code} exam verdict ${want ? "true" : "false"} (regression case)`);
+    }
+  }
   if (noExamFails) console.log(`  FAIL — ${noExamFails} no-exam plan problem(s)`);
   else if (noExamPlansTotal) console.log("  OK — every no-exam plan excludes all final-exam modules and is genuinely clash-free.");
   else console.log("  WARN — no exam-free plans found for any target/semester (pool may be too small)");
@@ -585,6 +598,66 @@ async function main() {
   }
   if (!showMoreFails) console.log("  OK — repeated show-more calls never return a plan already shown.");
 
+  // ---- 7. per-module exam-verdict audit (missed vs correctly excluded)
+  // Re-scrapes every catalogue module page independently of the assessments
+  // function, derives each verdict with hasFinalExam(), and cross-checks the
+  // result against (a) the map the function actually serves and (b) the
+  // recorded AUDIT_BASELINE counts. Any drift means hasFinalExam changed
+  // behaviour — fix the rule or, if deliberate, update the baseline.
+  console.log("\n[7] Exam-verdict audit (every catalogue module page, missed vs correctly excluded):");
+  let auditFails = 0;
+  try {
+    const { runAudit, AUDIT_BASELINE } = require("./audit-exam-verdicts.js");
+    const audit = await runAudit();
+    if (audit.errors.length) {
+      auditFails += audit.errors.length;
+      console.log(`  FAIL — ${audit.errors.length} module page(s) could not be fetched: ${audit.errors.sort().join(", ")}`);
+    }
+    if (audit.nodata.length) {
+      auditFails += audit.nodata.length;
+      console.log(`  FAIL — ${audit.nodata.length} module page(s) have no Assessment Strategy table: ${audit.nodata.sort().join(", ")}`);
+    }
+    // (a) served map must equal the fresh independent scrape
+    let assessServed = null;
+    try { assessServed = await getJson(`${BASE}/.netlify/functions/assessments`); } catch (e) { /* offline */ }
+    if (assessServed && assessServed.results) {
+      const fresh = audit.verdicts;
+      const mism = [];
+      const extra = [];
+      for (const [code, v] of fresh) {
+        const r = assessServed.results[code];
+        if (!r || r.status !== "ok" || !!r.hasFinalExam !== v) mism.push(`${code}: served=${r && r.status === "ok" ? !!r.hasFinalExam : "no-data"} fresh=${v}`);
+      }
+      for (const code of Object.keys(assessServed.results)) {
+        if (!fresh.has(code)) extra.push(code);
+      }
+      if (mism.length || extra.length) {
+        auditFails += mism.length + extra.length;
+        for (const m of mism.slice(0, 10)) console.log(`  FAIL — served map disagrees with the fresh scrape: ${m}`);
+        if (mism.length > 10) console.log(`  FAIL — …and ${mism.length - 10} more mismatches`);
+        if (extra.length) console.log(`  FAIL — served map covers modules outside the audit: ${extra.join(", ")}`);
+      } else {
+        console.log(`  OK — served assessments map matches the fresh scrape for all ${fresh.size} modules (v${assessServed.v}).`);
+      }
+    } else {
+      console.log("  WARN — assessments endpoint unavailable; served-map cross-check skipped");
+    }
+    // (b) counts must match the recorded baseline
+    if (audit.included.length !== AUDIT_BASELINE.included || audit.excluded.length !== AUDIT_BASELINE.excluded) {
+      auditFails++;
+      console.log(
+        `  FAIL — verdict counts drifted from the recorded baseline: ${audit.included.length} exam / ${audit.excluded.length} exam-free vs baseline ${AUDIT_BASELINE.included} / ${AUDIT_BASELINE.excluded}.\n         If the change is deliberate, update AUDIT_BASELINE in tools/audit-exam-verdicts.js; if not, hasFinalExam has a bug.`
+      );
+    } else {
+      console.log(
+        `  OK — verdict counts match the baseline: ${audit.included.length} with a final exam, ${audit.excluded.length} correctly exam-free, 0 modules without assessment data.`
+      );
+    }
+  } catch (e) {
+    auditFails++;
+    console.log(`  FAIL — exam-verdict audit could not run: ${e.message}`);
+  }
+
   // ---- summary
   console.log("\n================ SUMMARY ================");
   const noTt = all.filter((m) => !(live.get(m.code) && live.get(m.code).classes && live.get(m.code).classes.length));
@@ -595,7 +668,7 @@ async function main() {
   console.log(`Cross-semester false clashes: ${crossSem}`);
   console.log(`Data-quality problems: ${problems.length}`);
   if (bad.length) console.log(`Fetch errors: ${bad.join(", ")}`);
-  console.log(problems.length || planFails || crossSem || showMoreFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
+  console.log(problems.length || planFails || noExamFails || crossSem || showMoreFails || auditFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
 }
 
 main().catch((e) => {
