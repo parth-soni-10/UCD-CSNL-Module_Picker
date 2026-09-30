@@ -23,6 +23,10 @@ const BASE = "http://localhost:8787";
 // --- app.js logic, replicated exactly --------------------------------------
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+// Plan-builder preference filters (mirrors app.js planPrefs) — exercised by
+// section [6c]. Empty selection = "max per day" counts module classes only.
+const prefs = { noEarly: false, noFriday: false, maxPerDay: 0 };
+const currentSelection = () => [];
 
 function offeringKey(cls) {
   return `${cls.day}|${cls.startTime}|${cls.type}|${cls.offering}`;
@@ -340,6 +344,25 @@ async function main() {
         .map((s) => s.trim())
         .filter(Boolean);
       if (sem !== "all" && sems.length && !sems.includes(sem)) continue;
+      // Preference filters mirror app.js planPool: drop modules that cannot
+      // satisfy "no 9am" / "no Friday" / "max modules per day".
+      if (prefs.noEarly && data.classes.some((cls) => timeToMinutes(cls.startTime) < 10 * 60)) continue;
+      if (prefs.noFriday && data.classes.every((cls) => cls.day === "Fri")) continue;
+      if (prefs.maxPerDay > 0) {
+        const perDay = {};
+        for (const cls of data.classes) perDay[cls.day] = (perDay[cls.day] || 0) + 1;
+        let possible = true;
+        for (const day of Object.keys(perDay)) {
+          const selectedOnDay = currentSelection().filter((s) => {
+            if (s.code === m.code) return false;
+            const d = live.get(s.code);
+            const other = d && d.classes ? d.classes.find((x) => offeringKey(x) === s.offeringKey) : null;
+            return other && other.day === day;
+          }).length;
+          if (perDay[day] + selectedOnDay > prefs.maxPerDay) possible = false;
+        }
+        if (!possible) continue;
+      }
       pool.push({ code: m.code, credits, semester: m.semester || (data && data.semester) || "", info: { title: m.title, credits }, data });
     }
     return pool;
@@ -612,6 +635,73 @@ async function main() {
   }
   if (!showMoreFails) console.log("  OK — repeated show-more calls never return a plan already shown.");
 
+  // ---- 6c. preference filters + client/server rule agreement
+  console.log("\n[6c] Preference filters and exam-rule agreement:");
+  let prefFails = 0;
+  {
+    // (a) the catalogue's exported assessment rows must reproduce the served
+    // exam map exactly (client rule == server rule, modulo timetable-only
+    // rows like COMP47970)
+    const catalogueAssess = themes
+      .flatMap((t) => t.courses)
+      .filter((c) => Array.isArray(c.assessments) && c.assessments.length);
+    if (!catalogueAssess.length) {
+      prefFails++;
+      console.log("  FAIL — catalogue carries no assessment rows (assessment export broken)");
+    } else {
+      const mism = [];
+      for (const c of catalogueAssess) {
+        const code = codeFromName(c.name).toUpperCase();
+        const client = c.assessments.some(
+          (a) =>
+            /^\s*exam/i.test(a.description || "") &&
+            (/end\s+of\s+(the\s+)?(trimester|semester)/i.test(a.timing || "") || /\bfinal\s+exam/i.test(a.description || ""))
+        );
+        if (!!assessmentExamMap.get(code) !== client) mism.push(code);
+      }
+      const explainable = mism.filter((code) => {
+        // timetable-row-only modules are legitimately map-true while the page
+        // rows say false — verify each one really has an EXAM/EXM row
+        const d = live.get(code);
+        return d && d.classes && d.classes.some((x) => EXAM_CLASS_TYPES.has(String(x.type || "").toUpperCase()));
+      });
+      const real = mism.filter((code) => !explainable.includes(code));
+      if (real.length) {
+        prefFails++;
+        console.log(`  FAIL — client rule disagrees with the served exam map for: ${real.join(", ")}`);
+      } else {
+        console.log(`  OK — ${catalogueAssess.length} exported assessments agree with the served exam map${explainable.length ? ` (${explainable.length} timetable-only exception${explainable.length > 1 ? "s" : ""} explained)` : ""}.`);
+      }
+    }
+    // (b) preference filters: each must constrain the pool it applies to
+    const poolBase = planPool("1", false).map((p) => p.code);
+    prefs.noEarly = true;
+    const poolNoEarly = planPool("1", false).map((p) => p.code);
+    prefs.noEarly = false;
+    prefs.noFriday = true;
+    const poolNoFriday = planPool("1", false).map((p) => p.code);
+    prefs.noFriday = false;
+    prefs.maxPerDay = 2;
+    const poolMaxDay = planPool("1", false).map((p) => p.code);
+    prefs.maxPerDay = 0;
+    const badNoEarly = poolNoEarly.filter((code) => {
+      const d = live.get(code);
+      return d.classes.some((cls) => timeToMinutes(cls.startTime) < 10 * 60);
+    });
+    const badNoFriday = poolNoFriday.filter((code) => {
+      const d = live.get(code);
+      return d.classes.every((cls) => cls.day === "Fri");
+    });
+    if (badNoEarly.length) { prefFails++; console.log(`  FAIL — no-9am pool contains all-early modules: ${badNoEarly.join(", ")}`); }
+    else if (poolNoEarly.length >= poolBase.length) { prefFails++; console.log("  FAIL — no-9am filter removed nothing (filter not applied?)"); }
+    else console.log(`  OK — no-9am filter: ${poolBase.length} -> ${poolNoEarly.length} modules, none with a pre-10:00 sitting.`);
+    if (badNoFriday.length) { prefFails++; console.log(`  FAIL — no-Friday pool contains Friday-only modules: ${badNoFriday.join(", ")}`); }
+    else if (poolNoFriday.length >= poolBase.length) { prefFails++; console.log("  FAIL — no-Friday filter removed nothing (filter not applied?)"); }
+    else console.log(`  OK — no-Friday filter: ${poolBase.length} -> ${poolNoFriday.length} modules, none Friday-only.`);
+    if (prefs.maxPerDay !== 0) { prefFails++; console.log("  FAIL — maxPerDay pref not restored"); }
+  }
+  if (!prefFails) console.log("  OK — preference filters and exam-rule agreement verified.");
+
   // ---- 6b. workload ranking (mirror of app.js planWorkload ordering)
   // Plans with equal credit fit must be ordered by fewest distinct days on
   // campus (then fewer sessions, then fewer modules) — the "2 days/wk beats
@@ -723,7 +813,7 @@ async function main() {
   console.log(`Cross-semester false clashes: ${crossSem}`);
   console.log(`Data-quality problems: ${problems.length}`);
   if (bad.length) console.log(`Fetch errors: ${bad.join(", ")}`);
-  console.log(problems.length || planFails || noExamFails || crossSem || showMoreFails || wlFails || auditFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
+  console.log(problems.length || planFails || noExamFails || crossSem || showMoreFails || wlFails || prefFails || auditFails ? "RESULT: FAILURES FOUND" : "RESULT: ALL CHECKS PASSED");
 }
 
 main().catch((e) => {

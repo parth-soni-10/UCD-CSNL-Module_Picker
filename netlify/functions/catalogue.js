@@ -38,7 +38,7 @@ try {
 
 const STORE_NAME = "csnl-catalogue";
 const KEY = "modules";
-const VERSION = 7; // bumped when the stored catalogue shape changes
+const VERSION = 8; // bumped when the stored catalogue shape changes (8: + assessments)
 const NL_STREAMS_URL = "https://www.ucd.ie/cs/study/postgraduate/nlstreams/";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
@@ -285,6 +285,29 @@ function codeFromName(name) {
   return m ? m[1].trim() : name;
 }
 
+// Attaches the scraped assessment components to each course, keyed by code:
+// c.assessments = [{ description, timing, weight }]. The frontend renders
+// the breakdown and derives the exam verdict itself from these rows (the
+// weights are also the raw material for the exam rule, so the client and
+// the server always agree by construction).
+function attachAssessments(themes, assess) {
+  if (!assess || !assess.results) return themes;
+  for (const t of themes) {
+    for (const c of t.courses) {
+      const code = codeFromName(c.name).toUpperCase();
+      const r = assess.results[code];
+      if (r && r.status === "ok" && Array.isArray(r.components) && r.components.length) {
+        c.assessments = r.components.map((x) => ({
+          description: x.description || "",
+          timing: x.timing || "",
+          weight: typeof x.weight === "number" ? x.weight : null,
+        }));
+      }
+    }
+  }
+  return themes;
+}
+
 // Merges the committed seed with UCD's generic catalogue, refreshing credits
 // and attaching descriptions.
 function buildFromGenericCatalogue(curated, ucd) {
@@ -344,9 +367,33 @@ async function getCatalogue(opts) {
       const html = await fetchText(NL_STREAMS_URL);
       const { streams, pageUpdated } = parseNlStreams(html);
       if (stored.pageUpdated === pageUpdated) {
+        // Page unchanged — but if this stored catalogue predates the
+        // assessment export (v8) it lacks c.assessments. Backfill from the
+        // stored assessment map (peek only) instead of serving rows forever
+        // without them.
+        const needsAssess = !stored.themes.some((t) => (t.courses || []).some((c) => c.assessments));
+        if (needsAssess) {
+          try {
+            const { peekStored } = require("./assessments.js");
+            const assess = await peekStored();
+            if (assess && assess.results && Object.keys(assess.results).length) {
+              attachAssessments(stored.themes, assess);
+              await writeStored(stored);
+            }
+          } catch (e) {
+            /* nice-to-have */
+          }
+        }
         return stored; // unchanged since we last looked
       }
-      const fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
+      let fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
+      try {
+        // peek only — never trigger the multi-second assessment scrape here
+        const { peekStored } = require("./assessments.js");
+        fresh.themes = attachAssessments(fresh.themes, await peekStored());
+      } catch (e) {
+        /* assessments are a nice-to-have */
+      }
       fresh.year = targetYear;
       fresh.v = VERSION;
       await writeStored(fresh);
@@ -360,7 +407,14 @@ async function getCatalogue(opts) {
   try {
     const html = await fetchText(NL_STREAMS_URL);
     const { streams, pageUpdated } = parseNlStreams(html);
-    const fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
+    let fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
+    try {
+      // peek only — never trigger the multi-second assessment scrape here
+      const { peekStored } = require("./assessments.js");
+      fresh.themes = attachAssessments(fresh.themes, await peekStored());
+    } catch (e) {
+      /* assessment data is a nice-to-have — the catalogue still serves */
+    }
     fresh.year = targetYear;
     fresh.v = VERSION;
     await writeStored(fresh);
@@ -388,9 +442,53 @@ async function getCatalogue(opts) {
   }
 }
 
-exports.handler = async () => {
+exports.handler = async (event) => {
   try {
-    const catalogue = await getCatalogue();
+    // Health/action endpoint: ?action=health returns service metadata —
+    // catalogue and assessment freshness and counts — without the full
+    // payload, so the site can show a data-health line and tooling can
+    // monitor the scraper without downloading the catalogue.
+    const params = (event && event.queryStringParameters) || {};
+    if (params.action === "health") {
+      // Health reads ONLY already-stored data — it never triggers a rebuild
+      // (a cold health check would have to fetch the streams page, the UCD
+      // catalogue and up to 68 module pages, ~15-30s — no basis for a status
+      // line the page loads on every visit). Absence of stored data is the
+      // signal itself; the first normal visit warms everything up.
+      const stored = await readStored();
+      const cat = stored || {};
+      const themes = cat.themes || [];
+      const courses = themes.flatMap((t) => t.courses || []);
+      const withAssess = courses.filter((c) => Array.isArray(c.assessments) && c.assessments.length);
+      const examCount = withAssess.filter((c) =>
+        c.assessments.some(
+          (a) =>
+            /^\s*exam/i.test(a.description || "") &&
+            (/end\s+of\s+(the\s+)?(trimester|semester)/i.test(a.timing || "") || /\bfinal\s+exam/i.test(a.description || ""))
+        )
+      ).length;
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=60" },
+        body: JSON.stringify({
+          ok: hasStoredData(stored),
+          warmed: hasStoredData(stored),
+          year: cat.year ?? null,
+          generatedAt: cat.generatedAt || null,
+          pageUpdated: cat.pageUpdated || null,
+          verified: !!cat.verified,
+          source: cat.source || null,
+          themes: themes.length,
+          modules: courses.length,
+          assessments: {
+            ok: withAssess.length > 0,
+            modules: withAssess.length,
+            examModules: examCount,
+          },
+        }),
+      };
+    }
+    const catalogue = await getCatalogue({ force: params.force === "1" });
     return {
       statusCode: 200,
       headers: {
@@ -409,3 +507,9 @@ exports.handler = async () => {
 };
 
 exports.getCatalogue = getCatalogue; // used by the scheduled refresh function
+exports.attachAssessments = attachAssessments; // exposed for tests
+
+// A stored catalogue counts as "warmed" only when it's a real payload.
+function hasStoredData(stored) {
+  return !!(stored && Array.isArray(stored.themes) && stored.themes.length);
+}

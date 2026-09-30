@@ -95,11 +95,14 @@ const server = http.createServer(async (req, res) => {
         res.end("Not found");
         return;
       }
-      const ext = path.extname(filePath).toLowerCase();
-      res.writeHead(200, {
-        "Content-Type": MIME[ext] || "application/octet-stream",
-      });
-      res.end(data);
+    const ext = path.extname(filePath).toLowerCase();
+    res.writeHead(200, {
+      "Content-Type": MIME[ext] || "application/octet-stream",
+      // HTML must always revalidate (it references versioned scripts);
+      // other assets may live briefly in the browser cache.
+      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=300",
+    });
+    res.end(data);
     });
   });
 });

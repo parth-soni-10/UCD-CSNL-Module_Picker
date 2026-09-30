@@ -2212,6 +2212,220 @@ body {
   font-size: 11.5px;
 }
 
+/* ------------------------------------------------- batch-3 feature styles */
+
+/* Assessment breakdown chips on module cards */
+.assess-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 8px 2px 0;
+}
+.assess-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  cursor: help;
+  max-width: 100%;
+  overflow: hidden;
+}
+.assess-chip strong {
+  font-weight: 700;
+}
+.assess-chip.final {
+  color: var(--exam, #b91c1c);
+  border-color: var(--exam-border, rgba(185, 28, 28, 0.4));
+  background: var(--exam-soft, rgba(185, 28, 28, 0.08));
+}
+.assess-chip.midterm {
+  color: var(--text-3);
+  border-style: dashed;
+}
+
+/* Live clash preview on offerings */
+.offering.clash-preview {
+  border-color: var(--exam-border, rgba(185, 28, 28, 0.45));
+  background: var(--exam-soft, rgba(185, 28, 28, 0.05));
+}
+.off-clash {
+  font-size: 10.5px;
+  color: var(--exam, #b91c1c);
+  margin-top: 2px;
+}
+
+/* Plan preference filters */
+.plan-prefs {
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.pref {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pref input[type="checkbox"] {
+  accent-color: var(--accent, #2563eb);
+}
+.pref input[type="number"] {
+  width: 46px;
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+/* Theme completion meter */
+.theme-meter {
+  font-size: 11.5px;
+  color: var(--ok, #16a34a);
+  margin: 0 2px 6px;
+}
+
+/* Contact hours already inherit .plan-badge.wl */
+
+/* Compare staging bar + table */
+.compare-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border: 1px solid var(--accent, #2563eb);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+  position: sticky;
+  top: calc(var(--topbar-h, 90px) + 8px);
+  z-index: 25;
+}
+.compare-bar.hidden {
+  display: none;
+}
+.btn-compare-go {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+.btn-compare-clear {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+.cmp-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 4px;
+  cursor: pointer;
+}
+.cmp-pick input {
+  accent-color: var(--accent, #2563eb);
+}
+.compare-table {
+  padding: 0;
+}
+.compare-table.hidden {
+  display: none;
+}
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.cmp-table th,
+.cmp-table td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.cmp-table thead th,
+.cmp-table tr:first-child th {
+  background: var(--surface-2, var(--surface));
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.cmp-table tr > th:first-child {
+  width: 110px;
+  color: var(--text-3);
+  font-weight: 600;
+  background: var(--surface-2, var(--surface));
+}
+.cmp-exam {
+  display: inline-block;
+  font-weight: 700;
+  margin-right: 6px;
+}
+.cmp-exam.yes {
+  color: var(--exam, #b91c1c);
+}
+.cmp-exam.no {
+  color: var(--ok, #16a34a);
+}
+.cmp-exam-why {
+  display: block;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.cmp-assess {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+.cmp-assess strong {
+  color: var(--text-1, inherit);
+}
+
+/* Report link on cards */
+.report-link {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 4px;
+  text-decoration: none;
+}
+.report-link:hover {
+  color: var(--exam, #b91c1c);
+  text-decoration: underline;
+}
+
+/* Export / Import row */
+.import-label {
+  position: relative;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Offering swap buttons inside the event tooltip */
+.tt-swaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.swap-offering {
+  font: inherit;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.swap-offering:hover {
+  border-color: var(--accent, #2563eb);
+  color: var(--accent, #2563eb);
+}
+
 /* ------------------------------------------------------------ motion gates */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -2245,12 +2459,24 @@ body {
 
 @media (max-width: 720px) {
   /* Long theme labels must never force the panel wider than the phone —
-     they were the source of a 60px horizontal scroll on 390px screens. */
+     they were the source of a 60px horizontal scroll on 390px screens.
+     The label span itself gets the same treatment (it is a flex item of
+     .theme-toggle, whose min-content width is set by the longest name). */
+  .theme-toggle {
+    min-width: 0;
+  }
   .theme-toggle > span:first-child {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
+  }
+  .theme {
+    min-width: 0;
+  }
+  .panel {
+    min-width: 0;
   }
   .row {
     min-width: 0;

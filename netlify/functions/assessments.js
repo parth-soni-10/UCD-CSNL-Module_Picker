@@ -315,3 +315,7 @@ exports.handler = async (event) => {
 exports.getAssessments = getAssessments;
 exports.hasFinalExam = hasFinalExam;
 exports.parseAssessment = parseAssessment;
+// Non-building peek at the stored map (or null) — lets the catalogue attach
+// assessment rows when they already exist without ever triggering the
+// ~10-30s scrape inside a catalogue request.
+exports.peekStored = readStored;

@@ -51,6 +51,10 @@ let viewTerm = "all"; // "all" | "1" | "2" — which semester the weekly grid sh
 let examInfo = {}; // code -> { hasExam, label } — why a module is (not) exam-free
 let lastTimingsAt = null; // when the live timetable payload was generated (freshness stamp)
 let lastAssessAt = null; // when the exam map was generated (freshness stamp)
+// Plan-builder preference filters ("avoid 9am", "no Friday", max modules/day)
+let planPrefs = { noEarly: false, noFriday: false, maxPerDay: 0 };
+let serviceHealth = null; // catalogue ?action=health payload (data-health line)
+let comparePick = new Set(); // codes staged for the module comparison table
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -93,6 +97,13 @@ const els = {
   comparePanel: document.getElementById("compare-panel"),
   toast: document.getElementById("toast"),
   freshness: document.getElementById("data-freshness"),
+  prefNoEarly: document.getElementById("pref-no-early"),
+  prefNoFriday: document.getElementById("pref-no-friday"),
+  prefMaxPerDay: document.getElementById("pref-max-per-day"),
+  exportSelBtn: document.getElementById("export-sel-btn"),
+  importSelInput: document.getElementById("import-sel-input"),
+  compareBar: document.getElementById("compare-bar"),
+  compareTable: document.getElementById("compare-table"),
   addCodeInput: document.getElementById("add-code-input"),
   addCodeBtn: document.getElementById("add-code-btn"),
   addCodeError: document.getElementById("add-code-error"),
@@ -797,9 +808,217 @@ function renderDataFreshness() {
   };
   const bits = [];
   if (lastTimingsAt) bits.push(`timings fetched ${ago(lastTimingsAt)}`);
-  if (lastAssessAt) bits.push(`exam data refreshed ${ago(lastAssessAt)}`);
+  if (serviceHealth) {
+    const a = serviceHealth.assessments || {};
+    if (a.ok && a.generatedAt) bits.push(`exam data refreshed ${ago(Date.parse(a.generatedAt))}`);
+    else if (a.ok === false) bits.push("exam data unavailable");
+    if (serviceHealth.verified) bits.push(`catalogue verified ${serviceHealth.pageUpdated || ""}`.trim());
+  } else if (lastAssessAt) {
+    bits.push(`exam data refreshed ${ago(lastAssessAt)}`);
+  }
   el.textContent = bits.join(" · ") + (bits.length ? " · " : "") + "not an official UCD service";
 }
+
+// --- selection export / import (JSON file) -----------------------------------
+// A file survives "save my whole year" better than a URL: every timetable's
+// selections in one artifact that can be moved between devices or kept as a
+// backup. Structure: { app, version, savedAt, year, active, selection }.
+function exportSelectionFile() {
+  const payload = {
+    app: "csnl-module-picker",
+    version: 1,
+    savedAt: new Date().toISOString(),
+    year: targetYearString(),
+    active: activeTimetable,
+    selection,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `csnl-selection-${targetYearString().replace("/", "-")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  showToast("Selection exported as JSON.", null, 3500);
+}
+
+function importSelectionFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(String(reader.result));
+      if (!data || data.app !== "csnl-module-picker" || typeof data.selection !== "object") {
+        throw new Error("not a picker export");
+      }
+      const incoming = {};
+      const csnl = new Set(curatedCodes());
+      for (const [name, arr] of Object.entries(data.selection)) {
+        if (!Array.isArray(arr)) continue;
+        // keep only CSNL codes; keep only well-formed entries
+        const sel = arr.filter((s) => s && typeof s.code === "string" && csnl.has(s.code) && s.offeringKey);
+        incoming[String(name)] = sel;
+      }
+      if (!Object.keys(incoming).length) throw new Error("no timetables in the file");
+      const snapshotAll = JSON.parse(JSON.stringify(selection));
+      const had = new Set(Object.keys(selection));
+      for (const [name, sel] of Object.entries(incoming)) selection[name] = sel;
+      if (data.active && typeof data.active === "string" && selection[data.active]) {
+        activeTimetable = data.active;
+      } else if (!selection[activeTimetable]) {
+        activeTimetable = Object.keys(selection)[0];
+      }
+      saveState();
+      refreshUI();
+      syncUrl();
+      const n = Object.keys(incoming).length;
+      showToast(
+        `Imported ${n} timetable${n > 1 ? "s" : ""} from the file.`,
+        () => {
+          // Undo: drop timetables that were new and restore those that existed
+          for (const name of Object.keys(selection)) if (!had.has(name)) delete selection[name];
+          selection = snapshotAll;
+          saveState();
+          refreshUI();
+          syncUrl();
+        },
+        7000
+      );
+    } catch (e) {
+      showToast(`Couldn't import: ${e.message === "not a picker export" ? "that file wasn't exported by this site" : e.message}`, null, 5000);
+    }
+  };
+  reader.readAsText(file);
+}
+if (els.exportSelBtn) els.exportSelBtn.addEventListener("click", exportSelectionFile);
+if (els.importSelInput) {
+  els.importSelInput.addEventListener("change", () => {
+    const f = els.importSelInput.files && els.importSelInput.files[0];
+    if (f) importSelectionFile(f);
+    els.importSelInput.value = ""; // allow re-importing the same file
+  });
+}
+
+// --- compare modules ---------------------------------------------------------
+// Stage 2-3 modules with the compare-toggle on their cards, then render a
+// side-by-side table: credits, semester, kind, exam verdict, assessments.
+function renderCompareBar() {
+  if (!els.compareBar) return;
+  if (!comparePick.size) {
+    els.compareBar.classList.add("hidden");
+    els.compareBar.innerHTML = "";
+    return;
+  }
+  els.compareBar.classList.remove("hidden");
+  els.compareBar.innerHTML =
+    `<span>Comparing ${comparePick.size} module${comparePick.size > 1 ? "s" : ""}</span>` +
+    `<button class="btn btn-primary btn-compare-go" type="button">Compare</button>` +
+    `<button class="btn btn-ghost btn-compare-clear" type="button">Clear</button>`;
+}
+
+function toggleComparePick(code, on) {
+  if (on) comparePick.add(code);
+  else comparePick.delete(code);
+  if (comparePick.size > 3) {
+    // keep the table readable: drop the oldest pick beyond three
+    const first = comparePick.values().next().value;
+    comparePick.delete(first);
+    const card = document.querySelector(`.course-card[data-code="${CSS.escape(first)}"] .cmp-toggle`);
+    if (card) card.checked = false;
+  }
+  renderCompareBar();
+}
+
+function renderCompareTable() {
+  if (!els.compareTable) return;
+  const codes = [...comparePick];
+  if (codes.length < 2) {
+    els.compareTable.innerHTML = "";
+    els.compareTable.classList.add("hidden");
+    return;
+  }
+  els.compareTable.classList.remove("hidden");
+  const cell = (v) => `<td>${v}</td>`;
+  const rows = [];
+  rows.push(
+    `<tr><th></th>${codes
+      .map((c) => `<th><a href="${UCD_MODULE_BASE}${esc(c)}" target="_blank" rel="noopener">${esc(c)}</a></th>`)
+      .join("")}</tr>`
+  );
+  rows.push(`<tr><th>Title</th>${codes.map((c) => cell(esc(moduleInfo(c).title || c))).join("")}</tr>`);
+  rows.push(`<tr><th>Credits</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.credits ? i.credits + " cr" : "—"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Semester</th>${codes.map((c) => { const i = moduleInfo(c); const s = i && (i.semester || (live.get(c) || {}).semester); return cell(s ? esc(String(s).replace(",", "+")) : "—"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Kind</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.kind ? esc(i.kind) : "—"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Final exam</th>${codes.map((c) => {
+    const rows2 = moduleAssessments(c);
+    const has = rows2 ? clientHasFinalExam(rows2) : isExamModule(c, live.get(c));
+    const why = examInfo[c] ? examInfo[c].label : has ? "Has a final exam" : "No final-exam component";
+    return cell(`<span class="cmp-exam ${has ? "yes" : "no"}">${has ? "Yes" : "No"}</span><span class="cmp-exam-why">${esc(why)}</span>`);
+  }).join("")}</tr>`);
+  rows.push(`<tr><th>Assessment</th>${codes.map((c) => {
+    const list = moduleAssessments(c);
+    return cell(list ? list.map((a) => {
+      const d = String(a.description || "");
+      const type = d.includes(":") ? d.slice(0, d.indexOf(":")).trim() : d.slice(0, 24).trim();
+      return `<div class="cmp-assess">${esc(type)}<strong>${a.weight == null ? "" : " " + a.weight + "%"}</strong></div>`;
+    }).join("") : "—");
+  }).join("")}</tr>`);
+  rows.push(`<tr><th>Timetable</th>${codes.map((c) => {
+    const d = live.get(c);
+    if (!d || !d.classes || !d.classes.length) return cell('<span class="muted">not published</span>');
+    const days = [...new Set(d.classes.map((x) => x.day).filter((x) => DAYS.includes(x)))];
+    return cell(days.length ? esc(days.join(" ")) : "—");
+  }).join("")}</tr>`);
+  els.compareTable.innerHTML = `<table class="cmp-table">${rows.join("")}</table>`;
+}
+
+if (els.compareBar) {
+  els.compareBar.addEventListener("click", (e) => {
+    if (e.target.closest(".btn-compare-go")) {
+      renderCompareTable();
+      els.compareTable.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (e.target.closest(".btn-compare-clear")) {
+      comparePick.clear();
+      document.querySelectorAll(".cmp-toggle").forEach((t) => (t.checked = false));
+      renderCompareBar();
+      renderCompareTable();
+    }
+  });
+}
+
+// --- keyboard pass -----------------------------------------------------------
+// "/" focuses search (like GitHub), Esc closes tooltips/compare bar, and
+// [ / ] step through visible module cards. Skips when typing in a field.
+document.addEventListener("keydown", (e) => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  const typing = tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable;
+  if (e.key === "/" && !typing) {
+    e.preventDefault();
+    els.search.focus();
+    els.search.select();
+    return;
+  }
+  if (e.key === "Escape") {
+    document.querySelectorAll(".ev-tooltip.show").forEach((t) => t.classList.remove("show"));
+    if (comparePick.size) {
+      comparePick.clear();
+      document.querySelectorAll(".cmp-toggle").forEach((t) => (t.checked = false));
+      renderCompareBar();
+    }
+    if (!typing) els.search.blur();
+    return;
+  }
+  if (typing || !(e.key === "[" || e.key === "]")) return;
+  const cards = [...document.querySelectorAll(".course-card")].filter((c) => c.offsetParent);
+  if (!cards.length) return;
+  const current = cards.findIndex((c) => c === document.activeElement?.closest?.(".course-card"));
+  const next = e.key === "]" ? Math.min(cards.length - 1, current + 1) : Math.max(0, current < 0 ? 0 : current - 1);
+  const target = cards[current < 0 ? 0 : next];
+  target.scrollIntoView({ block: "center" });
+  target.focus?.();
+  target.classList.add("flash");
+  setTimeout(() => target.classList.remove("flash"), 900);
+});
 
 // Fills the print-only header and module legend (visible only in print).
 function renderPrintInfo() {
@@ -918,6 +1137,17 @@ function render() {
       coreBtn.addEventListener("click", () => addThemeCores(themeObj.name, coreCodes));
       body.appendChild(coreBtn);
     }
+    // Theme completion meter: how much of this stream's teaching is already
+    // picked (cores + credits) — the picker acting as a degree tracker.
+    const selCodes = selectedCodeSet();
+    const themeSel = themeObj.courses.filter((c) => selCodes.has(c.code));
+    if (themeSel.length) {
+      const cr = themeSel.reduce((s, c) => s + (c.credits || 0), 0);
+      const meter = document.createElement("div");
+      meter.className = "theme-meter";
+      meter.textContent = `${themeSel.length}/${themeObj.courses.length} selected · ${cr} cr`;
+      body.insertBefore(meter, body.firstChild);
+    }
     let cardIndex = 0;
     for (const c of themeObj.courses) {
       const card = renderCourseCard(c, over);
@@ -1018,6 +1248,28 @@ function renderCourseCard(c, over) {
       ? `<span class="badge over-limit-badge" title="This module pushes your selection over the CSNL credit limits. Consider swapping it out.">⚠ Over limit</span>`
       : "";
 
+  // Report-a-problem link (module-specific): prefills the suggestions form.
+  const reportLink = `<a class="report-link" href="#suggest-text" data-report="${esc(c.code)}" title="Report a problem with this module's data">⚠ report</a>`;
+
+  // Assessment breakdown, e.g. "Essay 10% · Group work 30% · Exam 60%" —
+  // shown once the catalogue exports the scraped rows (cheap chips so the
+  // whole mix fits on a card; weights sum to the module's credits).
+  const assessments = c.assessments || moduleAssessments(c.code);
+  const assessHtml = assessments
+    ? `<div class="assess-breakdown" title="Assessment components from ${esc(c.code)}'s UCD module page">` +
+      assessments
+        .map((a) => {
+          const d = String(a.description || "");
+          const type = d.includes(":") ? d.slice(0, d.indexOf(":")).trim() : d.slice(0, 26).trim();
+          const isExam = /^\s*exam/i.test(d) && /end\s+of\s+(the\s+)?(trimester|semester)/i.test(a.timing || "") || /\bfinal\s+exam/i.test(d);
+          const isMidterm = /^\s*exam/i.test(d) && !isExam;
+          return `<span class="assess-chip${isExam ? " final" : ""}${isMidterm ? " midterm" : ""}" title="${esc(d)} — ${esc(a.timing)}${a.weight == null ? "" : " · " + a.weight + "%"}">` +
+            `${esc(type)}<strong>${a.weight == null ? "" : " " + a.weight + "%"}</strong></span>`;
+        })
+        .join("") +
+      `</div>`
+    : "";
+
   // Why is this module (not) exam-free — the exact question the exam filter
   // raises. Derived from the assessment scrape; "n/a" when data is pending.
   const examNote = examInfo[c.code]
@@ -1035,11 +1287,14 @@ function renderCourseCard(c, over) {
       </div>
       <div class="card-code-col">
         <span class="badge">${esc(c.code)}</span>
+        <label class="cmp-pick" title="Add to module comparison"><input type="checkbox" class="cmp-toggle" data-code="${esc(c.code)}" ${comparePick.has(c.code) ? "checked" : ""} /> cmp</label>
+        ${reportLink}
       </div>
     </div>
     ${c.description ? `<p class="card-desc">${esc(scrubNonCsnl(c.description))}</p>` : ""}
     ${c.comments ? `<div class="card-note" title="From the UCD CSNL streams page">${esc(c.comments)}</div>` : ""}
     ${examNote}
+    ${assessHtml}
     <div class="offerings" data-code="${esc(c.code)}"></div>
   `;
 
@@ -1053,21 +1308,35 @@ function renderCourseCard(c, over) {
     const note = data.scheduleNote || data.reason || "No classes scheduled";
     offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet. ${esc(note)}.</div>`;
   } else {
+    // Which offerings clash with the CURRENT selection? Computed live so a
+    // conflicting pick is visible before it's made — the plan builder then
+    // becomes the recovery tool, not the first line of defence.
     for (const cls of data.classes) {
       const key = offeringKey(cls);
       const checked = currentSelection().some(
         (s) => s.code === c.code && s.offeringKey === key
       );
+      const clashWith = [...new Set(
+        currentSelection()
+          .filter((s) => {
+            if (s.code === c.code) return false;
+            const d = live.get(s.code);
+            const other = d && d.classes ? d.classes.find((x) => offeringKey(x) === s.offeringKey) : null;
+            return other && classesClash(cls, other);
+          })
+          .map((s) => s.code)
+      )];
       const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}-${cls.weeks[cls.weeks.length - 1]}` : "";
       const loc = cls.location ? ` · ${esc(cls.location)}` : "";
       const div = document.createElement("label");
-      div.className = "offering" + (checked ? " checked" : "");
+      div.className = "offering" + (checked ? " checked" : "") + (clashWith.length ? " clash-preview" : "");
       div.innerHTML = `
         <input type="checkbox" ${checked ? "checked" : ""} data-code="${esc(c.code)}" data-key="${esc(key)}" />
         <div class="off-main">
           <div class="off-type">${esc(cls.typeLabel)} ${cls.offering ? "· Offering " + esc(cls.offering) : ""}</div>
           <div class="off-time">${esc(cls.day)} ${esc(cls.startTime)}-${esc(cls.endTime)}</div>
           <div class="off-meta">${weeks}${loc}</div>
+          ${clashWith.length ? `<div class="off-clash" title="Picking this would clash with your current selection">⚠ clashes with ${esc(clashWith.join(", "))}</div>` : ""}
         </div>
       `;
       offeringsEl.appendChild(div);
@@ -1287,6 +1556,20 @@ function evTooltipMarkup(info, data, cls, code) {
   if (sem) badges.push(`<span class="tt-badge">Sem ${sem.replace(",", "+")}</span>`);
   // The why-behind-the-badge, same source the exam-free filter uses.
   const why = examInfo[code] ? examInfo[code].label : null;
+  // Alternative offerings of the same session type: one click swaps the
+  // selected group straight from the grid, no need to find the card again.
+  const key = offeringKey(cls);
+  const swaps = (data && data.classes ? data.classes : []).filter(
+    (x) => x.type === cls.type && offeringKey(x) !== key
+  );
+  const swapHtml = swaps.length
+    ? `<div class="tt-row tt-swaps">${swaps
+        .map(
+          (x) =>
+            `<button class="swap-offering" data-code="${esc(code)}" data-from="${esc(key)}" data-to="${esc(offeringKey(x))}" title="Switch to this offering">↔ ${esc(x.day)} ${esc(x.startTime)}${x.offering ? " · " + esc(x.offering) : ""}</button>`
+        )
+        .join("")}</div>`
+    : "";
   const weeks = cls.weeks && cls.weeks.length ? `Weeks ${cls.weeks[0]}-${cls.weeks[cls.weeks.length - 1]}` : "";
   return `
     <div class="ev-tooltip" role="tooltip">
@@ -1295,6 +1578,7 @@ function evTooltipMarkup(info, data, cls, code) {
       <div class="tt-divider"></div>
       ${badges.length ? `<div class="tt-row">${badges.join("")}</div>` : ""}
       ${why ? `<div class="tt-row tt-why">${esc(why)}</div>` : ""}
+      ${swapHtml}
       ${weeks ? `<div class="tt-row">${esc(weeks)}</div>` : ""}
       ${cls.location ? `<div class="tt-row">Location: ${esc(cls.location)}</div>` : ""}
       ${cls.offering ? `<div class="tt-row">Offering ${esc(cls.offering)} · CRN ${esc(cls.crn || "-")}</div>` : ""}
@@ -1524,6 +1808,28 @@ function renderTimetable() {
 // Close any open event tooltip when tapping elsewhere on the page.
 document.addEventListener("click", (e) => {
   if (e.target.closest(".timetable-event")) return;
+  document.querySelectorAll(".ev-tooltip.show").forEach((t) => t.classList.remove("show"));
+});
+
+// "Switch offering" buttons inside an event's tooltip: swap the selected
+// group without leaving the grid.
+function switchOffering(code, fromKey, toKey) {
+  const sel = currentSelection().filter((s) => !(s.code === code && s.offeringKey === fromKey));
+  if (!sel.some((s) => s.code === code && s.offeringKey === toKey)) {
+    sel.push({ code, offeringKey: toKey });
+  }
+  const snapshot = snapshotSelection();
+  selection[activeTimetable] = sel;
+  saveState();
+  refreshUI();
+  syncUrl();
+  showToast("Offering switched.", () => restoreSelection(snapshot, "Previous selection"), 3500);
+}
+document.addEventListener("click", (e) => {
+  const swap = e.target.closest(".swap-offering");
+  if (!swap) return;
+  e.stopPropagation();
+  switchOffering(swap.dataset.code, swap.dataset.from, swap.dataset.to);
   document.querySelectorAll(".ev-tooltip.show").forEach((t) => t.classList.remove("show"));
 });
 
@@ -1788,6 +2094,27 @@ function refreshExamInfo() {
   }
 }
 
+// Client-side exam verdict from the module's own assessment rows (exported
+// by the catalogue function): an exam-typed component counts when it is sat
+// "End of trimester" OR explicitly says "final exam" — the exact rule the
+// server's hasFinalExam implements, so both always agree by construction.
+function clientHasFinalExam(assessments) {
+  if (!Array.isArray(assessments)) return false;
+  return assessments.some(
+    (c) =>
+      /^\s*exam/i.test(c.description || "") &&
+      (/end\s+of\s+(the\s+)?(trimester|semester)/i.test(c.timing || "") ||
+        /\bfinal\s+exam/i.test(c.description || ""))
+  );
+}
+
+// The assessment rows for a module: from the catalogue payload when the
+// scrape exported them, otherwise unknown (renderers show nothing).
+function moduleAssessments(code) {
+  const info = moduleInfo(code);
+  return info && Array.isArray(info.assessments) ? info.assessments : null;
+}
+
 function loadAssessmentsCache() {
   try {
     const raw = localStorage.getItem(LS_ASSESS);
@@ -1876,7 +2203,11 @@ function planModuleSemesters(info, data) {
 }
 
 function planPool(sem, noExam) {
-  // Modules with live classes + known credits, matching the chosen semester
+  // Modules with live classes + known credits, matching the chosen semester,
+  // then the user's preference filters (avoid 9am / no Friday / max per day)
+  // applied at module granularity: a module is only droppable if ALL its
+  // classes could break the preference (otherwise filtering happens on the
+  // clash-free assignment, which we check below).
   const pool = [];
   for (const code of curatedCodes()) {
     const data = live.get(code);
@@ -1887,6 +2218,30 @@ function planPool(sem, noExam) {
     if (!credits) continue;
     const sems = planModuleSemesters(info, data);
     if (sem !== "all" && sems.length && !sems.includes(sem)) continue;
+    // Hard preference filters: drop modules that CANNOT satisfy them.
+    // "no 9am" = the module must not require any attendance before 10:00,
+    // so anything with an 8am/9am sitting (lecture, lab, whatever) is out.
+    if (planPrefs.noEarly && data.classes.some((cls) => timeToMinutes(cls.startTime) < 10 * 60)) continue;
+    if (planPrefs.noFriday && data.classes.every((cls) => cls.day === "Fri")) continue;
+    if (planPrefs.maxPerDay > 0) {
+      const perDay = {};
+      let possible = true;
+      for (const cls of data.classes) {
+        perDay[cls.day] = (perDay[cls.day] || 0) + 1;
+      }
+      // A module breaks "max per day" only when every one of its class days
+      // is already at the cap with the current selection counted in.
+      for (const day of Object.keys(perDay)) {
+        const selectedOnDay = currentSelection().filter((s) => {
+          if (s.code === code) return false;
+          const d = live.get(s.code);
+          const other = d && d.classes ? d.classes.find((x) => offeringKey(x) === s.offeringKey) : null;
+          return other && other.day === day;
+        }).length;
+        if (perDay[day] + selectedOnDay > planPrefs.maxPerDay) possible = false;
+      }
+      if (!possible) continue;
+    }
     pool.push({ code, credits, sems, info, data });
   }
   return pool;
@@ -1951,13 +2306,16 @@ function planViolatesPolicy(modules) {
 function planWorkload(modules) {
   const days = new Set();
   let sessions = 0;
+  let hours = 0;
   for (const m of modules) {
     for (const cls of m.data.classes) {
       if (DAY_INDEX[cls.day]) days.add(cls.day);
       sessions++;
+      const mins = timeToMinutes(cls.endTime) - timeToMinutes(cls.startTime);
+      if (Number.isFinite(mins) && mins > 0) hours += mins / 60;
     }
   }
-  return { days: days.size, sessions, score: days.size * 1000 + sessions };
+  return { days: days.size, sessions, hours: Math.round(hours), score: days.size * 1000 + sessions };
 }
 
 function shuffle(arr) {
@@ -2190,7 +2548,7 @@ function renderPlans(noExam, append) {
         ? `<span class="plan-badge exact">exact</span>`
         : `<span class="plan-badge">±${plan.diff}</span>`;
     const wl = plan.workload || planWorkload(plan.modules);
-    const wlBadge = `<span class="plan-badge wl" title="Fewer days on campus at the same credits ranks higher">${wl.days} day${wl.days === 1 ? "" : "s"}/wk</span>`;
+    const wlBadge = `<span class="plan-badge wl" title="Fewer days on campus at the same credits ranks higher">${wl.days} day${wl.days === 1 ? "" : "s"}/wk · ~${wl.hours} contact hrs</span>`;
     const planCodes = JSON.stringify(plan.modules.map((m) => m.code));
     item.innerHTML = `
       <div class="plan-item-head">
@@ -2239,6 +2597,28 @@ els.planNoExamBtn.addEventListener("click", async () => {
   }
   renderPlans(true);
 });
+
+// Preference filters re-run the current plan search with the new constraints
+function readPlanPrefs() {
+  planPrefs = {
+    noEarly: !!(els.prefNoEarly && els.prefNoEarly.checked),
+    noFriday: !!(els.prefNoFriday && els.prefNoFriday.checked),
+    maxPerDay: els.prefMaxPerDay ? parseInt(els.prefMaxPerDay.value, 10) || 0 : 0,
+  };
+}
+for (const el of [els.prefNoEarly, els.prefNoFriday, els.prefMaxPerDay]) {
+  if (!el) continue;
+  el.addEventListener("change", () => {
+    readPlanPrefs();
+    if (planSession) {
+      // re-run the active search with the new preferences
+      const [, semStr, noExamStr] = planSession.key.split("|");
+      planSession = null;
+      renderPlans(noExamStr === "1");
+    }
+  });
+}
+readPlanPrefs();
 els.planResults.addEventListener("click", (e) => {
   const more = e.target.closest(".plan-more");
   if (more) {
@@ -2314,7 +2694,11 @@ els.search.addEventListener("input", () => {
 
 els.courseList.addEventListener("change", (e) => {
   if (e.target.type === "checkbox" && e.target.dataset.code) {
-    toggleOffering(e.target.dataset.code, e.target.dataset.key, e.target.checked);
+    if (e.target.classList.contains("cmp-toggle")) {
+      toggleComparePick(e.target.dataset.code, e.target.checked);
+      return;
+    }
+    toggleOffering(e.target.code || e.target.dataset.code, e.target.dataset.key, e.target.checked);
   }
 });
 
@@ -2727,6 +3111,15 @@ els.courseList.addEventListener("click", (e) => {
     retryModule(retry.dataset.code);
     return;
   }
+  const report = e.target.closest(".report-link");
+  if (report) {
+    e.preventDefault();
+    const code = report.dataset.report;
+    els.suggestText.value = `Problem with ${code}: `;
+    els.suggestText.focus();
+    els.suggestText.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
 });
 
 // Suggestions — posts to Netlify Forms via AJAX (no page reload). In
@@ -2913,4 +3306,14 @@ function startAutoRefresh() {
     setH();
     new ResizeObserver(setH).observe(topbar);
   }
+
+  // Service health (catalogue + assessment freshness) for the data line —
+  // non-critical: the page works fine without it.
+  fetch("/.netlify/functions/catalogue?action=health")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((h) => {
+      serviceHealth = h;
+      renderDataFreshness();
+    })
+    .catch(() => {});
 })();

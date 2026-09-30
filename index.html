@@ -15,6 +15,7 @@
       content="Browse every UCD CSNL module with live clash-free timetables, filter exam-free modules and build a clash-free plan toward the 90-credit year."
     />
     <meta property="og:type" content="website" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
@@ -121,6 +122,8 @@
       </a>
 
       <div class="layout-top">
+      <!-- Module comparison staging bar (appears when 1+ modules ticked) -->
+      <div id="compare-bar" class="compare-bar hidden" role="status"></div>
       <!-- Module catalogue -->
       <section class="col-modules">
         <div class="panel">
@@ -205,6 +208,10 @@
               <button id="clear-btn" class="btn btn-ghost grow">Clear Selection</button>
               <button id="delete-timetable-btn" class="btn btn-danger grow">Delete Timetable</button>
             </div>
+            <div class="row">
+              <button id="export-sel-btn" class="btn btn-ghost grow" title="Download every timetable's selection as a JSON file">Export</button>
+              <label class="btn btn-ghost grow import-label" title="Load a previously exported selection file">Import<input type="file" id="import-sel-input" accept="application/json,.json" hidden /></label>
+            </div>
           </div>
         </div>
 
@@ -237,6 +244,13 @@
           </div>
           <div class="row">
             <button id="plan-btn" class="btn btn-primary grow">Find Clash-Free Plans</button>
+          </div>
+          <div class="row plan-prefs" role="group" aria-label="Plan preferences">
+            <label class="pref"><input type="checkbox" id="pref-no-early" /> no 9am</label>
+            <label class="pref"><input type="checkbox" id="pref-no-friday" /> no Friday</label>
+            <label class="pref">max/day
+              <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit" />
+            </label>
           </div>
           <div class="row">
             <button id="plan-noexam-btn" class="btn btn-ghost grow" title="Only modules with no final exam">Build No-Exam Plan</button>
@@ -306,6 +320,9 @@
           </form>
         </div>
       </aside>
+
+      <!-- Module comparison table -->
+      <section id="compare-table" class="compare-table hidden" aria-label="Module comparison"></section>
 
       <!-- Weekly timetable -->
       <section class="col-timetable">
@@ -377,5 +394,13 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="app.js"></script></body>
+    <script src="app.js?v=3"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
 </html>
