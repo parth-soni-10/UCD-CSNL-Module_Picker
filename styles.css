@@ -3017,3 +3017,10 @@ body {
     transform: none;
   }
 }
+
+/* Empty copy in the Selection panel. A class rather than a style="…" attribute
+   on the generated <p>, because the deployed CSP is `style-src 'self'` with no
+   'unsafe-inline' — a style attribute parsed out of markup would be dropped. */
+.sel-empty {
+  margin: 4px 2px 12px;
+}

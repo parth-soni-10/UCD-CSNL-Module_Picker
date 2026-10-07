@@ -1,0 +1,39 @@
+name: Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax-check the site and the functions
+        run: |
+          set -e
+          for f in app.js sw.js server.js netlify/functions/*.js tools/*.js; do
+            node --check "$f"
+          done
+
+      # The deployed CSP is script-src 'self' with no 'unsafe-inline', so an
+      # inline <script> or a style="…" attribute in the served markup would be
+      # blocked in production while working perfectly on localhost, where
+      # server.js sends no CSP at all. That is exactly how the service-worker
+      # registration silently stopped running.
+      - name: Check nothing inline would be blocked by the deployed CSP
+        run: python3 tools/check-csp-inline.py
+
+      - name: Check the manifest and modules.json parse
+        run: |
+          set -e
+          python3 -c "import json; json.load(open('manifest.webmanifest'))"
+          python3 -c "import json; json.load(open('modules.json'))"

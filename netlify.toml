@@ -26,11 +26,18 @@
 [functions."refresh-catalogue"]
   schedule = "0 0 * * *"
 
-# Suppress Netlify's "Powered by Netlify" badge, which Netlify injects as an
-# inline script on Free-plan projects. Omitting 'unsafe-inline' from script-src
-# blocks that injected script; the site itself only uses the self-hosted app.js,
-# so nothing here is affected.
+# Full policy. script-src stays 'self' with no 'unsafe-inline', which also
+# suppresses Netlify's "Powered by Netlify" badge (injected as an inline script
+# on Free-plan projects) — the site itself ships exactly one same-origin script,
+# and the service worker is registered from inside it rather than inline.
+#
+# The rest was previously unspecified, which left the page frameable by any
+# site. Every origin here is first-party: fonts are self-hosted, data comes from
+# same-origin functions, so nothing else needs an allowance.
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "script-src 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"

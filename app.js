@@ -2,6 +2,22 @@
 
 "use strict";
 
+// Cache-busting version, read from this script's own <script src="app.js?v=…">
+// tag while it is still executing — document.currentScript is null once the
+// script has finished, and the service worker is registered from inside an
+// async init that runs later. It names the worker's URL below, so bumping the
+// one query in index.html installs a new worker *and* renames the cache it uses:
+// the previous shell is dropped on activate rather than being served stale for
+// one load after every deploy.
+const APP_VERSION = (() => {
+  try {
+    const src = document.currentScript && document.currentScript.src;
+    return src ? new URL(src, location.href).searchParams.get("v") || "1" : "1";
+  } catch {
+    return "1";
+  }
+})();
+
 const FUNCTION_URL = "/.netlify/functions/timetable";
 const CATALOGUE_URL = "/.netlify/functions/catalogue";
 const BATCH_SIZE = 20; // modules per function call (fewer, bigger requests)
@@ -464,8 +480,26 @@ function classTerms(cls) {
 // times + overlapping weeks. If either side lacks week data, fall back to
 // treating an overlapping time as a clash. Shared by the timetable renderer
 // and the clash-free plan builder, so both use identical rules.
+// UCD publishes final sittings as timetable rows typed EXAM or EXM — but only
+// for some modules. Others (e.g. GEOG40820) schedule the final exam outside the
+// weekly timetable entirely, so this signal alone under-counts; the module
+// page's Assessment Strategy table is the authoritative one (see isExamModule).
+// It is declared here, above classesClash, because the clash rule needs it.
+const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
+
 function classesClash(a, b) {
   if (!a || !b || a.day !== b.day) return false;
+  // A sitting is not a teaching session. Two rows can share a slot and never
+  // conflict in practice — COMP47790 carries both a TUT and an EXAM at
+  // Fri 11:00 — so an exam row must never be reported as clashing with a class
+  // or with another sitting. Without this the module looked incompatible with
+  // itself and the harness reported it as an internal clash.
+  if (
+    EXAM_CLASS_TYPES.has(String(a.type || "").toUpperCase()) ||
+    EXAM_CLASS_TYPES.has(String(b.type || "").toUpperCase())
+  ) {
+    return false;
+  }
   // Classes in disjoint trimesters can never run at the same time (Autumn
   // weeks 1-12 vs Spring weeks 20-33 share no week), so they never clash —
   // this also covers the case where one side has no week data to compare.
@@ -1441,7 +1475,7 @@ function renderSummary() {
   }
 
   if (sel.length === 0) {
-    list.innerHTML = `<p class="muted" style="margin:4px 2px 12px">Nothing selected yet. Tick classes in the module list.</p>`;
+    list.innerHTML = `<p class="muted sel-empty">Nothing selected yet. Tick classes in the module list.</p>`;
   }
   els.totalCredits.textContent = `${credits} credits`;
   renderCreditsBreakdown();
@@ -1464,9 +1498,15 @@ function renderCreditProgress(credits) {
           ? `Full-year target reached — thesis brings the total to ~90`
           : `${TOTAL_YEAR_TARGET - credits} credits to the ~${TOTAL_YEAR_TARGET}-credit year`;
   el.innerHTML = `
-    <div class="cp-track"><div class="cp-fill zone-${zone}" style="width:${pct}%"></div></div>
+    <div class="cp-track"><div class="cp-fill zone-${zone}"></div></div>
     <div class="cp-meta"><span>${pct}% of ~${TOTAL_YEAR_TARGET}</span><span>${esc(label)}</span></div>
   `;
+  // Width through CSSOM rather than a style="…" attribute: the deployed CSP is
+  // `style-src 'self'` with no 'unsafe-inline', which blocks style attributes
+  // parsed out of markup. CSSOM writes are not governed by CSP, so the bar
+  // still animates and the policy stays strict.
+  const fill = el.querySelector(".cp-fill");
+  if (fill) fill.style.width = `${pct}%`;
 }
 
 // Live credit breakdown in the Selection panel: COMP vs non-COMP, and
@@ -2055,7 +2095,7 @@ function renderSwitcher() {
 // Weak signal: UCD publishes final sittings as timetable rows typed EXAM or
 // EXM — but only for some modules. Others (e.g. GEOG40820) schedule the final
 // exam outside the weekly timetable entirely, so this alone under-counts.
-const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
+// EXAM_CLASS_TYPES itself is declared next to classesClash, which reads it.
 
 function moduleHasExam(data) {
   if (!data || !Array.isArray(data.classes)) return false;
@@ -3208,6 +3248,23 @@ async function autoRefresh() {
   }
 }
 
+// Register the offline shell. Deliberately tolerant: a browser without
+// service-worker support, a blocked registration or a failed fetch must never
+// affect the picker itself, which keeps its data caches in localStorage.
+//
+// This lives here rather than in an inline <script> in index.html because the
+// deployed CSP is `script-src 'self'`, which blocks inline scripts outright.
+// The registration used to be inline, so it never ran in production — the
+// trailing .catch() hid the violation — and the offline shell in sw.js was dead
+// on the deployed site while working locally, where server.js sends no CSP.
+function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  // Absolute path: a deep link such as /?s=COMP30960 must resolve sw.js at the
+  // site root, not relative to the current directory. The ?v= is what carries
+  // the app's version into sw.js, which names its cache after it.
+  navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).catch(() => {});
+}
+
 function startAutoRefresh() {
   setInterval(autoRefresh, AUTO_REFRESH_MS);
   document.addEventListener("visibilitychange", () => {
@@ -3316,4 +3373,6 @@ function startAutoRefresh() {
       renderDataFreshness();
     })
     .catch(() => {});
+
+  registerServiceWorker();
 })();

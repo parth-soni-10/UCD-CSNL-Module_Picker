@@ -9,15 +9,33 @@
 //     and assessment data must be live; when offline the app already
 //     degrades gracefully to its localStorage caches.
 //   • Never cache POSTs or non-GET requests.
+//
+// Versioning. The cache is named after the `?v=` on this worker's own script
+// URL, which app.js copies from its own <script> tag in index.html. Bumping
+// that one query therefore installs a new worker AND renames this cache, so
+// `activate` drops the previous shell instead of serving it stale for one load
+// after every deploy — which is what a fixed cache name plus a pathname-only
+// key used to do.
 
-const CACHE = "csnl-picker-v2";
+const VERSION = (() => {
+  try {
+    return new URL(self.location.href).searchParams.get("v") || "1";
+  } catch {
+    return "1";
+  }
+})();
+
+const CACHE = `csnl-picker-v${VERSION}`;
+
 const SHELL = [
   "/",
   "/index.html",
-  "/app.js",
+  `/app.js?v=${VERSION}`,
   "/styles.css",
   "/manifest.webmanifest",
   "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
   "/modules.json",
 ];
 
@@ -48,17 +66,20 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.open(CACHE).then(async (cache) => {
-      // Cache key = pathname only. Deep links ("/?s=…") must share the shell
-      // cache with "/", not pin whatever asset version was current when that
-      // exact query string was first seen.
-      const key = new Request(url.pathname);
+      // A navigation (a deep link such as "/?s=COMP30960") is keyed by pathname
+      // only, so every deep link shares the one shell entry with "/" instead of
+      // pinning a copy per query string. Every other request is keyed by
+      // pathname *and* query, because the ?v= on app.js is a genuine version
+      // marker: app.js?v=4 must never be answered from the app.js?v=3 entry.
+      const isNavigation = req.mode === "navigate";
+      const key = new Request(isNavigation ? url.pathname : url.pathname + url.search);
       const cached = await cache.match(key);
       const network = fetch(req)
         .then((res) => {
           if (res && res.ok) cache.put(key, res.clone());
           return res;
         })
-        .catch(() => cached);
+        .catch(() => cached || (isNavigation ? cache.match("/index.html") : undefined));
       return cached || network;
     })
   );

@@ -642,7 +642,27 @@ async function main() {
     // (a) the catalogue's exported assessment rows must reproduce the served
     // exam map exactly (client rule == server rule, modulo timetable-only
     // rows like COMP47970)
-    const catalogueAssess = themes
+    // `themes` was snapshotted before the assessments call above populated the
+    // stored map, so on a cold store the snapshot legitimately carries no
+    // c.assessments yet: the catalogue's v8 backfill can only fill them from a
+    // map that already exists. Re-read once before concluding the export is
+    // broken — otherwise the first run after a cold start reports a false
+    // failure and an identical second run reports success.
+    let catalogueThemes = themes;
+    const themesWithAssess = (ts) =>
+      (ts || []).some((t) => (t.courses || []).some((c) => Array.isArray(c.assessments) && c.assessments.length));
+    if (!themesWithAssess(catalogueThemes)) {
+      try {
+        const recat = await getJson(`${BASE}/.netlify/functions/catalogue`);
+        catalogueThemes = Array.isArray(recat) ? recat : recat.themes;
+        if (themesWithAssess(catalogueThemes)) {
+          console.log("  note — catalogue re-read: assessments appeared after the scrape (cold store)");
+        }
+      } catch (e) {
+        console.log(`  note — catalogue re-read failed: ${e.message}`);
+      }
+    }
+    const catalogueAssess = (catalogueThemes || [])
       .flatMap((t) => t.courses)
       .filter((c) => Array.isArray(c.assessments) && c.assessments.length);
     if (!catalogueAssess.length) {
@@ -682,7 +702,6 @@ async function main() {
     const poolNoFriday = planPool("1", false).map((p) => p.code);
     prefs.noFriday = false;
     prefs.maxPerDay = 2;
-    const poolMaxDay = planPool("1", false).map((p) => p.code);
     prefs.maxPerDay = 0;
     const badNoEarly = poolNoEarly.filter((code) => {
       const d = live.get(code);

@@ -16,6 +16,11 @@
     />
     <meta property="og:type" content="website" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+    <!-- iOS ignores the manifest's icons and SVG entirely, so without this it
+         falls back to a screenshot of the page for the home-screen icon. -->
+    <link rel="apple-touch-icon" href="icon-180.png" />
     <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
@@ -394,13 +399,9 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="app.js?v=3"></script>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("sw.js").catch(() => {});
-        });
-      }
-    </script>
+    <!-- Only one script, and it is same-origin: the deployed CSP is
+         script-src 'self'. The service worker is registered from app.js — an
+         inline registration here would be blocked by that policy. -->
+    <script src="app.js?v=4"></script>
   </body>
 </html>
