@@ -32,19 +32,40 @@
 
 "use strict";
 
-const zlib = require("zlib");
+// The storage backend is injected by whichever host runs this module. The
+// Netlify runtime used to supply @netlify/blobs automatically; the Cloudflare
+// Worker (worker.js) now calls setStore() with a KV-backed reader/writer of
+// the same shape — get(store, key) / set(store, key, value). With no backend
+// the long-lived memory cache serves the instance, which is what the local
+// dev server (server.js) relies on.
+let storeBackend = null;
 
-let getStore = null;
-try {
-  ({ getStore } = require("@netlify/blobs"));
-} catch (e) {
-  /* @netlify/blobs is only installed on Netlify; locally we cache in memory */
+// How many outbound subrequests one invocation of this module may make. Local
+// Node runs are unbudgeted; the Cloudflare Worker injects its platform ceiling
+// through setStore(), because a Workers free-plan invocation may make only 50
+// subrequests — and each module page costs two of them (www.ucd.ie redirects
+// to hub.ucd.ie). A pass that reaches the ceiling stops early and the next
+// pass rotates to the codes it did not get to.
+let subrequestBudget = Infinity;
+
+// Some work here has to outlive the response that triggered it (see the
+// opportunistic refresh in getAssessments). A long-lived Node process can just
+// let that promise run; on Workers, work started after the response is sent is
+// cancelled unless it is registered with ExecutionContext.waitUntil(), so the
+// Worker injects that through setStore() as well.
+let keepAlive = (promise) => promise;
+
+function setStore(backend) {
+  storeBackend = backend;
+  subrequestBudget =
+    backend && Number.isFinite(backend.maxSubrequests) ? backend.maxSubrequests : Infinity;
+  keepAlive = (backend && backend.waitUntil) || ((promise) => promise);
 }
 
 const STORE_NAME = "csnl-assessments";
 const KEY = "map";
 const VERSION = 3; // bump invalidates the stored blob when the exam rule changes
-const TTL_MS = 24 * 60 * 60 * 1000; // refresh at most once a day
+const TTL_MS = 24 * 60 * 60 * 1000; // a visitor triggers at most one refresh pass a day
 const FETCH_TIMEOUT_MS = 20000;
 const CONCURRENCY = 6; // parallel module-page fetches
 const UA =
@@ -131,7 +152,13 @@ async function fetchText(url) {
     const buf = await res.arrayBuffer();
     const bytes = new Uint8Array(buf);
     if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-      return zlib.gunzipSync(Buffer.from(bytes)).toString("utf8");
+      // UCD sometimes answers with a gzip body that fetch() has not decoded
+      // (no matching Content-Encoding), so it is gunzipped by hand.
+      // DecompressionStream is the portable form of this: it exists in Node
+      // 18+ (the local dev server) and in the Workers runtime, where
+      // node:zlib may not.
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return await new Response(stream).text();
     }
     return new TextDecoder("utf-8").decode(bytes);
   } finally {
@@ -139,7 +166,7 @@ async function fetchText(url) {
   }
 }
 
-async function fetchOne(code) {
+async function fetchOne(code, budget) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const html = await fetchText(`https://www.ucd.ie/modules/${code}`);
@@ -148,19 +175,26 @@ async function fetchOne(code) {
       return { status: "ok", hasFinalExam: hasFinalExam(components), components };
     } catch (e) {
       if (attempt === 1) return { status: "error" };
+      // A retry costs another two subrequests; only take it if one is left.
+      if (budget.left < 2) return { status: "error" };
+      budget.left -= 2;
       await new Promise((r) => setTimeout(r, 800));
     }
   }
 }
 
-async function fetchAll(codes) {
+async function fetchAll(codes, budget) {
   const results = {};
   let ok = 0;
   let i = 0;
   async function worker() {
     while (i < codes.length) {
+      // Checked and reserved with no await in between, so the workers racing
+      // on this cannot overshoot the ceiling between them.
+      if (budget.left < 2) return;
+      budget.left -= 2;
       const code = codes[i++];
-      const r = await fetchOne(code);
+      const r = await fetchOne(code, budget);
       if (r.status === "ok") ok++;
       results[code] = r;
     }
@@ -174,9 +208,9 @@ async function fetchAll(codes) {
 // ---------------------------------------------------------------------------
 
 async function readStored() {
-  if (getStore) {
+  if (storeBackend) {
     try {
-      return await getStore(STORE_NAME).getJSON(KEY);
+      return await storeBackend.get(STORE_NAME, KEY);
     } catch (e) {
       /* fall through to memory cache */
     }
@@ -186,19 +220,56 @@ async function readStored() {
 
 async function writeStored(value) {
   memCache = value;
-  if (getStore) {
+  if (storeBackend) {
     try {
-      await getStore(STORE_NAME).setJSON(KEY, value);
+      await storeBackend.set(STORE_NAME, KEY, value);
     } catch (e) {
       /* memory cache still serves this instance */
     }
   }
 }
 
-async function buildFresh(codes) {
-  const { results, okCount } = await fetchAll(codes);
-  // If UCD mostly failed (WAF, outage) don't clobber a good stored map.
-  if (codes.length && okCount / codes.length < 0.5) return null;
+/** One refresh pass: fetch the codes that are missing from the stored map or
+    least recently fetched, merge them over it, and hand back the merged map.
+    A pass is not obliged to reach the whole code list — see subrequestBudget —
+    so successive passes (the three daily crons plus any visitor-triggered one)
+    rotate through the map.
+
+    Failures are skipped in the merge instead of replacing entries, so a UCD
+    outage or a WAF block can never clobber a map that was already good. That
+    replaces the old "mostly-failed pass" guard, which had to decide between
+    writing a bad map and writing nothing. */
+async function refreshPass(codes, stored) {
+  const previous = (stored && stored.results) || {};
+  const lastFetched = (entry) => Date.parse((entry && entry.at) || "") || 0;
+  const ordered = [...codes].sort((a, b) => lastFetched(previous[a]) - lastFetched(previous[b]));
+
+  const budget = { left: subrequestBudget };
+  const { results } = await fetchAll(ordered, budget);
+  if (!Object.keys(results).length) return null; // nothing learned — don't rewrite
+
+  const merged = { ...previous };
+  const now = new Date().toISOString();
+  for (const [code, result] of Object.entries(results)) {
+    if (result.status === "error") {
+      // Never downgrade an entry we already have: a failed fetch says nothing
+      // about the module, so whatever was recorded stays. A first-time failure
+      // is still recorded, carrying the attempt time, so the retry cooldown in
+      // needsAnotherPass() can tell it was just tried.
+      if (!previous[code]) merged[code] = { status: "error", at: now };
+      else if (previous[code].status === "error") merged[code] = { ...previous[code], at: now };
+      continue;
+    }
+    merged[code] = { ...result, at: now };
+  }
+
+  const okInMerged = codes.filter((code) => merged[code] && merged[code].status === "ok").length;
+  // Never store a map with nothing good in it. A total outage should leave the
+  // previous map — or the honest "ucd unreachable" response — in place and let
+  // the next request try again at once, rather than freezing an all-error map
+  // for the length of the retry cooldown below.
+  if (!okInMerged) return null;
+
   let meta = {};
   try {
     // Recorded so clients can tell when the catalogue changed underneath a
@@ -210,12 +281,28 @@ async function buildFresh(codes) {
   }
   return {
     v: VERSION,
-    generatedAt: new Date().toISOString(),
+    generatedAt: now,
     total: codes.length,
-    okCount,
+    okCount: okInMerged,
     ...meta,
-    results,
+    results: merged,
   };
+}
+
+// A stored map is only finished when every catalogue code has a good entry.
+// `status: "unknown"` is a real answer (the module page has no Assessment
+// Strategy table) and counts as finished; a failed attempt does not, but is
+// only retried after a cooldown so that one permanently dead module page
+// cannot make every visit start a refresh pass.
+const RETRY_AFTER_MS = 60 * 60 * 1000;
+
+function needsAnotherPass(stored, codes) {
+  return codes.some((code) => {
+    const entry = stored.results && stored.results[code];
+    if (!entry) return true;
+    if (entry.status !== "error") return false;
+    return Date.now() - (Date.parse(entry.at || "") || 0) > RETRY_AFTER_MS;
+  });
 }
 
 async function catalogueCodes() {
@@ -239,18 +326,31 @@ async function getAssessments(opts) {
   // set of modules. Detect by comparing the map's total with the live
   // catalogue's — a mismatch counts as stale even inside the TTL.
   let drift = false;
+  let incomplete = false;
   let liveCodes = null;
   if (!force && stored && stored.v === VERSION) {
     try {
       const { cat, codes } = await catalogueCodes();
       liveCodes = codes;
       drift = stored.total !== codes.length;
+      // A chunked pass can leave codes unfetched (see subrequestBudget), or a
+      // pass can fail on some codes. Such a map is served honestly but is not
+      // finished, and the next visitor should push it on rather than wait out
+      // the TTL.
+      incomplete = needsAnotherPass(stored, codes);
     } catch (e) {
       /* catalogue unreachable — treat stored as still valid */
     }
   }
 
-  if (!force && stored && stored.v === VERSION && !drift && Date.now() - Date.parse(stored.generatedAt) < TTL_MS) {
+  if (
+    !force &&
+    stored &&
+    stored.v === VERSION &&
+    !drift &&
+    !incomplete &&
+    Date.now() - Date.parse(stored.generatedAt) < TTL_MS
+  ) {
     return stored;
   }
   if (!force && stored && stored.v === VERSION) {
@@ -261,7 +361,7 @@ async function getAssessments(opts) {
       inflight = (async () => {
         try {
           const { cat, codes } = liveCodes ? { cat: null, codes: liveCodes } : await catalogueCodes();
-          const fresh = await buildFresh(codes);
+          const fresh = await refreshPass(codes, stored);
           if (fresh) await writeStored(fresh);
         } catch (e) {
           /* keep serving the stale map */
@@ -269,6 +369,11 @@ async function getAssessments(opts) {
           inflight = null;
         }
       })();
+      // The response is already on its way, so tell the host the refresh has
+      // to survive it. Without this a Worker cancels the in-flight fetches the
+      // moment the response is sent and the stored map silently stops
+      // advancing — the map looks fine but never gains another module.
+      keepAlive(inflight);
     }
     return { ...stored, stale: true };
   }
@@ -276,7 +381,7 @@ async function getAssessments(opts) {
   // No usable stored map: build synchronously (cold start / first call).
   try {
     const { cat, codes } = await catalogueCodes();
-    const fresh = await buildFresh(codes);
+    const fresh = await refreshPass(codes, stored);
     if (fresh) {
       await writeStored(fresh);
       return fresh;
@@ -319,3 +424,4 @@ exports.parseAssessment = parseAssessment;
 // assessment rows when they already exist without ever triggering the
 // ~10-30s scrape inside a catalogue request.
 exports.peekStored = readStored;
+exports.setStore = setStore; // used by worker.js to inject the KV-backed store

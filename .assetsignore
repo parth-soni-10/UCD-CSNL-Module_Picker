@@ -1,0 +1,24 @@
+# Files in this repo that are NOT part of the published site.
+#
+# The assets directory is the repository root (same as the Netlify publish
+# directory), so everything not listed here would be served. `modules.json`
+# stays public deliberately: it is the fallback catalogue data, and the
+# Netlify deploy published it too.
+.git/
+.github/
+.gitignore
+.freebuff/
+.wrangler/
+node_modules/
+
+netlify/
+tools/
+
+README.md
+LICENSE
+netlify.toml
+package.json
+server.js
+wrangler.toml
+worker.js
+.assetsignore

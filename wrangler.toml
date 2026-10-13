@@ -1,0 +1,42 @@
+# Cloudflare Workers config for the CSNL Module Picker.
+#
+# The site is served from the repository root (same as Netlify's
+# `publish = "."`), and the four functions under netlify/functions/ are
+# bundled into worker.js rather than copied — see its header for what the
+# Worker wires up (KV storage, the /.netlify/functions/* routes, the cron).
+#
+#   npx wrangler dev      → local test on http://localhost:8787
+#   npx wrangler deploy   → publish to <name>.<your-subdomain>.workers.dev
+#
+# `run_worker_first` is scoped to the function paths only, so ordinary page and
+# asset requests never invoke the Worker.
+
+name = "ucd-csnl-module-picker"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+run_worker_first = ["/.netlify/functions/*"]
+
+# One namespace holding both stores the functions used to keep in Netlify
+# blobs, under their original names:
+#   csnl-catalogue/modules   (the module catalogue)
+#   csnl-assessments/map     (the exam-assessment map)
+[[kv_namespaces]]
+binding = "STORE_KV"
+id = "a6f075b04f284e42b1b1fd88e96a7a7b"
+
+# The daily catalogue refresh. This replaces the Netlify scheduled function
+# [functions."refresh-catalogue"] schedule = "0 0 * * *" from netlify.toml —
+# same job: re-read UCD's streams page, rewrite the stored module list only if
+# the page stamp changed, and force an assessment refresh pass.
+#
+# Three triggers rather than one: a Workers free-plan invocation may make only
+# 50 subrequests and a module page costs two of them, so one pass covers about
+# 22 of the ~68 modules (see MAX_SUBREQUESTS in worker.js). Three passes a day
+# rotate through the whole list, and any visitor-triggered pass adds another.
+# (Cron trigger changes can take up to ~15 minutes to propagate.)
+[triggers]
+crons = ["0 0 * * *", "20 0 * * *", "40 0 * * *"]

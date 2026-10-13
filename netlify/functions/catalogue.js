@@ -26,14 +26,18 @@
 
 "use strict";
 
-const zlib = require("zlib");
 const FALLBACK = require("../../modules.json");
 
-let getStore = null;
-try {
-  ({ getStore } = require("@netlify/blobs"));
-} catch (e) {
-  /* @netlify/blobs is only installed on Netlify; locally we cache in memory */
+// The storage backend is injected by whichever host runs this module. The
+// Netlify runtime used to supply @netlify/blobs automatically; the Cloudflare
+// Worker (worker.js) now calls setStore() with a KV-backed reader/writer of
+// the same shape — get(store, key) / set(store, key, value). With no backend
+// the long-lived memory cache serves the instance, which is what the local
+// dev server (server.js) relies on.
+let storeBackend = null;
+
+function setStore(backend) {
+  storeBackend = backend;
 }
 
 const STORE_NAME = "csnl-catalogue";
@@ -67,7 +71,13 @@ async function fetchText(url, timeoutMs) {
     const buf = await res.arrayBuffer();
     const bytes = new Uint8Array(buf);
     if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-      return zlib.gunzipSync(Buffer.from(bytes)).toString("utf8");
+      // UCD sometimes answers with a gzip body that fetch() has not decoded
+      // (no matching Content-Encoding), so it is gunzipped by hand.
+      // DecompressionStream is the portable form of this: it exists in Node
+      // 18+ (the local dev server) and in the Workers runtime, where
+      // node:zlib may not.
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return await new Response(stream).text();
     }
     return new TextDecoder("utf-8").decode(bytes);
   } finally {
@@ -333,9 +343,9 @@ function buildFromGenericCatalogue(curated, ucd) {
 // ---------------------------------------------------------------------------
 
 async function readStored() {
-  if (getStore) {
+  if (storeBackend) {
     try {
-      return await getStore(STORE_NAME).getJSON(KEY);
+      return await storeBackend.get(STORE_NAME, KEY);
     } catch (e) {
       /* fall through to memory cache */
     }
@@ -345,9 +355,9 @@ async function readStored() {
 
 async function writeStored(value) {
   memCache = value;
-  if (getStore) {
+  if (storeBackend) {
     try {
-      await getStore(STORE_NAME).setJSON(KEY, value);
+      await storeBackend.set(STORE_NAME, KEY, value);
     } catch (e) {
       /* memory cache still serves this instance */
     }
@@ -508,6 +518,7 @@ exports.handler = async (event) => {
 
 exports.getCatalogue = getCatalogue; // used by the scheduled refresh function
 exports.attachAssessments = attachAssessments; // exposed for tests
+exports.setStore = setStore; // used by worker.js to inject the KV-backed store
 
 // A stored catalogue counts as "warmed" only when it's a real payload.
 function hasStoredData(stored) {

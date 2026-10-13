@@ -30,9 +30,11 @@ exports.handler = async () => {
   }
 
   try {
-    // Force a full re-scrape so exam-assessment data stays current even with
-    // zero visitors. Module pages change rarely, but a daily re-check keeps
-    // the no-exam plan builder and Final Exam badges honest.
+    // Force one refresh pass so exam-assessment data stays current even with
+    // zero visitors. Module pages change rarely, and a pass covers as much of
+    // the map as the host's subrequest ceiling allows (see subrequestBudget in
+    // assessments.js) — the 00:00 / 00:20 / 00:40 crons together cover the
+    // whole module list each day.
     const assessments = await getAssessments({ force: true });
     console.log(
       `Assessments refreshed: total=${assessments.total}, ok=${assessments.okCount}, year=${assessments.catalogueYear ?? "?"}`
