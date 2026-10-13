@@ -128,14 +128,14 @@ print header.
 URL Netlify uses (`/.netlify/functions/timetable`), so local behaviour matches
 production exactly. Node 18+ is required; there are no dependencies.
 
-## Deploy to Netlify
+## Deploy
 
-No build step. Either:
-
-1. **Drag & drop**: upload this folder at https://app.netlify.com/drop
-   (functions included).
-2. **Git**: push to a repo and connect it to Netlify — no build command,
-   publish directory `.`, Node 18+.
+One Worker (`ucd-csnl-module-picker`) serves the site and the functions, holds the
+catalogue and assessments caches in a KV namespace, and runs three daily crons
+that refresh the assessments map in budgeted passes. A push to `main` publishes
+it: the repo is connected to that Worker in **Cloudflare Workers Builds**
+(production branch `main`, deploy command `npx wrangler deploy`, no build command).
+`npx wrangler deploy` on your own machine publishes exactly the same thing.
 
 ## Files
 
@@ -145,10 +145,10 @@ No build step. Either:
 | `modules.json` | Fallback module list (streams, credits, semester, comments — **no timings**), regenerated from the CSNL page; last-resort fallback for `/catalogue` |
 | `tools/test-timetables.js` | Test harness — fetches every live timetable and checks data quality, every module pair for clashes, and the clash-free plan builder |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
-| `netlify/functions/catalogue.js` | Auto-refreshing module list service (Netlify Blobs + fallback) |
-| `netlify/functions/refresh-catalogue.js` | Scheduled daily catalogue check (cron in `netlify.toml`) |
+| `netlify/functions/catalogue.js` | Auto-refreshing module list service (KV store + memory fallback) |
+| `netlify/functions/refresh-catalogue.js` | Scheduled catalogue check (three daily crons in `wrangler.toml`) |
 | `server.js` | Zero-dependency local server (mounts both functions) |
-| `netlify.toml` | Netlify config (publish `.`, functions dir, cron schedule) |
+| `netlify.toml` | The old Netlify config, kept as the record of the routes and cron schedule it used to declare |
 
 ## Notes
 
@@ -158,6 +158,6 @@ No build step. Either:
 - Selections, added module codes, the theme choice and the cached timings are
   stored in your browser's `localStorage`. Selections are matched to classes
   by their live schedule key, so they keep working even after times change.
-- The only runtime dependency is `@netlify/blobs` (used by `/catalogue` on
-  Netlify); Netlify installs it automatically. Locally, `node server.js` works
-  with zero installed dependencies — the catalogue caches in memory instead.
+- There are no runtime dependencies. The store reaches the functions by
+  injection — KV in the Worker, memory in `node server.js` — so neither path has
+  anything to install, and the catalogue caches in memory locally.
