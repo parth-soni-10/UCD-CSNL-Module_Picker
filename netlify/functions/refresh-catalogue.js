@@ -1,4 +1,6 @@
-// Scheduled catalogue refresh — runs daily (three crons in wrangler.toml).
+// Scheduled catalogue refresh — runs daily (three crons in the workflow at
+// .github/workflows/refresh-catalogue.yml, which calls this route on the
+// deployed site; Pages has no cron triggers of its own).
 //
 // Re-reads UCD's CSNL streams page every day and updates the stored module
 // list the moment UCD changes it (the page's `page_last_update` stamp is

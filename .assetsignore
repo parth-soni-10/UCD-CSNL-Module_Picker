@@ -19,6 +19,7 @@ LICENSE
 package.json
 server.js
 wrangler.toml
+wrangler.dev.toml
 worker.js
 .assetsignore
 # Deploy files. This repository's Pages mirror control config, the scripts that

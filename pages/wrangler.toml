@@ -6,15 +6,15 @@
 # names the upload that tools/deploy-pages.mjs stages.
 #
 # No [triggers] here, and that is not an omission: Pages has no cron triggers, so
-# the three daily catalogue-refresh crons stay on the `ucd-csnl-module-picker`
-# Worker.
+# the three daily catalogue-refresh passes live in .github/workflows/
+# refresh-catalogue.yml, which calls this deployment's own refresh route.
 
 name = "ucdcsnlmodulepicker"
 pages_build_output_dir = "../.pages-dist"
 compatibility_date = "2026-10-01"
 
-# The same KV namespace the Worker and its crons use, so the module catalogue and
-# the assessments map are one store.
+# The KV namespace the module catalogue, the assessments map and the suggestion
+# list live in — the only copy, now that this deployment is the site's only host.
 [[kv_namespaces]]
 binding = "STORE_KV"
 id = "a6f075b04f284e42b1b1fd88e96a7a7b"

@@ -23,14 +23,16 @@
  *               netlify/functions/suggestions.js).
  *
  *   schedule    The daily 00:00 UTC refresh used to be declared in the host's
- *               config as [functions."refresh-catalogue"] schedule; it is a
- *               Workers cron trigger now (see [triggers]) that runs the very
- *               same refresh-catalogue handler.
+ *               config as [functions."refresh-catalogue"] schedule, then as
+ *               three Workers cron triggers. Pages has no cron triggers, so it
+ *               is a GitHub Actions workflow now (.github/workflows/
+ *               refresh-catalogue.yml), which calls the very same handler over
+ *               this deployment's own route.
  *
  *   routing     The paths the frontend already calls, /.netlify/functions/*,
- *               are served from here. `run_worker_first` in wrangler.toml is
- *               scoped to that prefix, so asset requests never invoke this
- *               Worker and are served straight from the assets layer.
+ *               are served from here. The deployed project scopes its worker to
+ *               that prefix, so asset requests never invoke this Worker and are
+ *               served straight from the assets layer.
  *
  * The handlers are called with the same minimal event the dev server passes
  * them ({ httpMethod, queryStringParameters }), and their { statusCode,
@@ -116,15 +118,5 @@ export default {
         headers: { "Content-Type": "application/json; charset=utf-8" },
       });
     }
-  },
-
-  async scheduled(controller, env, ctx) {
-    wireStorage(env, ctx);
-    ctx.waitUntil(
-      refreshModule.handler().then(
-        () => console.log("scheduled catalogue refresh finished"),
-        (error) => console.error("scheduled catalogue refresh failed:", (error && error.stack) || error)
-      )
-    );
   },
 };
