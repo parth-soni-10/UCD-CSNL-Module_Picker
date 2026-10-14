@@ -1,4 +1,4 @@
-// Scheduled catalogue refresh — runs daily (see netlify.toml).
+// Scheduled catalogue refresh — runs daily (three crons in wrangler.toml).
 //
 // Re-reads UCD's CSNL streams page every day and updates the stored module
 // list the moment UCD changes it (the page's `page_last_update` stamp is

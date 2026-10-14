@@ -6,19 +6,26 @@
  * parsers and caching have exactly one implementation. `node server.js` (the
  * local dev server) still mounts the same files the way it always did.
  *
- * What the Netlify runtime used to provide, and what replaces it here:
+ * What the previous host used to provide, and what replaces it here:
  *
- *   storage     The functions got @netlify/blobs injected by the platform.
+ *   storage     The functions had a blob store injected by the platform.
  *               Here each module is handed a KV-backed reader/writer through
  *               its own setStore() hook, with the same call shapes:
  *               get(store, key) / set(store, key, value). Keys keep their
- *               original store names — `csnl-catalogue/modules` and
- *               `csnl-assessments/map` — in one KV namespace.
+ *               original store names — `csnl-catalogue/modules`,
+ *               `csnl-assessments/map` and `csnl-suggestions/list` — in one KV
+ *               namespace.
  *
- *   schedule    The daily 00:00 UTC refresh (netlify.toml
- *               [functions."refresh-catalogue"] schedule) is a Workers cron
- *               trigger (see [triggers]) that runs the very same
- *               refresh-catalogue handler.
+ *   forms       The suggestions form was handled by the platform, which
+ *               scanned the markup for it and intercepted its POST at "/".
+ *               Nothing does that here, so the form posts to
+ *               /.netlify/functions/suggestions, which stores it (see
+ *               netlify/functions/suggestions.js).
+ *
+ *   schedule    The daily 00:00 UTC refresh used to be declared in the host's
+ *               config as [functions."refresh-catalogue"] schedule; it is a
+ *               Workers cron trigger now (see [triggers]) that runs the very
+ *               same refresh-catalogue handler.
  *
  *   routing     The paths the frontend already calls, /.netlify/functions/*,
  *               are served from here. `run_worker_first` in wrangler.toml is
@@ -34,15 +41,17 @@ import catalogueModule from "./netlify/functions/catalogue.js";
 import assessmentsModule from "./netlify/functions/assessments.js";
 import timetableModule from "./netlify/functions/timetable.js";
 import refreshModule from "./netlify/functions/refresh-catalogue.js";
+import suggestionsModule from "./netlify/functions/suggestions.js";
 
 const ROUTES = {
   "/.netlify/functions/catalogue": catalogueModule,
   "/.netlify/functions/assessments": assessmentsModule,
   "/.netlify/functions/timetable": timetableModule,
   "/.netlify/functions/refresh-catalogue": refreshModule,
+  "/.netlify/functions/suggestions": suggestionsModule,
 };
 
-/** KV-backed stand-in for the two Netlify blob stores, carrying the platform
+/** KV-backed stand-in for the blob stores the functions expect, carrying the platform
     constraint the modules need to know about: a Workers free-plan invocation
     may make only 50 subrequests, and one module page costs two of them (the
     www.ucd.ie redirect to hub.ucd.ie). 44 leaves headroom for the catalogue
@@ -73,6 +82,7 @@ function wireStorage(env, ctx) {
   const backend = storeFor(env.STORE_KV, ctx);
   catalogueModule.setStore(backend);
   assessmentsModule.setStore(backend);
+  suggestionsModule.setStore(backend);
 }
 
 export default {
@@ -86,6 +96,12 @@ export default {
       httpMethod: request.method,
       queryStringParameters: Object.fromEntries(url.searchParams),
     };
+    // Only the suggestions endpoint reads a body, and reading it for every
+    // request would consume the stream for the handlers that do not.
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      event.headers = Object.fromEntries(request.headers);
+      event.body = await request.text();
+    }
 
     try {
       const result = await mod.handler(event);

@@ -3162,9 +3162,10 @@ els.courseList.addEventListener("click", (e) => {
   }
 });
 
-// Suggestions — posts to Netlify Forms via AJAX (no page reload). In
-// production Netlify intercepts the POST at "/"; the local dev server logs
-// the submission instead.
+// Suggestions — posts to this repo's own endpoint via AJAX (no page reload).
+// It used to be posted to "/" for the platform to intercept; nothing intercepts
+// "/" now, so the same URL is used by the deployed Worker and by
+// `node server.js` locally, and neither needs a form to be "detected" first.
 els.suggestForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!els.suggestText.value.trim()) {
@@ -3184,22 +3185,22 @@ els.suggestForm.addEventListener("submit", async (e) => {
   els.suggestSubmit.disabled = true;
   els.suggestSubmit.textContent = "Sending…";
   try {
-    // URL-encoded (not multipart) — this is the AJAX shape Netlify Forms accepts.
-    // Netlify matches the POST by Content-Type + form-name, so send both explicitly.
-    const res = await fetch("/", {
+    // URL-encoded, which is the shape the endpoint reads (it also accepts JSON).
+    const res = await fetch("/.netlify/functions/suggestions", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(new FormData(els.suggestForm)).toString(),
     });
-    // A 200 means Netlify accepted it. 405 (or 404) usually means the form
-    // wasn't detected yet — Netlify only scans for forms on deploy, so the
-    // site has to be redeployed after form detection is enabled.
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // The endpoint answers JSON, and says why when it refuses one.
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { reason: payload.error });
     els.suggestForm.reset();
     els.suggestDone.classList.remove("hidden");
   } catch (err) {
     console.error("Suggestion submit failed:", err);
-    els.suggestError.textContent = "Couldn't send your suggestion. Check your connection and try again.";
+    els.suggestError.textContent = err && err.reason
+      ? err.reason
+      : "Couldn't send your suggestion. Check your connection and try again.";
     els.suggestError.hidden = false;
   } finally {
     els.suggestSubmit.disabled = false;

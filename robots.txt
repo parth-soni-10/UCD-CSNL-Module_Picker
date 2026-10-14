@@ -3,4 +3,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ucd-csnl-module-picker.parth10.workers.dev/sitemap.xml
+Sitemap: https://ucdcsnlmodulepicker.pages.dev/sitemap.xml

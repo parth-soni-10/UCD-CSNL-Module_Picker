@@ -3,9 +3,9 @@
 //   node server.js          -> http://localhost:8787
 //   PORT=9000 node server.js
 //
-// Serves the static site and mounts the Netlify timetable function at
-// /.netlify/functions/timetable so the frontend code is identical locally
-// and on Netlify.
+// Serves the static site and mounts the timetable function (and its siblings) at
+// the same /.netlify/functions/* paths production serves, so the frontend code
+// is identical locally and deployed.
 
 "use strict";
 
@@ -15,6 +15,7 @@ const path = require("path");
 const { handler: timetableHandler } = require("./netlify/functions/timetable.js");
 const { handler: catalogueHandler } = require("./netlify/functions/catalogue.js");
 const { handler: assessmentsHandler } = require("./netlify/functions/assessments.js");
+const { handler: suggestionsHandler } = require("./netlify/functions/suggestions.js");
 
 const ROOT = __dirname;
 const PORT = parseInt(process.env.PORT || "8787", 10) || 8787;
@@ -32,11 +33,31 @@ const MIME = {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
+  function readBody(req) {
+    return new Promise((resolve) => {
+      let body = "";
+      req.on("data", (chunk) => (body += chunk));
+      req.on("end", () => resolve(body));
+    });
+  }
+
   async function serveFunction(handler) {
     try {
       const event = {
+        httpMethod: req.method,
         queryStringParameters: Object.fromEntries(url.searchParams.entries()),
+        // `accept` travels too, because the suggestions endpoint answers a
+        // navigation with a page and the app's fetch with JSON; dropping it
+        // here would make the local server the one place a native submit looks
+        // like a fetch.
+        headers: {
+          "content-type": req.headers["content-type"] || "",
+          accept: req.headers.accept || "",
+        },
       };
+      // Only the suggestions endpoint reads a body, and reading it eagerly for
+      // every request would leave the handlers that do not care waiting on it.
+      if (req.method !== "GET" && req.method !== "HEAD") event.body = await readBody(req);
       const result = await handler(event);
       res.writeHead(result.statusCode || 200, result.headers || {});
       res.end(result.body);
@@ -46,7 +67,7 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Functions mounted at the same paths Netlify uses
+  // Functions mounted at the same paths production serves
   if (url.pathname === "/.netlify/functions/timetable") {
     await serveFunction(timetableHandler);
     return;
@@ -59,20 +80,11 @@ const server = http.createServer(async (req, res) => {
     await serveFunction(assessmentsHandler);
     return;
   }
-
-  // Suggestions form (Netlify Forms): on Netlify the platform intercepts
-  // the POST at "/" before this handler. Locally there is no form backend,
-  // so log the submission and accept it so the flow is testable.
-  if (req.method === "POST") {
-    let body = "";
-    req.on("data", (chunk) => (body += chunk));
-    req.on("end", () => {
-      const data = new URLSearchParams(body);
-      const email = data.get("email") || "no email";
-      console.log(`[suggestion] ${data.get("name") || "anonymous"} (${email}): ${data.get("suggestion") || "(empty)"}`);
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ ok: true, dev: true }));
-    });
+  // The suggestions form posts here, exactly as it does in production. No store
+  // backend is wired locally, so the handler logs the submission and accepts
+  // it — the flow is testable without a KV namespace on this machine.
+  if (url.pathname === "/.netlify/functions/suggestions") {
+    await serveFunction(suggestionsHandler);
     return;
   }
 
@@ -112,4 +124,5 @@ server.listen(PORT, () => {
   console.log(`Timetable function: http://localhost:${PORT}/.netlify/functions/timetable?codes=COMP30960`);
   console.log(`Catalogue function: http://localhost:${PORT}/.netlify/functions/catalogue`);
   console.log(`Assessments function: http://localhost:${PORT}/.netlify/functions/assessments`);
+  console.log(`Suggestions endpoint:  http://localhost:${PORT}/.netlify/functions/suggestions`);
 });

@@ -277,16 +277,31 @@
           <div class="panel-head">
             <h2>Suggestions</h2>
           </div>
+          <!-- The form posts to this repo's own endpoint (app.js sends it as an
+               AJAX request, so nothing navigates). It used to carry the
+               platform's form attributes — a form-name field and a honeypot
+               declaration — because the old host scanned the markup and
+               intercepted the POST at "/". Nothing does that here, and the
+               bot-field is now read by the endpoint itself
+               (netlify/functions/suggestions.js).
+
+               `action` names that endpoint rather than being left off, which
+               is what a form with no action does not have: it posts to the
+               page's own URL, and nothing accepts a POST on "/" — measured,
+               that answers 405 and the suggestion is lost. Leaving it off left
+               the form dependent on app.js having already attached its submit
+               handler, so any visitor whose script was blocked, still loading,
+               or served from the service worker's previous copy (which ran for
+               one load after every deploy) hit that 405. Two attributes remove
+               the case entirely. -->
           <form
             id="suggest-form"
             class="suggest-form"
             name="suggestions"
             method="POST"
-            data-netlify="true"
-            netlify-honeypot="bot-field"
+            action="/.netlify/functions/suggestions"
             novalidate
           >
-            <input type="hidden" name="form-name" value="suggestions" />
             <p class="hidden" aria-hidden="true">
               <label>Leave this field empty: <input name="bot-field" /></label>
             </p>
@@ -390,7 +405,7 @@
             Timings fetched live from
             <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">UCD's General Reference Timetable</a>
             on every page load. Not an official UCD service. Built by
-            <a href="https://portfolio.parth10.workers.dev/" target="_blank" rel="noopener">Parth</a>.
+            <a href="https://parth-portfolio-wb.pages.dev/" target="_blank" rel="noopener">Parth</a>.
             <span id="data-freshness" class="data-freshness"></span>
           </span>
         </div>
@@ -402,6 +417,6 @@
     <!-- Only one script, and it is same-origin: the deployed CSP is
          script-src 'self'. The service worker is registered from app.js — an
          inline registration here would be blocked by that policy. -->
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=6"></script>
   </body>
 </html>

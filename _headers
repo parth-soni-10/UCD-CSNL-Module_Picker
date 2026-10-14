@@ -1,18 +1,21 @@
 # Response headers for the Cloudflare deployment.
 #
-# The same policy netlify.toml carried, moved to the `_headers` convention the
-# static-assets layer reads (netlify.toml is Netlify-only). `script-src` stays
+# The same policy the Netlify config carried, in the `_headers` convention the
+# static-assets layer reads — that config is gone, this file is the only copy.
+# `script-src` stays
 # 'self' with no 'unsafe-inline' — the site ships one same-origin script and
 # registers the service worker from inside it, and Cloudflare injects no badge
 # script of its own, so nothing needs an escape hatch.
 #
 # frame-ancestors names the Dashboard Portal: it shows this dashboard in a
-# preview frame, and 'none' made the preview refuse to load. The portal now
-# lives at dashboards-home.parth10.workers.dev; the old *.netlify.app
-# origin it used before is gone. Origin-scoped to the portal rather than `*`,
-# so no other site can frame us.
+# preview frame, and 'none' made the preview refuse to load. The portal is
+# served from two hosts — dashboards-home-portal.pages.dev, which its manifest
+# and every link now use, and dashboards-home.parth10.workers.dev, which the
+# Workers deployment still answers on — so both are named: either one can open
+# the preview. The old *.netlify.app origin it used before is gone, and this is
+# origin-scoped to the portal rather than `*`, so no other site can frame us.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self' https://dashboards-home.parth10.workers.dev
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self' https://dashboards-home.parth10.workers.dev https://dashboards-home-portal.pages.dev
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()

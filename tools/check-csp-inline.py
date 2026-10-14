@@ -16,6 +16,11 @@ the only trace was a console violation nobody was reading.
 JS files are scanned too, because most of this app's markup is generated from
 template strings. A line whose code (comments stripped) contains style="…" is a
 real violation; a mention inside a comment is not.
+
+The functions under netlify/functions/ are scanned for the same reason: the
+suggestions endpoint answers a form navigation with a page it builds itself, so
+the markup of that page lives in a JS template string and would be dropped in
+production the same way an inline <script> in index.html is.
 """
 
 import os
@@ -58,7 +63,15 @@ def scan(path, label):
 
 def main():
     targets = []
-    for rel in ("index.html", "app.js", "sw.js"):
+    functions = os.path.join(ROOT, "netlify", "functions")
+    scanned = ["index.html", "app.js", "sw.js"]
+    if os.path.isdir(functions):
+        scanned += [
+            os.path.join("netlify", "functions", name)
+            for name in sorted(os.listdir(functions))
+            if name.endswith(".js")
+        ]
+    for rel in scanned:
         path = os.path.join(ROOT, rel)
         if os.path.exists(path):
             targets.append((path, rel))
@@ -73,7 +86,7 @@ def main():
             print("  %s:%d  %s\n      %s" % (rel, number, what, snippet))
         print(
             "\nEither move it into a file/class, or add its hash to the policy in "
-            "netlify.toml."
+            "_headers."
         )
         return 1
 

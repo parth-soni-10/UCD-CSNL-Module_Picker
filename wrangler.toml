@@ -28,8 +28,8 @@ run_worker_first = ["/.netlify/functions/*"]
 binding = "STORE_KV"
 id = "a6f075b04f284e42b1b1fd88e96a7a7b"
 
-# The daily catalogue refresh. This replaces the Netlify scheduled function
-# [functions."refresh-catalogue"] schedule = "0 0 * * *" from netlify.toml —
+# The daily catalogue refresh. This replaces the schedule the Netlify config
+# used to declare ([functions."refresh-catalogue"] schedule = "0 0 * * *") —
 # same job: re-read UCD's streams page, rewrite the stored module list only if
 # the page stamp changed, and force an assessment refresh pass.
 #

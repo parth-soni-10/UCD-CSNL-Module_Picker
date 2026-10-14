@@ -1518,6 +1518,33 @@ body {
   padding: 8px 10px;
 }
 
+/* The receipt the endpoint answers a native form submit with, shown when
+   app.js never attached its handler — JavaScript blocked, failed, or still
+   loading. It is a document of its own rather than the app shell: no sidebar,
+   no timetable, one card and two links. The policy on that response allows the
+   stylesheet and nothing inline, so this rule lives here with the rest. */
+.suggest-receipt {
+  max-width: 34rem;
+  margin: 12vh auto;
+  padding: 0 16px;
+}
+
+.suggest-receipt h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.suggest-receipt .plan-hint {
+  margin: 0 0 14px;
+}
+
+.suggest-receipt-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
 /* ---------------------------------------------------------- timetable grid */
 .timetable-wrap {
   /* grid metrics in px, read by app.js for event positioning and overridden
