@@ -19,13 +19,12 @@ LICENSE
 package.json
 server.js
 wrangler.toml
-wrangler.dev.toml
-worker.js
 .assetsignore
-# Deploy files. This repository's Pages mirror control config, the scripts that
-# deploy it, and the staging output those scripts write (`.pages-bundle/`,
-# `.pages-dist/`) are development files: the assets directory is the repository
-# root, so anything not listed here would be uploaded and served.
-pages/
-.pages-bundle/
+# The function Pages compiles at deploy time. The upload is a staged copy of the
+# repository, so without this rule the router and the catch-all would also be
+# published as files under /functions/.
+functions/
+# Deploy files: the script that stages the upload and the staging output it
+# writes (`.pages-dist/`) are development files. The assets directory is the
+# repository root, so anything not listed here would be uploaded and served.
 .pages-dist/

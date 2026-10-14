@@ -9,7 +9,7 @@
 // endpoint in this repo does.
 //
 // Storage is the same injected backend the catalogue and assessments use
-// (`setStore()` from worker.js, a KV namespace in production and an in-memory
+// (`setStore()` from functions/_router.js, a KV namespace in production and an in-memory
 // map on the local server), under its own store name so a suggestion can never
 // collide with a cached catalogue. The shape kept is a list, newest last,
 // capped, because the useful question is "what have people asked for" and not

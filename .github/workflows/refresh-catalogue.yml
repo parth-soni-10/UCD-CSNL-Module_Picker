@@ -3,7 +3,8 @@ name: Refresh the catalogue
 # The daily catalogue refresh — the schedule that used to be three Cloudflare
 # cron triggers.
 #
-# It ran on the Worker (`[triggers]` in wrangler.toml → worker.js `scheduled` →
+# It ran on the Worker (`[triggers]` in what was then a Workers config → the
+# handler's `scheduled` →
 # netlify/functions/refresh-catalogue.js) because a Cloudflare deploy had no
 # scheduler of its own to keep UCD's module list current. This site is served
 # from Cloudflare Pages now, which has no cron triggers either, so the schedule
@@ -12,7 +13,7 @@ name: Refresh the catalogue
 # Three passes rather than one, at the times the crons used: a free-plan
 # invocation may make only 50 subrequests and a module page costs two of them, so
 # one pass covers about 22 of the ~68 modules and the three rotate through the
-# whole list (see MAX_SUBREQUESTS in worker.js). A visitor's own catalogue request
+# whole list (see MAX_SUBREQUESTS in functions/_router.js). A visitor's own catalogue request
 # refreshes page-by-page too, so a missed pass is a delay rather than an outage —
 # catalogue.js self-heals on every request.
 

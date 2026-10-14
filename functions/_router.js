@@ -1,10 +1,13 @@
 /**
- * UCD CSNL Module Picker — Cloudflare Worker.
+ * UCD CSNL Module Picker — the routing half of this site's Pages Function.
  *
  * This file only adapts how the four functions under netlify/functions/ are
- * hosted; Wrangler bundles those files into this Worker, so the scrapers,
- * parsers and caching have exactly one implementation. `node server.js` (the
- * local dev server) still mounts the same files the way it always did.
+ * hosted; Pages compiles this directory (see `functions/[[path]].js`, the
+ * catch-all route) and it imports those files, so the scrapers, parsers and
+ * caching have exactly one implementation. `node server.js` (the local dev
+ * server) still mounts the same files the way it always did. The `_` prefix
+ * keeps this file out of the routing table: the only route is the catch-all
+ * beside it.
  *
  * What the previous host used to provide, and what replaces it here:
  *
@@ -39,11 +42,11 @@
  * headers, body } results are turned straight back into a Response.
  */
 
-import catalogueModule from "./netlify/functions/catalogue.js";
-import assessmentsModule from "./netlify/functions/assessments.js";
-import timetableModule from "./netlify/functions/timetable.js";
-import refreshModule from "./netlify/functions/refresh-catalogue.js";
-import suggestionsModule from "./netlify/functions/suggestions.js";
+import catalogueModule from "../netlify/functions/catalogue.js";
+import assessmentsModule from "../netlify/functions/assessments.js";
+import timetableModule from "../netlify/functions/timetable.js";
+import refreshModule from "../netlify/functions/refresh-catalogue.js";
+import suggestionsModule from "../netlify/functions/suggestions.js";
 
 const ROUTES = {
   "/.netlify/functions/catalogue": catalogueModule,

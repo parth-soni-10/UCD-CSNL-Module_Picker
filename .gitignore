@@ -7,5 +7,9 @@ server.log
 # not project source — the sibling repos ignore the same directory.
 .freebuff/
 
+# Deploy staging output, written by tools/deploy-pages.mjs. Build output; also
+# listed in .assetsignore, so it can never be uploaded even by hand.
+.pages-dist/
+
 # Cloudflare Wrangler local state (not committed)
 .wrangler/

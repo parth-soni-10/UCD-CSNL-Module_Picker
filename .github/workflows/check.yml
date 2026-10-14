@@ -17,10 +17,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Syntax-check the site and the functions
+      - name: Syntax-check the site, the function and the tools
         run: |
           set -e
-          for f in app.js sw.js server.js netlify/functions/*.js tools/*.js; do
+          for f in app.js sw.js server.js functions/*.js netlify/functions/*.js tools/*.js; do
             node --check "$f"
           done
 

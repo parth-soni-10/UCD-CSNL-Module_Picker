@@ -30,7 +30,7 @@ const FALLBACK = require("../../modules.json");
 
 // The storage backend is injected by whichever host runs this module. The
 // Netlify runtime used to supply @netlify/blobs automatically; the Cloudflare
-// Worker (worker.js) now calls setStore() with a KV-backed reader/writer of
+// functions/_router.js now calls setStore() with a KV-backed reader/writer of
 // the same shape — get(store, key) / set(store, key, value). With no backend
 // the long-lived memory cache serves the instance, which is what the local
 // dev server (server.js) relies on.
@@ -518,7 +518,7 @@ exports.handler = async (event) => {
 
 exports.getCatalogue = getCatalogue; // used by the scheduled refresh function
 exports.attachAssessments = attachAssessments; // exposed for tests
-exports.setStore = setStore; // used by worker.js to inject the KV-backed store
+exports.setStore = setStore; // used by functions/_router.js to inject the KV-backed store
 
 // A stored catalogue counts as "warmed" only when it's a real payload.
 function hasStoredData(stored) {

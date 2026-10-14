@@ -131,9 +131,9 @@ matches production exactly. Node 18+ is required; there are no dependencies.
 ## Deploy
 
 One **Cloudflare Pages** project (`ucdcsnlmodulepicker`) serves everything from
-one host: the page, the functions (bundled as the deployment's `_worker.js`), and
+one host: the page, its functions (compiled by Pages from `functions/`), and
 the KV namespace the catalogue, the assessments map and the suggestion list live
-in. A push to `main` publishes it — the build bundles `worker.js` and stages the
+in. A push to `main` publishes it — Pages compiles `functions/` and the build stages the
 upload, and no data or code is generated outside it. Three daily GitHub Actions
 runs (00:00 / 00:20 / 00:40 UTC) refresh the assessments map in budgeted passes,
 because Pages has no cron triggers of its own.
