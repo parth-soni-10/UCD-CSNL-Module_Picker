@@ -15,9 +15,9 @@
 # this repository (the repository root, minus `.assetsignore`).
 #
 # No [triggers] here, and that is not an omission: Pages has no cron triggers, so
-# the three daily catalogue-refresh passes live in
-# .github/workflows/refresh-catalogue.yml, which calls this deployment's own
-# refresh route.
+# the catalogue refresh lives in .github/workflows/refresh-catalogue.yml, which
+# calls this deployment's own refresh route twice a month (the 1st and the 15th)
+# in three budgeted passes.
 
 name = "ucdcsnlmodulepicker"
 pages_build_output_dir = ".pages-dist"

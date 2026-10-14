@@ -26,7 +26,7 @@
 // period EEEN40680 sitting.
 //
 // Persistence: Netlify Blobs in production, in-memory cache locally. The map
-// is refreshed when older than TTL_MS; the daily refresh-catalogue cron also
+// is refreshed when older than TTL_MS; the scheduled refresh-catalogue run also
 // warms it. If UCD is unreachable the stored map is served with `stale: true`
 // so the UI can fall back gracefully instead of blocking the plan builder.
 
@@ -232,8 +232,8 @@ async function writeStored(value) {
 /** One refresh pass: fetch the codes that are missing from the stored map or
     least recently fetched, merge them over it, and hand back the merged map.
     A pass is not obliged to reach the whole code list — see subrequestBudget —
-    so successive passes (the three daily crons plus any visitor-triggered one)
-    rotate through the map.
+    so successive passes (the three of one scheduled run, plus any
+    visitor-triggered one) rotate through the map.
 
     Failures are skipped in the merge instead of replacing entries, so a UCD
     outage or a WAF block can never clobber a map that was already good. That
@@ -416,7 +416,7 @@ exports.handler = async (event) => {
   }
 };
 
-// Exposed for the daily cron (refresh-catalogue.js) and tests.
+// Exposed for the scheduled refresh (refresh-catalogue.js) and tests.
 exports.getAssessments = getAssessments;
 exports.hasFinalExam = hasFinalExam;
 exports.parseAssessment = parseAssessment;

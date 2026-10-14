@@ -12,7 +12,7 @@ across future academic years:
 | Module title | **Live** — UCD |
 | Academic year (auto-picks the latest published) | **Live** — UCD |
 | Trimester / semester (Autumn, Spring, or both) | **Live** — UCD |
-| Module list (streams, core/optional, semester, credits, comments) | **Live from UCD's official CSNL page** (ucd.ie/cs/study/postgraduate/nlstreams) — re-checked on every load and daily |
+| Module list (streams, core/optional, semester, credits, comments) | **Live from UCD's official CSNL page** (ucd.ie/cs/study/postgraduate/nlstreams) — re-checked on every load, and by schedule twice a month |
 | New modules each year | **Appear automatically** — whatever UCD publishes on the CSNL streams page is what the site offers |
 
 There are **no hardcoded timings anywhere**. When UCD updates a schedule —
@@ -54,10 +54,12 @@ on three levels, with no code change:
 - On every request, `/catalogue` re-reads the page; if UCD has changed it
   (the page's `page_last_update` stamp differs), the list is regenerated
   immediately — the site can't go stale even mid-year.
-- A **scheduled function** (`refresh-catalogue`) re-reads the page **daily**
-  at `00:00 UTC` (`0 0 * * *`), so the stored list stays current even with
-  zero visitors. It compares the page stamp and only rewrites the blob when
-  UCD actually changed the list.
+- A **scheduled function** (`refresh-catalogue`) re-reads the page **twice a
+  month**, at `03:00 UTC` on the 1st and the 15th (`0 3 1,15 * *`) — every 14
+  days across a month — so the stored list stays current even with zero
+  visitors. It compares the page stamp and only rewrites the blob when UCD
+  actually changed the list. It ran daily until 14 October 2026; UCD
+  republishes the list once a year, so that was 365 checks to catch one change.
 - If the CSNL page is unreachable, the service falls back to UCD's generic
   current-year module catalogue (credits refreshed), and finally to the
   committed `modules.json` — per-module timings are still fetched live from
@@ -134,9 +136,10 @@ One **Cloudflare Pages** project (`ucdcsnlmodulepicker`) serves everything from
 one host: the page, its functions (compiled by Pages from `functions/`), and
 the KV namespace the catalogue, the assessments map and the suggestion list live
 in. A push to `main` publishes it — Pages compiles `functions/` and the build stages the
-upload, and no data or code is generated outside it. Three daily GitHub Actions
-runs (00:00 / 00:20 / 00:40 UTC) refresh the assessments map in budgeted passes,
-because Pages has no cron triggers of its own.
+upload, and no data or code is generated outside it. One GitHub Actions run on
+the 1st and the 15th of each month (03:00 UTC) refreshes the catalogue and the
+assessments map in three budgeted passes, because Pages has no cron triggers of
+its own.
 
 ## Files
 
@@ -147,7 +150,7 @@ because Pages has no cron triggers of its own.
 | `tools/test-timetables.js` | Test harness — fetches every live timetable and checks data quality, every module pair for clashes, and the clash-free plan builder |
 | `netlify/functions/timetable.js` | Live-timings proxy + UCD HTML parser |
 | `netlify/functions/catalogue.js` | Auto-refreshing module list service (KV store + memory fallback) |
-| `netlify/functions/refresh-catalogue.js` | Scheduled catalogue check (three daily passes, driven by `.github/workflows/refresh-catalogue.yml`) |
+| `netlify/functions/refresh-catalogue.js` | Scheduled catalogue check (three passes, twice a month, driven by `.github/workflows/refresh-catalogue.yml`) |
 | `netlify/functions/suggestions.js` | The suggestion form's endpoint — validates, drops honeypot fills, appends to KV; answers JSON to the app's fetch and a small HTML receipt to a form navigation |
 | `server.js` | Zero-dependency local server (mounts the functions at their real paths) |
 

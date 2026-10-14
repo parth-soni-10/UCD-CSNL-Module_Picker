@@ -25,12 +25,13 @@
  *               /.netlify/functions/suggestions, which stores it (see
  *               netlify/functions/suggestions.js).
  *
- *   schedule    The daily 00:00 UTC refresh used to be declared in the host's
- *               config as [functions."refresh-catalogue"] schedule, then as
- *               three Workers cron triggers. Pages has no cron triggers, so it
- *               is a GitHub Actions workflow now (.github/workflows/
+ *   schedule    The refresh used to be declared in the host's config as
+ *               [functions."refresh-catalogue"] schedule, then as three Workers
+ *               cron triggers — daily, in both. Pages has no cron triggers, so
+ *               it is a GitHub Actions workflow now (.github/workflows/
  *               refresh-catalogue.yml), which calls the very same handler over
- *               this deployment's own route.
+ *               this deployment's own route: twice a month, on the 1st and the
+ *               15th, with the three passes inside that one run.
  *
  *   routing     The paths the frontend already calls, /.netlify/functions/*,
  *               are served from here. The deployed project scopes its worker to
