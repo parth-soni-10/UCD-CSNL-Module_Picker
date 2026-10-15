@@ -1,0 +1,13 @@
+# CSNL Module Picker
+
+## Architecture and deployment
+- Keep the app vanilla HTML, CSS, and JavaScript. The Cloudflare Pages asset build is `node tools/deploy-pages.mjs --assets . --out .pages-dist`; Pages Functions remain under `functions/` and must not be copied into the asset directory.
+- `app.js` and `styles.css` are versioned together by the SHA-256 prefix in the `app.js?v=` script URL. The service worker uses that version for its cache and waits for an explicit update action before activation.
+- Keep the strict self-only `script-src` and `style-src` policy in `_headers`. Avoid inline executable scripts, event handlers, style attributes, and runtime style injection.
+
+## Data and interaction rules
+- `modules.json` is the catalogue. Timetable and assessment data come from the existing Pages Functions and live UCD sources; do not invent schedules or assessment facts.
+- Preserve share URLs `?q=<search>&t=<saved-timetable>&tm=<1|2|all>&s=<CODE:offering-list,…>` and their initial-render/history behavior. `1` and `2` encode the first and second semester views. Test encoded module/offering state after URL changes.
+- Keep the suggest form endpoint `/.netlify/functions/suggestions`, its `name`, `email`, `suggestion`, and `bot-field` fields, and the honeypot. Its Pages Function stores submissions through the existing `STORE_KV` binding.
+- Keep keyboard access, visible focus, reduced-motion behavior, responsive touch targets, and light/dark WCAG AA contrast when changing component behavior or tokens.
+- Keep the disclaimer that this is an unofficial UCD planner and that users must verify module details with UCD.

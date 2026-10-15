@@ -12,10 +12,9 @@
 //
 // Versioning. The cache is named after the `?v=` on this worker's own script
 // URL, which app.js copies from its own <script> tag in index.html. Bumping
-// that one query therefore installs a new worker AND renames this cache, so
-// `activate` drops the previous shell instead of serving it stale for one load
-// after every deploy — which is what a fixed cache name plus a pathname-only
-// key used to do.
+// that one query therefore installs a new worker AND renames this cache. An
+// update waits for the visitor to choose "Update available → Reload"; the
+// current shell remains usable until then.
 
 const VERSION = (() => {
   try {
@@ -44,8 +43,11 @@ self.addEventListener("install", (event) => {
     caches
       .open(CACHE)
       .then((cache) => cache.addAll(SHELL))
-      .then(() => self.skipWaiting())
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

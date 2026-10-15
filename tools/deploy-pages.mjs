@@ -132,14 +132,20 @@ if (!existsSync(join(out, "404.html"))) {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Not found</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0c;color:#e9e9ea;font:16px/1.6 system-ui,sans-serif}main{text-align:center;padding:2rem}a{color:inherit}</style>
+<link rel="stylesheet" href="/404.css">
 </head>
 <body><main><h1>404</h1><p>Nothing here.</p><p><a href="/">Back to the site</a></p></main></body>
 </html>
 `,
     "utf8"
   );
+    await writeFile(
+      join(out, "404.css"),
+      "body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0b0c;color:#e9e9ea;font:16px/1.6 system-ui,sans-serif}main{text-align:center;padding:2rem}a{color:inherit}",
+      "utf8"
+    );
   copied.push("404.html (generated)");
+    copied.push("404.css (generated)");
 }
 
 const indexPresent = existsSync(join(out, "index.html"));
