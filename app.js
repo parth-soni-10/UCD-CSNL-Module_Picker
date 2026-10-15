@@ -2052,7 +2052,6 @@ function renderTotalWarning() {
     el.innerHTML = "";
     return;
   }
-  const diff = total - TOTAL_YEAR_TARGET;
   const under = total < TOTAL_WARN_LOW;
   const over = total > TOTAL_WARN_HIGH;
   const show = under || over;
@@ -2652,7 +2651,7 @@ for (const el of [els.prefNoEarly, els.prefNoFriday, els.prefMaxPerDay]) {
     readPlanPrefs();
     if (planSession) {
       // re-run the active search with the new preferences
-      const [, semStr, noExamStr] = planSession.key.split("|");
+      const [, , noExamStr] = planSession.key.split("|");
       planSession = null;
       renderPlans(noExamStr === "1");
     }

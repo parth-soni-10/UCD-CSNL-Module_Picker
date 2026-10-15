@@ -330,7 +330,7 @@ async function getAssessments(opts) {
   let liveCodes = null;
   if (!force && stored && stored.v === VERSION) {
     try {
-      const { cat, codes } = await catalogueCodes();
+      const { codes } = await catalogueCodes();
       liveCodes = codes;
       drift = stored.total !== codes.length;
       // A chunked pass can leave codes unfetched (see subrequestBudget), or a
@@ -360,7 +360,7 @@ async function getAssessments(opts) {
     if (!inflight) {
       inflight = (async () => {
         try {
-          const { cat, codes } = liveCodes ? { cat: null, codes: liveCodes } : await catalogueCodes();
+          const { codes } = liveCodes ? { codes: liveCodes } : await catalogueCodes();
           const fresh = await refreshPass(codes, stored);
           if (fresh) await writeStored(fresh);
         } catch (e) {
@@ -380,7 +380,7 @@ async function getAssessments(opts) {
 
   // No usable stored map: build synchronously (cold start / first call).
   try {
-    const { cat, codes } = await catalogueCodes();
+    const { codes } = await catalogueCodes();
     const fresh = await refreshPass(codes, stored);
     if (fresh) {
       await writeStored(fresh);

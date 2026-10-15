@@ -465,13 +465,11 @@ async function main() {
   }
 
   let planFails = 0;
-  let planChecks = 0;
   for (const target of [30, 60, 90]) {
     for (const sem of ["1", "2", "all"]) {
       const t0 = Date.now();
       const plans = findPlans(target, sem, 4000, false, 6);
       const elapsed = Date.now() - t0;
-      planChecks++;
       const label = `${target}cr sem=${sem}`;
       if (!plans.length) {
         console.log(`  ${label}: no plans found (${elapsed}ms) — not a failure, but flag if plans are expected`);
