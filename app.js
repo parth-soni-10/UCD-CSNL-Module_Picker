@@ -2870,11 +2870,32 @@ els.semSelector.addEventListener("keydown", (e) => {
 // The workspace pills keep the single-page planner's established URL intact
 // while making its three working surfaces reachable with a predictable tab bar.
 const workspaceTargets = { picker: "module-section", plan: "plan-section", timetable: "timetable-section", compare: "compare-section" };
-document.querySelectorAll("[data-workspace]").forEach((tab) => tab.addEventListener("click", () => {
+
+// The shared accessibility contract asks for focus on the page heading after a
+// client-side navigation. Switching workspace IS the navigation here (the URL
+// code restores the same state), so the heading is where a keyboard user is put
+// back after the view changes — the same place a page load announces.
+function focusPageHeading() {
+  const heading = document.querySelector(".topbar h1") || document.querySelector("h1");
+  if (!heading) return;
+  if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
+  try {
+    heading.focus({ preventScroll: true });
+  } catch (err) {
+    heading.focus();
+  }
+}
+
+document.querySelectorAll("[data-workspace]").forEach((tab) => tab.addEventListener("click", (event) => {
   document.querySelectorAll("[data-workspace]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
   const workspace = document.getElementById("picker-view");
   if (workspace) workspace.dataset.workspaceMode = tab.dataset.workspace;
   document.getElementById(workspaceTargets[tab.dataset.workspace])?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
+  // A pointer activation is a navigation: put the user on the heading with the
+  // new view's context. A keyboard activation (detail === 0, including the
+  // ArrowLeft/ArrowRight path below) must keep focus on the tab — moving it to
+  // the heading would break the roving tablist it just navigated.
+  if (event && event.detail > 0) focusPageHeading();
 }));
 document.querySelector(".fluid-tabs")?.addEventListener("keydown", (e) => {
   if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
