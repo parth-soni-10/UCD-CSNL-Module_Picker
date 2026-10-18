@@ -10,4 +10,6 @@
 - Preserve share URLs `?q=<search>&t=<saved-timetable>&tm=<1|2|all>&s=<CODE:offering-list,…>` and their initial-render/history behavior. `1` and `2` encode the first and second semester views. Test encoded module/offering state after URL changes.
 - Keep the suggest form endpoint `/.netlify/functions/suggestions`, its `name`, `email`, `suggestion`, and `bot-field` fields, and the honeypot. Its Pages Function stores submissions through the existing `STORE_KV` binding.
 - Keep keyboard access, visible focus, reduced-motion behavior, responsive touch targets, and light/dark WCAG AA contrast when changing component behavior or tokens.
+- Motion timings come from the shared `--motion-duration-*` and `--motion-ease-*` tokens declared in `:root`; do not hard-code a duration in a transition — map it to a tier.
+- Several components only exist once a plan does. Verify with `PICKER_BASE_URL=http://127.0.0.1:<port>/ node tools/verify-picker.mjs`, which seeds a real selection through the `?s=` share parameter; an empty picker renders one swipe row and looks like a pass while checking almost nothing.
 - Keep the disclaimer that this is an unofficial UCD planner and that users must verify module details with UCD.

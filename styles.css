@@ -50,6 +50,16 @@
 
 /* ------------------------------------------------------------- theme tokens */
 :root {
+  /* Shared motion tokens: the same names and values as the design system, so a
+     timing change is one edit across the fleet rather than a hunt through this
+     file. Rules below reference the tiers instead of literal milliseconds. */
+  --motion-duration-micro: 100ms;
+  --motion-duration-standard: 200ms;
+  --motion-duration-complex: 400ms;
+  --motion-duration-page: 600ms;
+  --motion-ease-enter: cubic-bezier(.16, 1, .3, 1);
+  --motion-ease-exit: cubic-bezier(.7, 0, .84, 0);
+  --motion-ease-transform: cubic-bezier(.4, 0, .2, 1);
   color-scheme: light;
   --bg: #f4f5f7;
   --surface: #ffffff;
@@ -3252,7 +3262,7 @@ body {
   font: 600 13px/1 var(--font-sans);
   text-decoration: none;
   cursor: pointer;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition: color var(--motion-duration-micro) ease, background-color var(--motion-duration-micro) ease;
 }
 .site-nav-link.is-active,
 .fluid-tabs [aria-selected="true"] {
@@ -3308,14 +3318,14 @@ body {
 .chart-dot:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 4px; }
 .undo-component { display: contents; }
 .rubber-segment { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 3px; padding: 4px; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface-2); }
-.rubber-indicator { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px)/3); border: 1px solid var(--accent); border-radius: 10px; background: var(--accent); transform: translateX(calc(var(--segment-index, 0) * 100%)); transition: transform 200ms ease-in-out; pointer-events: none; }
+.rubber-indicator { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px)/3); border: 1px solid var(--accent); border-radius: 10px; background: var(--accent); transform: translateX(calc(var(--segment-index, 0) * 100%)); transition: transform var(--motion-duration-standard) ease-in-out; pointer-events: none; }
 .rubber-segment .sem-chip { position: relative; z-index: 1; justify-content: center; min-height: 38px; padding: 5px 8px; border: 1px solid transparent; border-radius: 10px; color: var(--text-2); background: transparent; }
 .rubber-segment .sem-chip.active { color: var(--accent-text); background: transparent; border-color: transparent; }
 .stepper-control { display: inline-grid; grid-template-columns: auto 34px minmax(40px,54px) 34px; align-items: center; gap: 5px; padding: 3px 6px; }
 .stepper-control > label { color: var(--text-2); font-size: 11px; }
 .stepper-control input[type="number"] { width: 46px; min-height: 34px; padding: 4px; border: 1px solid var(--border); border-radius: 9px; color: var(--text); background: var(--surface); text-align: center; }
 .stepper-button { width: 34px; min-height: 34px; padding: 0; border: 1px solid var(--border); border-radius: 9px; color: var(--text); background: var(--surface); font-size: 16px; cursor: pointer; }
-.dynamic-label { display: inline-block; transition: opacity 120ms ease, transform 120ms ease; }
+.dynamic-label { display: inline-block; transition: opacity var(--motion-duration-micro) ease, transform var(--motion-duration-micro) ease; }
 .dynamic-label.is-changing { opacity: .2; transform: translateY(2px); }
 .field-label { display: block; margin: 3px 0 5px; color: var(--text-3); font: 600 10px var(--font-mono); text-transform: uppercase; }
 .glide-select { width: 100%; min-height: 44px; border-radius: 12px; }
@@ -3323,12 +3333,12 @@ body {
 .jelly-radio legend { width: 100%; margin-bottom: 4px; color: var(--text-3); font: 600 10px var(--font-mono); text-transform: uppercase; }
 .jelly-radio label { position: relative; cursor: pointer; }
 .jelly-radio input { position: absolute; opacity: 0; inset: 0; }
-.jelly-radio label span { display: inline-flex; align-items: center; min-height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); background: var(--surface); font-size: 12px; transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
+.jelly-radio label span { display: inline-flex; align-items: center; min-height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); background: var(--surface); font-size: 12px; transition: color var(--motion-duration-standard) ease, background-color var(--motion-duration-standard) ease, border-color var(--motion-duration-standard) ease, transform var(--motion-duration-standard) ease; }
 .jelly-radio input:checked + span { border-color: var(--accent); color: var(--accent-text); background: var(--accent); transform: scale(1.04); }
 .jelly-radio input:focus-visible + span { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
 .squish-switch { display: inline-flex; align-items: center; gap: 9px; min-height: 38px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); background: var(--surface); font-size: 12px; cursor: pointer; }
-.squish-switch input[type="checkbox"] { appearance: none; width: 36px; height: 20px; margin: 0; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface-3); cursor: pointer; transition: background-color 160ms ease, border-color 160ms ease; }
-.squish-switch input::after { content: ""; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform 160ms ease; }
+.squish-switch input[type="checkbox"] { appearance: none; width: 36px; height: 20px; margin: 0; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface-3); cursor: pointer; transition: background-color var(--motion-duration-micro) ease, border-color var(--motion-duration-micro) ease; }
+.squish-switch input::after { content: ""; display: block; width: 14px; height: 14px; margin: 2px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform var(--motion-duration-micro) ease; }
 .squish-switch input:checked { border-color: var(--accent); background: var(--accent); }
 .squish-switch input:checked::after { transform: translateX(16px); }
 .squish-switch input:focus-visible { outline: 3px solid var(--accent-ring); outline-offset: 2px; }
@@ -3360,7 +3370,7 @@ body {
 .fund-top, .fund-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-2); font-size: 11px; }
 .fund-top strong { color: var(--text); }
 .fund-track { height: 8px; margin: 7px 0 5px; overflow: hidden; border-radius: 999px; background: var(--surface-3); }
-.fund-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width 250ms ease-out; }
+.fund-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width var(--motion-duration-standard) ease-out; }
 .activity-grid { display: grid; grid-template-columns: repeat(14, minmax(10px,1fr)); gap: 5px; }
 .activity-cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-2); }
 .activity-cell.level-1 { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
@@ -3376,7 +3386,7 @@ body {
 .week-sticky { position: sticky; top: 58px; z-index: 25; display: flex; justify-content: space-between; gap: 10px; margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 12px; color: var(--text); background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow); font-size: 12px; font-weight: 650; }
 .week-sticky span { color: var(--text-2); font: 500 10px var(--font-mono); }
 .touch-target { min-width: 40px; }
-.dynamic-button { transition: min-width 180ms ease, background-color 160ms ease, color 160ms ease; }
+.dynamic-button { transition: min-width var(--motion-duration-standard) ease, background-color var(--motion-duration-micro) ease, color var(--motion-duration-micro) ease; }
 .data-component-count { font-variant-numeric: tabular-nums; }
 .sw-update-banner { position: fixed; right: 16px; bottom: 16px; z-index: 120; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 10px 12px; border: 1px solid var(--border); border-radius: 14px; color: var(--text); background: var(--surface); box-shadow: 0 10px 35px rgba(0,0,0,.2); font-size: 12px; }
 .sw-update-banner[hidden] { display: none; }
