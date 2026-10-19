@@ -8,7 +8,7 @@
     <title>CSNL Module Picker | UCD Timetable Planner (Unofficial)</title>
     <meta
       name="description"
-      content="An unofficial UCD CSNL timetable planner. Browse 69 module codes from the published CSNL catalogue, explore live schedules, avoid class clashes and understand exam-free assessment options. Not an official UCD service; verify details with UCD."
+      content="An unofficial UCD CSNL timetable planner. Browse module codes from the published CSNL catalogue, explore live schedules, avoid class clashes and understand exam-free assessment options. Not an official UCD service; verify details with UCD."
     />
     <link rel="canonical" href="https://ucdcsnlmodulepicker.pages.dev/" />
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
@@ -401,6 +401,10 @@
           </div>
           <div id="credits-breakdown" class="credits-breakdown" aria-live="polite"></div>
           <div id="credit-progress" class="credit-progress" aria-live="polite"></div>
+          <div class="hairline-card" aria-label="Selection orbit">
+            <div class="hairline-figure" id="module-orbit"></div>
+            <p class="hairline-read" data-hairline-read aria-live="polite">No modules selected</p>
+          </div>
           <div id="summary-list" class="summary-list transaction-list" aria-live="polite" data-component="swipe-row"></div>
           <div class="timetable-tools">
             <label class="field-label" for="timetable-switcher">Saved selection</label>
@@ -608,7 +612,7 @@
             </div>
           </div>
           <div id="print-header" class="print-only"></div>
-          <div id="week-sticky" class="week-sticky" data-component="skiper74" aria-live="polite">Weekly timetable <span id="week-sticky-label">All published teaching weeks</span></div>
+          <div id="week-sticky" class="week-sticky" data-component="skiper74" aria-live="polite">Weekly timetable <span id="week-sticky-label">All published teaching weeks</span><button id="week-sticky-open" class="week-sticky-open" type="button" aria-label="Open the weekly timetable grid">Grid ↓</button></div>
           <div id="sem-selector" class="sem-selector rubber-segment" role="radiogroup" aria-label="Which semester the timetable shows" data-component="rubber-segment" data-layout-group="module-picker-semester-view">
             <span id="sem-indicator" class="rubber-indicator" aria-hidden="true"></span>
             <button type="button" role="radio" class="sem-chip active" data-sem="all" aria-checked="true" title="Show classes from both semesters">All</button>
@@ -698,6 +702,13 @@
     <!-- Only one script, and it is same-origin: the deployed CSP is
          script-src 'self'. The service worker is registered from app.js — an
          inline registration here would be blocked by that policy. -->
-    <script src="app.js?v=0250283e65e9"></script>
+    <!-- Hairline: the engine, its mount adapter and this site's figure. Three
+         external same-origin scripts, nothing inline: the deployed CSP is
+         script-src 'self'. The palette lives in styles.css, so the engine's
+         inject() is never called. -->
+    <script src="hairline/kernel.js"></script>
+    <script src="hairline/mount.js"></script>
+    <script src="hairline/orbit.js"></script>
+    <script src="app.js?v=orbit1"></script>
   </body>
 </html>

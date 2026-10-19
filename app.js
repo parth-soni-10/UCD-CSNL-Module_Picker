@@ -77,6 +77,9 @@ let lastAssessAt = null; // when the exam map was generated (freshness stamp)
 let planPrefs = { noEarly: false, noFriday: false, maxPerDay: 0 };
 let serviceHealth = null; // catalogue ?action=health payload (data-health line)
 let comparePick = new Set(); // codes staged for the module comparison table
+// The Hairline figure's handle: mounted once, then fed the current selection so
+// the drawing and the list behind it cannot disagree.
+let orbitHandle = null;
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -837,10 +840,27 @@ function refreshUI() {
   applyTouchTargets();
 }
 
+// The figure is also the way to the rows it counts: the module total opens the
+// catalogue, the credit badge opens the selected-module list. The visual value
+// still animates on the wrapper, so the button is only the control surface.
 function setAnimatedCounter(el, value, text) {
   if (!el) return;
   const previous = el.dataset.counterValue;
-  el.textContent = text;
+  const selection = !!el.closest("#selection-panel");
+  el.textContent = "";
+  const figure = document.createElement("button");
+  figure.type = "button";
+  figure.className = "counter-drill";
+  figure.textContent = text;
+  figure.setAttribute("aria-label", `${text} — open ${selection ? "the selected modules" : "the module list"}`);
+  figure.addEventListener("click", () => {
+    const target = document.getElementById(selection ? "summary-list" : "course-list");
+    if (!target) return;
+    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: "center" });
+  });
+  el.appendChild(figure);
   el.dataset.counterValue = String(value);
   el.dataset.component = "animated-counter";
   el.classList.add("data-component-count");
@@ -904,7 +924,7 @@ function renderPlannerInsights() {
   if (activity) {
     const weeks = Array.from({ length: 14 }, (_, i) => i + 1);
     const peak = Math.max(1, ...weeks.map((w) => weekCounts.get(w) || 0));
-    activity.innerHTML = `<div class="insight-heading"><div><span class="eyebrow">Published teaching weeks</span><h3>Planned class activity</h3></div><span class="data-source">Generated from selection</span></div><div class="activity-grid" role="group" aria-label="Planned classes per teaching week">${weeks.map((w) => { const count = weekCounts.get(w) || 0; const level = count ? Math.max(1, Math.ceil(count / peak * 4)) : 0; return `<button type="button" class="activity-cell level-${level}" data-activity-week="${w}" aria-label="Week ${w}, ${count} planned classes" title="Week ${w}: ${count} planned class${count === 1 ? "" : "es"}"></button>`; }).join("")}</div><div class="activity-legend"><span>Weeks 1–14 · ${selected.length} selected class offerings</span><span>Planned only · not attendance data</span></div>`;
+    activity.innerHTML = `<div class="insight-heading"><div><span class="eyebrow">Published teaching weeks</span><h3>Planned class activity</h3></div><span class="data-source">Generated from selection</span></div><div class="activity-grid" role="group" aria-label="Planned classes per teaching week">${weeks.map((w) => { const count = weekCounts.get(w) || 0; const level = count ? Math.max(1, Math.ceil(count / peak * 4)) : 0; return `<button type="button" class="activity-cell level-${level}" data-activity-week="${w}" aria-label="Week ${w}, ${count} planned classes" title="Week ${w}: ${count} planned class${count === 1 ? "" : "es"}"></button>`; }).join("")}</div><button type="button" class="chart-link" data-open-timetable aria-label="Open the weekly timetable behind this activity grid">Open the weekly timetable →</button><div class="activity-legend"><span>Weeks 1–14 · ${selected.length} selected class offerings</span><span>Planned only · not attendance data</span></div>`;
   }
   const chart = document.getElementById("workload-chart");
   if (chart) {
@@ -919,7 +939,20 @@ function renderPlannerInsights() {
   if (weekLabel) weekLabel.textContent = viewTerm === "1" ? `Autumn · ${weekText}` : viewTerm === "2" ? `Spring · ${weekText}` : weekText;
 }
 
+function openTimetableGrid() {
+  const tab = document.querySelector('[data-workspace="timetable"]');
+  if (tab) tab.click();
+  const grid = document.getElementById("timetable-grid");
+  if (!grid) return;
+  if (!grid.hasAttribute("tabindex")) grid.setAttribute("tabindex", "-1");
+  grid.focus({ preventScroll: true });
+  grid.scrollIntoView({ block: "center" });
+}
+
+document.getElementById("week-sticky-open")?.addEventListener("click", openTimetableGrid);
+
 document.getElementById("study-activity")?.addEventListener("click", (e) => {
+  if (e.target.closest("[data-open-timetable]")) { openTimetableGrid(); return; }
   const cell = e.target.closest("[data-activity-week]");
   if (cell) showToast(`Week ${cell.dataset.activityWeek}: ${cell.getAttribute("aria-label")}.`);
 });
@@ -1601,6 +1634,21 @@ function renderSummary() {
   setAnimatedCounter(els.totalCredits, credits, `${credits} credits`);
   renderCreditsBreakdown();
   renderCreditProgress(credits);
+  renderOrbit(byCode, credits);
+}
+
+// The selection figure: one orbiter per selected module, fed the same codes and
+// credits the summary above renders. It is illustrative, not a second control —
+// the summary list remains the keyboard way to remove or inspect a module.
+function renderOrbit(byCode, credits) {
+  if (!window.mountHairline) return;
+  const modules = [...byCode.keys()].map((code) => ({
+    code,
+    title: liveTitle(code),
+    credits: Number(moduleInfo(code)?.credits || 0),
+  }));
+  if (!orbitHandle) orbitHandle = window.mountHairline("module-orbit", { modules, credits });
+  else if (orbitHandle.set) orbitHandle.set({ modules, credits });
 }
 
 // Progress toward the ~90-credit CSNL year, shown as a bar next to the
