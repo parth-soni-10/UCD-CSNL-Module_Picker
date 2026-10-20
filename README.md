@@ -1,5 +1,7 @@
 # CSNL Module Picker
 
+**Live site:** https://ucdcsnlmodulepicker.pages.dev
+
 A simple, good-looking module picker for UCD Computer Science students that
 builds a clash-free weekly timetable. **Everything that can change year-to-year
 is fetched live from UCD on every page load** — the site is self-sustaining
