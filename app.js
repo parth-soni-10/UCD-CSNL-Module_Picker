@@ -406,19 +406,21 @@ function getCurrentSemester() {
 // theme (light / dark / system)
 // ---------------------------------------------------------------------------
 
-function systemPrefersDark() {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
+/* Light is the site's default and dark is only ever an explicit choice, so the
+   operating system is not consulted — not at load, and not when it changes
+   mid-session. Both themes are the same token sets either way; this only
+   decides which one an undecided visitor lands on. The markup carries the same
+   default statically (`data-theme="light"`), which is what keeps a JS-off
+   visitor light and a dark-mode laptop from flashing dark before this runs. */
 function applyTheme(theme) {
   const root = document.documentElement;
-  if (theme === "dark" || theme === "light") {
-    root.setAttribute("data-theme", theme);
-  } else {
-    root.removeAttribute("data-theme"); // follow the OS
-  }
-  const dark = theme === "dark" || (!theme && systemPrefersDark());
-  els.themeToggle.setAttribute("aria-pressed", String(dark));
+  const next = theme === "dark" ? "dark" : "light";
+  root.setAttribute("data-theme", next);
+  els.themeToggle.setAttribute("aria-pressed", String(next === "dark"));
+  // Browser chrome follows the page, not the OS: with the two out of step the
+  // address bar is a dark strip above a light page.
+  const chrome = document.querySelector('meta[name="theme-color"]');
+  if (chrome) chrome.setAttribute("content", next === "dark" ? "#101216" : "#f4f5f7");
 }
 
 function initTheme() {
@@ -431,10 +433,7 @@ function initTheme() {
   applyTheme(stored);
 
   els.themeToggle.addEventListener("click", () => {
-    // first click makes the choice explicit; afterwards it's a plain toggle
-    const explicit = document.documentElement.getAttribute("data-theme");
-    const isDark = explicit === "dark" || (!explicit && systemPrefersDark());
-    const next = isDark ? "light" : "dark";
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
     try {
       localStorage.setItem(LS_THEME, next);
     } catch (e) {
@@ -442,13 +441,6 @@ function initTheme() {
     }
     applyTheme(next);
   });
-
-  // while the user hasn't chosen explicitly, track the OS preference live
-  window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => {
-      if (!document.documentElement.getAttribute("data-theme")) applyTheme(null);
-    });
 }
 
 function timeToMinutes(t) {
