@@ -108,8 +108,28 @@ def main():
 
     scripts = Scripts()
     scripts.feed(index_html)
-    if len(scripts.external) != 1 or not scripts.external[0] or scripts.external[0].startswith(("//", "http:", "https:")):
-        problems.append(("index.html", 1, "script-count", "expected exactly one same-origin external script (absolute or relative URL)"))
+    # EVERY external script must be same-origin, and there must be at least one.
+    # This used to say "exactly one same-origin external script", which was
+    # written when the page loaded exactly one — and the Hairline figure added
+    # three more (its kernel, its mount and its orbit). Checking the COUNT
+    # instead of the ORIGIN meant a second script from anywhere would have
+    # been reported as a count problem rather than as the origin problem it
+    # actually is. So the rule is now the stronger one: every one of them is
+    # checked, and a page that loads nothing is still reported.
+    if not scripts.external:
+        problems.append(
+            ("index.html", 1, "script-count", "no external script — the page loads nothing")
+        )
+    for src in scripts.external:
+        if not src or src.startswith(("//", "http:", "https:")):
+            problems.append(
+                (
+                    "index.html",
+                    1,
+                    "script-origin",
+                    "external script %r is not a same-origin path (absolute or relative URL)" % src,
+                )
+            )
 
     if problems:
         print("CSP would block %d construct(s):\n" % len(problems))
