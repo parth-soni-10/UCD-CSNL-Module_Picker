@@ -24,6 +24,9 @@
     <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- The component's own defaults load first so the host stylesheet, which
+         maps the --gs-* variables onto this site's tokens, can win. -->
+    <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -204,7 +207,7 @@
           <div id="credit-progress" class="credit-progress" aria-live="polite"></div>
           <div id="summary-list" class="summary-list" aria-live="polite"></div>
           <div class="timetable-tools">
-            <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
+            <select id="timetable-switcher" class="input" aria-label="Current timetable" data-glide data-glide-menu-width="220"></select>
             <div class="row">
               <input id="new-timetable-name" name="timetable-name" class="input grow" placeholder="New timetable name…" autocomplete="off" spellcheck="false" aria-label="New timetable name" />
               <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable" aria-label="Add timetable">+</button>
@@ -240,7 +243,7 @@
               autocomplete="off"
               aria-label="Target credit total"
             />
-            <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan">
+            <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan" data-glide data-glide-size="sm">
               <option value="current">Current sem.</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
@@ -417,6 +420,7 @@
     <!-- Only one script, and it is same-origin: the deployed CSP is
          script-src 'self'. The service worker is registered from app.js — an
          inline registration here would be blocked by that policy. -->
+    <script src="glide-select.js"></script>
     <script src="app.js?v=6"></script>
   </body>
 </html>

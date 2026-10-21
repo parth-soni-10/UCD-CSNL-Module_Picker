@@ -3051,3 +3051,52 @@ body {
 .sel-empty {
   margin: 4px 2px 12px;
 }
+
+/* --- GlideSelect -----------------------------------------------------------
+   The timetable switcher and the plan semester are chips with a gliding menu
+   now. The native <select> stays in the DOM as the value app.js reads, so the
+   picker only changes the surface, not the wiring. ------------------------- */
+.glide-select {
+  --gs-surface: var(--surface-2);
+  --gs-highlight: var(--accent-soft);
+  --gs-text: var(--text);
+  --gs-accent: var(--accent);
+  --gs-radius: 12px;
+  --gs-inner-radius: 8px;
+}
+
+.glide-select .glide-select__trigger {
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.timetable-tools > .glide-select .glide-select__trigger {
+  height: 38px;
+}
+
+.plan-controls > .glide-select .glide-select__trigger {
+  height: 34px;
+  font-size: 13px;
+}
+
+.timetable-tools > .glide-select {
+  display: block;
+  width: 100%;
+}
+
+.plan-controls > .glide-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.glide-select .glide-select__trigger {
+  width: 100%;
+}
+
+.glide-select__menu {
+  min-width: 100%;
+}
