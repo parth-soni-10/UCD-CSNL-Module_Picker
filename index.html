@@ -28,6 +28,7 @@
          maps the --gs-* variables onto this site's tokens, can win. -->
     <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="jelly-radio.css" />
+    <link rel="stylesheet" href="rubber-segment.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -185,7 +186,13 @@
           </div>
           <p id="add-code-error" class="add-code-error" role="alert" hidden></p>
           <p class="add-code-hint">Only modules on UCD's CSNL list are offered. Everything is fetched live from UCD on every load.</p>
-          <div id="timing-summary" class="timing-summary" role="group" aria-label="Timetable status">
+          <!-- The status chips are one single-choice filter, so they take Rubber
+               Segment: the thumb crosses the gap between two statuses and lands
+               on the new chip. The semester row above the timetable keeps Jelly
+               Radio, so the two rows read as different instruments. -->
+          <div id="timing-summary" class="timing-summary" role="group" aria-label="Timetable status"
+               data-rubber-segment data-rs-key="timing-status" data-rs-size="sm"
+               data-rs-inset="0" data-rs-radius="999" data-rs-stretch="85" data-rs-squash="2">
             <button type="button" class="ts-chip ts-live" data-ts="live" aria-pressed="false" title="Modules with a published timetable (click to show only these)">With timetable <strong class="ts-count">0</strong></button>
             <button type="button" class="ts-chip ts-none" data-ts="none" aria-pressed="false" title="Modules UCD hasn't published a timetable for yet (click to show only these)">Not published yet <strong class="ts-count">0</strong></button>
             <button type="button" class="ts-chip ts-failed hidden" data-ts="failed" aria-pressed="false" title="Modules that failed to load from UCD (click to show only these)">Load failed <strong class="ts-count">0</strong></button>
@@ -425,6 +432,7 @@
          inline registration here would be blocked by that policy. -->
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
+    <script src="rubber-segment.js" defer></script>
     <script src="app.js?v=6"></script>
   </body>
 </html>

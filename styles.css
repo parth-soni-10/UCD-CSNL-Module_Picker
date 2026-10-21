@@ -800,6 +800,22 @@ body {
   color: var(--accent);
 }
 
+/* The timetable status row is adopted by Rubber Segment (index.html). The
+ * thumb is the accent wash, so the chips give up their own fill and the thumb
+ * can be seen crossing them; each chip keeps its border, its count colour and
+ * its padding. The component's size preset would set a minimum height, which
+ * this row does not need — it is measured from the chips themselves. */
+.timing-summary[data-rubber-segment] {
+  --rs-thumb: var(--accent-soft);
+}
+.timing-summary[data-rubber-segment] .ts-chip {
+  background: transparent;
+  min-height: 0;
+}
+.timing-summary[data-rubber-segment] .ts-chip.active {
+  background: transparent;
+}
+
 /* Semester selector above the weekly timetable grid. */
 .sem-selector {
   display: flex;
