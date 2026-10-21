@@ -99,7 +99,9 @@ function mount({ stage, svg, read }, value) {
 
     // Painter's order: the plan sits at the centre of the ring, so a module
     // behind it (smaller x + y) is drawn first and one in front is drawn last.
-    const order = [{ key: 0, g: plan.g }, ...nodes.map((n) => ({ key: n.cx + n.cy, g: n.g }))];
+    // The plan sorts before every node: a node's key is cx + cy and the half
+    // of the ring behind the plan is negative, so a plan key of 0 hid those.
+    const order = [{ key: -100, g: plan.g }, ...nodes.map((n) => ({ key: n.cx + n.cy, g: n.g }))];
     order.sort((a, b) => a.key - b.key).forEach((o) => root.appendChild(o.g));
 
     readDefault();
