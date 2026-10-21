@@ -27,6 +27,7 @@
     <!-- The component's own defaults load first so the host stylesheet, which
          maps the --gs-* variables onto this site's tokens, can win. -->
     <link rel="stylesheet" href="glide-select.css" />
+    <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -383,7 +384,9 @@
             </div>
           </div>
           <div id="print-header" class="print-only"></div>
-          <div id="sem-selector" class="sem-selector" role="group" aria-label="Which semester the timetable shows">
+          <div id="sem-selector" class="sem-selector" role="group" aria-label="Which semester the timetable shows"
+               data-jelly-radio data-jelly-bare data-jelly-size="sm" data-jelly-radius="999"
+               data-jelly-swell="0.09" data-jelly-barge="3" data-jelly-shrink="0.04">
             <button type="button" class="sem-chip active" data-sem="all" aria-pressed="true" title="Show classes from both semesters">All</button>
             <button type="button" class="sem-chip" data-sem="1" aria-pressed="false" title="Show only Semester 1 (Autumn) classes">Autumn</button>
             <button type="button" class="sem-chip" data-sem="2" aria-pressed="false" title="Show only Semester 2 (Spring) classes">Spring</button>
@@ -421,6 +424,7 @@
          script-src 'self'. The service worker is registered from app.js — an
          inline registration here would be blocked by that policy. -->
     <script src="glide-select.js"></script>
+    <script src="jelly-radio.js" defer></script>
     <script src="app.js?v=6"></script>
   </body>
 </html>
