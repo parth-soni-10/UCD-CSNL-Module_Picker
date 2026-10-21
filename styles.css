@@ -3116,3 +3116,19 @@ body {
 .glide-select__menu {
   min-width: 100%;
 }
+
+/* footnote links: the trust pages and the machine-readable files a reader or
+   an agent checks next. Inline so they wrap under the source line on narrow
+   screens instead of pushing the timetable down. */
+.fn-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  margin-left: 6px;
+  font-size: 12.5px;
+}
+
+.fn-links a {
+  white-space: nowrap;
+}
+

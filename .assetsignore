@@ -28,3 +28,5 @@ functions/
 # writes (`.pages-dist/`) are development files. The assets directory is the
 # repository root, so anything not listed here would be uploaded and served.
 .pages-dist/
+# The agent-surface tests, not part of the published site.
+tests/

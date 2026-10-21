@@ -1,0 +1,272 @@
+/* CSNL Module Picker — the document pages (About, Contact, Privacy, 404).
+   Deliberately small: `styles.css` is loaded first and already supplies the
+   tokens, the base type, the sticky header and the button, so this file only
+   lays out a readable column inside that shell. No component here needs
+   JavaScript, which keeps the CSP's `script-src 'self'` untouched. */
+
+.topbar-inner.doc-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.doc-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.doc-brand .brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.doc-brand:hover {
+  color: var(--accent);
+}
+
+.doc-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.doc-nav a {
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 11px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.doc-nav a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.doc-nav a[aria-current="page"] {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--accent);
+}
+
+.doc-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.doc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 30px clamp(20px, 4vw, 40px) 36px;
+}
+
+.doc-eyebrow {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.doc-card h1 {
+  margin: 0 0 6px;
+  font-size: clamp(26px, 3.4vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.doc-lede {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--text-2);
+  max-width: 66ch;
+}
+
+.doc-updated {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.doc-card h2 {
+  margin: 32px 0 10px;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.doc-card h2:first-of-type {
+  margin-top: 26px;
+}
+
+.doc-card h3 {
+  margin: 22px 0 8px;
+  font-size: 14.5px;
+}
+
+.doc-card p,
+.doc-card li {
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.65;
+}
+
+.doc-card p {
+  margin: 0 0 12px;
+  max-width: 68ch;
+}
+
+.doc-card ul {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  max-width: 68ch;
+}
+
+.doc-card li {
+  margin-bottom: 7px;
+}
+
+.doc-card li::marker {
+  color: var(--text-3);
+}
+
+.doc-card strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.doc-card a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.doc-card a:hover {
+  text-decoration: underline;
+}
+
+.doc-card a:focus-visible,
+.footnote a:focus-visible {
+  text-decoration: underline;
+}
+
+.doc-rule {
+  height: 1px;
+  margin: 26px 0;
+  background: var(--border);
+  border: 0;
+}
+
+.doc-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 18px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.doc-facts li {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 0;
+}
+
+.doc-facts .fact-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.doc-facts .fact-value {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.doc-note {
+  margin: 24px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.doc-note p {
+  margin: 0;
+  font-size: 13.5px;
+}
+
+/* Specific enough to beat `.doc-card a`, which colours every link in the card
+   with the accent — without this the button label is blue on blue. */
+.doc-card a.doc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000);
+}
+
+.doc-card a.doc-cta:hover {
+  background: var(--accent-hover);
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.doc-footnote {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
+}
+
+.doc-footnote .footnote {
+  margin: 0;
+}
+
+@media print {
+  .topbar,
+  .doc-nav,
+  .doc-footnote {
+    display: none;
+  }
+
+  .doc-card {
+    box-shadow: none;
+    border: 0;
+    padding: 0;
+  }
+}

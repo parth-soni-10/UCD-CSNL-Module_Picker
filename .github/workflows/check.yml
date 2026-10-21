@@ -32,6 +32,16 @@ jobs:
       - name: Check nothing inline would be blocked by the deployed CSP
         run: python3 tools/check-csp-inline.py
 
+      # The agent-facing layer: Markdown negotiation on /, /about, /contact and
+      # /privacy, the .md aliases, the clean-URL redirects, the Markdown 404,
+      # and the metadata, trust pages and machine-readable files the deployment
+      # serves. These drive the real router with a stubbed assets layer, so no
+      # deploy and no UCD access is needed.
+      # Named explicitly: tests/ also holds the local harness and the HTTP
+      # verifier, which are scripts, not test files.
+      - name: Run the agent-surface tests
+        run: node --test tests/agent-surface.test.mjs
+
       - name: Check the manifest and modules.json parse
         run: |
           set -e

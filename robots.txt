@@ -1,5 +1,6 @@
-# The whole site is one page and everything published is meant to be
-# crawled; the only job here is to point at the sitemap.
+# Everything published here is meant to be crawled: the picker plus four
+# pages. Agents get a compact guide at /llms.txt, Markdown by asking for
+# `Accept: text/markdown`, and .md aliases for each page.
 User-agent: *
 Allow: /
 

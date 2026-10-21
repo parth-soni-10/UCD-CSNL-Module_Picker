@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- One page, so one entry. No <lastmod>: nothing in the repo records a
-     build date, and a guessed one is worse than an absent one. -->
+<!-- Four pages, no <lastmod>: nothing in the repo records a build date, and a
+     guessed one is worse than an absent one. The .md aliases are deliberately
+     absent — they are alternates of these URLs, advertised by Link headers and
+     <link rel="alternate">, not separate destinations. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://ucdcsnlmodulepicker.pages.dev/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ucdcsnlmodulepicker.pages.dev/about</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ucdcsnlmodulepicker.pages.dev/contact</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ucdcsnlmodulepicker.pages.dev/privacy</loc>
+    <priority>0.5</priority>
   </url>
 </urlset>

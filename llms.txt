@@ -1,0 +1,93 @@
+# CSNL Module Picker
+
+> Free, independent timetable builder for UCD's Computer Science (Negotiated Learning)
+> master's: every CSNL module with live UCD class times, a clash-free weekly grid, a
+> credit-target plan builder and an exam-free filter. Not an official UCD service.
+
+Live site: https://ucdcsnlmodulepicker.pages.dev/
+Source: https://github.com/parth-soni-10/UCD-CSNL-Module_Picker
+Maintainer: Parth Soni — soni.soni.parth@gmail.com
+Cost: free, no account, no cookies, no analytics.
+
+## When to use this
+
+Use this site when the task is one of these:
+
+- **Choosing CSNL modules for a year.** Every module on UCD's CSNL streams list is shown with
+  credits, core/optional status, semester and the lecturer's comments.
+- **Checking whether two modules clash.** Selecting modules draws a weekly grid; overlapping
+  classes are flagged. Same-time classes in different trimesters are not a clash, because they
+  never run together.
+- **Finding a combination that hits a credit target.** The planner searches for clash-free sets at
+  30, 60 or 90 credits, optionally avoiding 9am starts, Fridays or too many classes in a day.
+- **Avoiding final exams.** Assessment components from each module's UCD page drive an exam-free
+  filter and a no-final-exam plan mode.
+- **Reading a module's live timetable.** Day, time, weeks, trimester and room come from UCD's
+  General Reference Timetable for the current academic year.
+- **Comparing candidate selections.** Several named timetables can be kept and exported to JSON.
+
+Do **not** use it for registration, degree audits, exam timetables, fees or visa questions, or
+modules outside the CSNL list. UCD's own systems decide what a student may register for.
+"Exam-free" means no final exam was found on the module page; it is a filter, not a guarantee
+about continuous assessment.
+
+## How to call it
+
+HTML, Markdown and JSON, all unauthenticated:
+
+- `GET /` with `Accept: text/markdown` → this site's Markdown home; with `Accept: text/html` → the app.
+  HTML responses carry `Vary: Accept` and a `Link` alternate.
+- `/index.md`, `/about.md`, `/contact.md`, `/privacy.md` → always Markdown.
+- An unknown path with `Accept: text/markdown` → HTTP 404 with a Markdown body that links this
+  file and the sitemap. As HTML it returns the site's 404 page, also with HTTP 404.
+
+JSON endpoints (same deployment, no key, no cookies):
+
+- `GET /.netlify/functions/catalogue` →
+  `{ source, pageUpdated, generatedAt, verified, themes: [{ theme, courses: [{ name, credits, kind,
+  semester, comments }] }] }`. `name` contains the module code in parentheses. `?action=health`
+  returns freshness and counts only.
+- `GET /.netlify/functions/timetable?codes=COMP30960,COMP30030` → live timings for up to 80 codes:
+  `{ generatedAt, source, cacheTTLMinutes, results: { CODE: { found, title, year, semester,
+  trimesters, classes: [{ day, startTime, endTime, room, weeks, term }] } }, errors }`. A module UCD
+  has not timetabled answers `found: true` with a `reason` and no classes; a code outside the CSNL
+  list answers `found: false`; a request with no codes answers HTTP 400.
+- `GET /.netlify/functions/assessments` → assessment map from UCD module pages (`?force=1` refreshes).
+- `POST /.netlify/functions/suggestions` → the site's suggestion form (`name`, `email`,
+  `suggestion`). Not a general-purpose API.
+
+`semester` is `"1"` (Autumn), `"2"` (Spring) or `"1, 2"`. A class's `term` is the trimester(s) its
+weeks fall in.
+
+```bash
+curl -sS -H 'Accept: text/markdown' https://ucdcsnlmodulepicker.pages.dev/
+curl -sS https://ucdcsnlmodulepicker.pages.dev/index.md
+curl -sS 'https://ucdcsnlmodulepicker.pages.dev/.netlify/functions/timetable?codes=COMP30960'
+```
+
+## How it works
+
+1. UCD's CSNL streams page supplies the module list, streams, credits, kind, semester and comments;
+   UCD's module catalogue fills in descriptions. The result is cached in KV, re-checked per request
+   and refreshed twice a month, with a committed list as the last-resort fallback.
+2. Each selected code is resolved against UCD's General Reference Timetable for the current
+   academic year only. No published year means the module says so rather than showing old times.
+3. Clashes are computed from day, start, end and shared trimester. Semesters are kept apart.
+4. Selections, named timetables, theme and cached timings live in the visitor's `localStorage`.
+
+## Limits
+
+- Not an official UCD service; it cannot register a student or change a record.
+- CSNL modules only. The timetable endpoint refuses codes outside the current list.
+- One academic year at a time (UCD advances it around 1 August).
+- UCD is the source of truth; when it is unreachable the site reports the failure instead of
+  serving a stale timetable.
+- The module list changes yearly, so it is never repeated here — read the catalogue endpoint.
+
+## Pages
+
+- [Module picker](https://ucdcsnlmodulepicker.pages.dev/): the app.
+- [About](https://ucdcsnlmodulepicker.pages.dev/about): what it does, who runs it, data sources.
+- [Contact](https://ucdcsnlmodulepicker.pages.dev/contact): email, suggestion form, Discord, issues.
+- [Privacy](https://ucdcsnlmodulepicker.pages.dev/privacy): localStorage, the suggestion store, logs.
+- [Sitemap](https://ucdcsnlmodulepicker.pages.dev/sitemap.xml)

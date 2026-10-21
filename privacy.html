@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
+    <title>Privacy — CSNL Module Picker</title>
+    <meta
+      name="description"
+      content="What the CSNL Module Picker stores, where your timetable selections live, the one form that sends data to a server, and how to have it removed."
+    />
+    <link rel="canonical" href="https://ucdcsnlmodulepicker.pages.dev/privacy" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="CSNL Module Picker" />
+    <meta property="og:title" content="Privacy — CSNL Module Picker" />
+    <meta
+      property="og:description"
+      content="No accounts, no cookies, no analytics. Selections stay in your browser; the suggestion form is the only thing stored on the server."
+    />
+    <meta property="og:url" content="https://ucdcsnlmodulepicker.pages.dev/privacy" />
+    <meta property="og:image" content="https://ucdcsnlmodulepicker.pages.dev/og-image.png" />
+    <meta property="og:image:alt" content="CSNL Module Picker — a clash-free UCD timetable builder" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Privacy — CSNL Module Picker" />
+    <meta
+      name="twitter:description"
+      content="No accounts, no cookies, no analytics. What stays in your browser and what the suggestion form stores."
+    />
+    <meta name="twitter:image" content="https://ucdcsnlmodulepicker.pages.dev/og-image.png" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="alternate" type="text/markdown" href="/privacy.md" />
+    <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="topbar">
+      <div class="topbar-inner doc-inner">
+        <a class="doc-brand" href="/">
+          <span class="brand-mark" aria-hidden="true">CS</span>
+          <span>CSNL Module Picker</span>
+        </a>
+        <nav class="doc-nav" aria-label="Site">
+          <a href="/" title="Open the timetable builder">Picker</a>
+          <a href="/about">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy" aria-current="page">Privacy</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="doc-main" id="main-content">
+      <article class="doc-card">
+        <p class="doc-eyebrow">Privacy</p>
+        <h1>What this site keeps, and where</h1>
+        <p class="doc-lede">
+          CSNL Module Picker has no accounts, no advertising and no analytics or tracking scripts.
+          Your timetable choices never leave your browser. This page lists the little data the site
+          does handle, so nothing about it is a surprise.
+        </p>
+        <p class="doc-updated">Last updated: 21 October 2026</p>
+
+        <ul class="doc-facts">
+          <li>
+            <span class="fact-label">Cookies</span>
+            <span class="fact-value">None</span>
+          </li>
+          <li>
+            <span class="fact-label">Analytics</span>
+            <span class="fact-value">None</span>
+          </li>
+          <li>
+            <span class="fact-label">Accounts</span>
+            <span class="fact-value">None</span>
+          </li>
+          <li>
+            <span class="fact-label">Server-side data</span>
+            <span class="fact-value">Suggestion form only</span>
+          </li>
+        </ul>
+
+        <h2>What stays in your browser</h2>
+        <p>
+          Your selected modules, added module codes, named timetables, chosen theme and the last
+          fetched timings are kept in your browser's <code>localStorage</code>, on your device. They
+          are not sent to this site or to UCD. Clearing site data, or using a private window, removes
+          them. An export is a JSON file you download yourself, so it lives wherever you put it.
+        </p>
+
+        <h2>What is stored on the server</h2>
+        <p>
+          The only user-submitted data is the <strong>suggestion form</strong>. When you send a
+          suggestion, the message, an optional name and an optional email address are stored in this
+          site's Cloudflare KV namespace so the maintainer can act on them. The store keeps at most
+          the most recent 500 suggestions, and entries are removed as they are handled. Nothing else
+          you do is written to a server — choosing modules, planning a timetable and exporting it are
+          all local.
+        </p>
+
+        <h2>Requests to UCD</h2>
+        <p>
+          Class times and module pages are fetched by this site's own server-side proxy. Your browser
+          does not contact UCD for that data, so UCD does not receive your IP address from those
+          requests. Fonts, scripts and styles are loaded only from this domain. Following a link to
+          UCD, Discord, GitHub or the maintainer's portfolio takes you to that service, which has its
+          own privacy policy.
+        </p>
+
+        <h2>Hosting and logs</h2>
+        <p>
+          The site is hosted on Cloudflare Pages, which processes requests and keeps standard
+          operational logs — IP address, user agent, requested URL and timestamp — as any web host
+          does, for security and reliability. This project does not build profiles from those logs,
+          combine them with anything else, or sell or share data. There is no third-party embed on
+          any page, so no other company sees your visit through this site.
+        </p>
+
+        <h2>Cookies and consent</h2>
+        <p>
+          This site sets no cookies and runs no consent banner, because there is nothing to consent
+          to: no analytics, no advertising identifiers, no cross-site tracking. The service worker
+          caches the app's own files on your device so it loads quickly; that cache contains no
+          personal data and is cleared with the rest of the site's storage.
+        </p>
+
+        <h2>Your rights</h2>
+        <p>
+          If you have sent a suggestion and want it removed, or want to know what is held about it,
+          email <a href="mailto:soni.soni.parth@gmail.com">soni.soni.parth@gmail.com</a>. Under the
+          GDPR you may also ask for access, correction or erasure of personal data, and you have the
+          right to complain to the
+          <a href="https://www.dataprotection.ie/" target="_blank" rel="noopener"
+            >Irish Data Protection Commission</a
+          >. If this notice changes, the date at the top changes with it.
+        </p>
+
+        <p class="doc-note">
+          Questions about this page, or about data in a suggestion you sent? See
+          <a href="/contact">Contact</a>.
+        </p>
+      </article>
+    </main>
+
+    <div class="doc-footnote">
+      <div class="footnote">
+        <span class="fn-dot" aria-hidden="true"></span>
+        <span>
+          Not an official UCD service. Timings come from
+          <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener"
+            >UCD's General Reference Timetable</a
+          >. Built by
+          <a href="https://parth-portfolio-wb.pages.dev/" target="_blank" rel="noopener">Parth</a>.
+          <a href="/llms.txt">Agent guide</a> · <a href="/sitemap.xml">Sitemap</a>
+        </span>
+      </div>
+    </div>
+  </body>
+</html>

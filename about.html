@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
+    <title>About — CSNL Module Picker</title>
+    <meta
+      name="description"
+      content="What the CSNL Module Picker does, who runs it, which UCD pages its data comes from, and what it is not: an independent timetable planner for UCD Computer Science (NL) students."
+    />
+    <link rel="canonical" href="https://ucdcsnlmodulepicker.pages.dev/about" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="CSNL Module Picker" />
+    <meta property="og:title" content="About — CSNL Module Picker" />
+    <meta
+      property="og:description"
+      content="An independent, free timetable planner for UCD's Computer Science (Negotiated Learning) master's, built from UCD's own module list and live class times."
+    />
+    <meta property="og:url" content="https://ucdcsnlmodulepicker.pages.dev/about" />
+    <meta property="og:image" content="https://ucdcsnlmodulepicker.pages.dev/og-image.png" />
+    <meta property="og:image:alt" content="CSNL Module Picker — a clash-free UCD timetable builder" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="About — CSNL Module Picker" />
+    <meta
+      name="twitter:description"
+      content="What it does, who runs it, and where the UCD data comes from."
+    />
+    <meta name="twitter:image" content="https://ucdcsnlmodulepicker.pages.dev/og-image.png" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <link rel="alternate" type="text/markdown" href="/about.md" />
+    <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="topbar">
+      <div class="topbar-inner doc-inner">
+        <a class="doc-brand" href="/">
+          <span class="brand-mark" aria-hidden="true">CS</span>
+          <span>CSNL Module Picker</span>
+        </a>
+        <nav class="doc-nav" aria-label="Site">
+          <a href="/" title="Open the timetable builder">Picker</a>
+          <a href="/about" aria-current="page">About</a>
+          <a href="/contact">Contact</a>
+          <a href="/privacy">Privacy</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="doc-main" id="main-content">
+      <article class="doc-card">
+        <p class="doc-eyebrow">About</p>
+        <h1>What this is, and who makes it</h1>
+        <p class="doc-lede">
+          CSNL Module Picker is a free, independent timetable builder for UCD's Computer Science
+          (Negotiated Learning) master's. UCD publishes the module list, the credits and the class
+          times; it does not publish one view that turns a selection into a clash-free week. This
+          site builds that view from UCD's own pages.
+        </p>
+
+        <ul class="doc-facts">
+          <li>
+            <span class="fact-label">Maintainer</span>
+            <span class="fact-value">Parth Soni</span>
+          </li>
+          <li>
+            <span class="fact-label">Status</span>
+            <span class="fact-value">Independent, not UCD</span>
+          </li>
+          <li>
+            <span class="fact-label">Cost</span>
+            <span class="fact-value">Free, no account</span>
+          </li>
+          <li>
+            <span class="fact-label">Source</span>
+            <span class="fact-value">Public on GitHub</span>
+          </li>
+        </ul>
+
+        <h2>Why it exists</h2>
+        <p>
+          Choosing a CSNL year means reading a streams list of modules, checking how many credits
+          each carries, and then discovering — usually too late — that two modules you wanted are
+          timetabled at the same hour in the same trimester. The information is all public, but it
+          lives in three different places and changes between semesters. This site joins those
+          pages into one view so a selection can be tested before registration opens.
+        </p>
+
+        <h2>What it actually does</h2>
+        <ul>
+          <li>
+            <strong>Lists every CSNL module</strong> grouped by stream and theme, with credits,
+            core or optional status, semester and the module's own comments.
+          </li>
+          <li>
+            <strong>Fetches live class times</strong> for the modules you select from UCD's General
+            Reference Timetable, including day, time, weeks, trimester and room.
+          </li>
+          <li>
+            <strong>Draws the week</strong> for Autumn, Spring or both, and marks any classes that
+            overlap. Classes at the same time in different trimesters are not called a clash,
+            because they never run together.
+          </li>
+          <li>
+            <strong>Plans toward a credit target.</strong> The planner searches for clash-free
+            combinations at 30, 60 or 90 credits and can avoid 9am starts, avoid Fridays or cap how
+            many classes land on one day.
+          </li>
+          <li>
+            <strong>Filters for exam-free modules</strong> using the assessment components listed on
+            each module's UCD page, and has a no-final-exam plan mode.
+          </li>
+          <li>
+            <strong>Keeps several timetables</strong> that you can name, compare and export as JSON.
+          </li>
+        </ul>
+
+        <h2>Where the data comes from</h2>
+        <p>
+          Everything is read from UCD at the moment it is needed. The module list and stream
+          structure come from
+          <a href="https://www.ucd.ie/cs/study/postgraduate/nlstreams/" target="_blank" rel="noopener"
+            >UCD's CSNL streams page</a
+          >; module descriptions and assessment components come from UCD's module catalogue; class
+          times come from UCD's
+          <a
+            href="https://www.ucd.ie/students/course_search/generalreferencetimetable/"
+            target="_blank"
+            rel="noopener"
+            >General Reference Timetable</a
+          >. The catalogue is re-checked on request and refreshed twice a month, so modules UCD adds
+          appear on their own and modules UCD withdraws stop being offered.
+        </p>
+        <p>
+          Timings are for the current academic year only — UCD advances it around 1 August. If UCD
+          has not published a timetable for a module yet, the site says so rather than showing last
+          year's times, because a stale room is worse than an empty one.
+        </p>
+
+        <h2>What it is not</h2>
+        <p>
+          This is a planning aid, not a UCD service. It cannot register you, reserve a place,
+          confirm prerequisites, or override a programme rule. Capacity limits, registration windows
+          and assessment regulations belong to UCD, and UCD's systems and staff are the authority on
+          them. Always confirm a final selection in UCD's own system before you register.
+        </p>
+
+        <h2>Why trust the numbers</h2>
+        <p>
+          The site shows its own provenance rather than asking you to take it on faith: a badge says
+          whether the module list was re-verified against UCD's page on this visit, and a data line
+          shows when timings were fetched. When UCD is unreachable, the site reports the failure
+          instead of serving an old timetable as if it were current.
+        </p>
+
+        <p class="doc-note">
+          <strong>Found a wrong time or a missing module?</strong> That is worth reporting — see
+          <a href="/contact">Contact</a>. The source code and issue tracker are public at
+          <a href="https://github.com/parth-soni-10/UCD-CSNL-Module_Picker" target="_blank" rel="noopener"
+            >github.com/parth-soni-10/UCD-CSNL-Module_Picker</a
+          >.
+        </p>
+
+        <p>
+          <a class="doc-cta" href="/">Open the module picker</a>
+        </p>
+      </article>
+    </main>
+
+    <div class="doc-footnote">
+      <div class="footnote">
+        <span class="fn-dot" aria-hidden="true"></span>
+        <span>
+          Not an official UCD service. Timings come from
+          <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener"
+            >UCD's General Reference Timetable</a
+          >. Built by
+          <a href="https://parth-portfolio-wb.pages.dev/" target="_blank" rel="noopener">Parth</a>.
+          <a href="/llms.txt">Agent guide</a> · <a href="/sitemap.xml">Sitemap</a>
+        </span>
+      </div>
+    </div>
+  </body>
+</html>

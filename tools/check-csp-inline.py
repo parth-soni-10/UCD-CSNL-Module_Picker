@@ -29,8 +29,13 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# <script> with no src, and on*= attributes.
-INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)[^>]*>", re.I)
+# <script> with no src, and on*= attributes. A `type="application/ld+json"`
+# block is excluded: it is a data block, not a script the browser prepares or
+# executes, so script-src does not apply to it. Every other inline <script> is
+# still a violation.
+INLINE_SCRIPT = re.compile(
+    r"<script(?![^>]*\bsrc=)(?![^>]*\bapplication/ld\+json\b)[^>]*>", re.I
+)
 INLINE_HANDLER = re.compile(r"\son(?:click|change|input|submit|load|error|focus|blur|keydown|keyup|mouseover|mouseout|touchstart)\s*=", re.I)
 STYLE_ATTR = re.compile(r"style\s*=\s*[\"']")
 LINE_COMMENT = re.compile(r"//.*$")
@@ -64,7 +69,10 @@ def scan(path, label):
 def main():
     targets = []
     functions = os.path.join(ROOT, "netlify", "functions")
-    scanned = ["index.html", "app.js", "sw.js"]
+    scanned = [
+        "index.html", "about.html", "contact.html", "privacy.html", "404.html",
+        "app.js", "sw.js",
+    ]
     if os.path.isdir(functions):
         scanned += [
             os.path.join("netlify", "functions", name)
