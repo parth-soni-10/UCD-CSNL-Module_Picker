@@ -419,7 +419,9 @@ function initTheme() {
   } catch (e) {
     /* ignore */
   }
-  applyTheme(stored);
+  // A stored choice wins; otherwise the picker opens light. The OS preference
+  // is deliberately not followed, so the page has one first impression.
+  applyTheme(stored === "dark" ? "dark" : "light");
 
   els.themeToggle.addEventListener("click", () => {
     // first click makes the choice explicit; afterwards it's a plain toggle
@@ -434,12 +436,6 @@ function initTheme() {
     applyTheme(next);
   });
 
-  // while the user hasn't chosen explicitly, track the OS preference live
-  window
-    .matchMedia("(prefers-color-scheme: dark)")
-    .addEventListener("change", () => {
-      if (!document.documentElement.getAttribute("data-theme")) applyTheme(null);
-    });
 }
 
 function timeToMinutes(t) {
