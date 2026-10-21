@@ -13,3 +13,25 @@
 - Motion timings come from the shared `--motion-duration-*` and `--motion-ease-*` tokens declared in `:root`; do not hard-code a duration in a transition — map it to a tier.
 - Several components only exist once a plan does. Verify with `PICKER_BASE_URL=http://127.0.0.1:<port>/ node tools/verify-picker.mjs`, which seeds a real selection through the `?s=` share parameter; an empty picker renders one swipe row and looks like a pass while checking almost nothing. It also drives the keyboard-only journey (disclosure, semester arrows, workspace tabs, dialog open/close, first twenty tab stops) and the update prompt: a worker registered under a changed version query must reach `waiting`, the banner must announce itself with `role="status"`, and `SKIP_WAITING` must activate that worker.
 - Keep the disclaimer that this is an unofficial UCD planner and that users must verify module details with UCD.
+## The design-system component layer
+
+The site is now built on the shared design-system rather than on hand-written
+markup, and the change is visible in the source.
+
+- **The 27 components** from `design-system/` are the base for this site's
+  controls. Every integrated instance renders `data-component="<slug>"`, and
+  that attribute is what the coverage verifier reads - it is the contract, not
+  a comment.
+- **The component layer** is `components.js`, and it is idempotent: it
+  re-runs on a debounced MutationObserver after each route render, and it
+  installs each part inside its own try/catch, so a component that cannot
+  install logs once and shows up as a missing marker rather than as a broken
+  page.
+- **The tokens** are the site's own stylesheet, so a spacing, colour or
+  motion value is set in one place and read by everything. The motion
+  durations are the four tiers (`--motion-duration-micro`, `-standard`,
+  `-complex`, `-page`) and the three easing curves; a duration is never
+  written into a rule.
+- **The strict CSP is not negotiable**: no inline `<script>`, no `<style>`
+  element, no `style=""` attribute in served HTML. `tools/check-csp-inline.py`
+  (or the shared `verify-csp.ts`) fails the build if one appears.
