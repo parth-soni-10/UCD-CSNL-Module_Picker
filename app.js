@@ -2,10 +2,6 @@
 
 "use strict";
 
-document.documentElement.classList.add("js");
-const bootScreen = document.getElementById("boot-screen");
-if (bootScreen) bootScreen.hidden = false;
-
 // Cache-busting version, read from this script's own <script src="app.js?v=…">
 // tag while it is still executing — document.currentScript is null once the
 // script has finished, and the service worker is registered from inside an
@@ -55,10 +51,8 @@ const LS_ACTIVE = "csnlPicker:active:v1";
 const LS_THEME = "csnlPicker:theme:v1";
 const LS_TIMINGS = "csnlPicker:timings:v1"; // browser cache of fetched UCD timings
 const LS_VIEW_TERM = "csnlPicker:viewTerm:v1";
-const SESSION_CLEAR_UNDO = "csnlPicker:clear-undo:v1";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-let workloadShowClasses = false;
 
 // ---------------------------------------------------------------------------
 // state
@@ -77,9 +71,6 @@ let lastAssessAt = null; // when the exam map was generated (freshness stamp)
 let planPrefs = { noEarly: false, noFriday: false, maxPerDay: 0 };
 let serviceHealth = null; // catalogue ?action=health payload (data-health line)
 let comparePick = new Set(); // codes staged for the module comparison table
-// The Hairline figure's handle: mounted once, then fed the current selection so
-// the drawing and the list behind it cannot disagree.
-let orbitHandle = null;
 
 // ---------------------------------------------------------------------------
 // dom refs
@@ -406,21 +397,19 @@ function getCurrentSemester() {
 // theme (light / dark / system)
 // ---------------------------------------------------------------------------
 
-/* Light is the site's default and dark is only ever an explicit choice, so the
-   operating system is not consulted — not at load, and not when it changes
-   mid-session. Both themes are the same token sets either way; this only
-   decides which one an undecided visitor lands on. The markup carries the same
-   default statically (`data-theme="light"`), which is what keeps a JS-off
-   visitor light and a dark-mode laptop from flashing dark before this runs. */
+function systemPrefersDark() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 function applyTheme(theme) {
   const root = document.documentElement;
-  const next = theme === "dark" ? "dark" : "light";
-  root.setAttribute("data-theme", next);
-  els.themeToggle.setAttribute("aria-pressed", String(next === "dark"));
-  // Browser chrome follows the page, not the OS: with the two out of step the
-  // address bar is a dark strip above a light page.
-  const chrome = document.querySelector('meta[name="theme-color"]');
-  if (chrome) chrome.setAttribute("content", next === "dark" ? "#101216" : "#f4f5f7");
+  if (theme === "dark" || theme === "light") {
+    root.setAttribute("data-theme", theme);
+  } else {
+    root.removeAttribute("data-theme"); // follow the OS
+  }
+  const dark = theme === "dark" || (!theme && systemPrefersDark());
+  els.themeToggle.setAttribute("aria-pressed", String(dark));
 }
 
 function initTheme() {
@@ -433,7 +422,10 @@ function initTheme() {
   applyTheme(stored);
 
   els.themeToggle.addEventListener("click", () => {
-    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    // first click makes the choice explicit; afterwards it's a plain toggle
+    const explicit = document.documentElement.getAttribute("data-theme");
+    const isDark = explicit === "dark" || (!explicit && systemPrefersDark());
+    const next = isDark ? "light" : "dark";
     try {
       localStorage.setItem(LS_THEME, next);
     } catch (e) {
@@ -441,6 +433,13 @@ function initTheme() {
     }
     applyTheme(next);
   });
+
+  // while the user hasn't chosen explicitly, track the OS preference live
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", () => {
+      if (!document.documentElement.getAttribute("data-theme")) applyTheme(null);
+    });
 }
 
 function timeToMinutes(t) {
@@ -827,148 +826,6 @@ function refreshUI() {
   renderTimingSummary();
   renderCompare();
   renderDataFreshness();
-  renderPlannerInsights();
-  renderSavedSelectionRow();
-  applyTouchTargets();
-}
-
-// The figure is also the way to the rows it counts: the module total opens the
-// catalogue, the credit badge opens the selected-module list. The visual value
-// still animates on the wrapper, so the button is only the control surface.
-function setAnimatedCounter(el, value, text) {
-  if (!el) return;
-  const previous = el.dataset.counterValue;
-  const selection = !!el.closest("#selection-panel");
-  el.textContent = "";
-  const figure = document.createElement("button");
-  figure.type = "button";
-  figure.className = "counter-drill";
-  figure.textContent = text;
-  figure.setAttribute("aria-label", `${text} — open ${selection ? "the selected modules" : "the module list"}`);
-  figure.addEventListener("click", () => {
-    const target = document.getElementById(selection ? "summary-list" : "course-list");
-    if (!target) return;
-    if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
-    target.focus({ preventScroll: true });
-    target.scrollIntoView({ block: "center" });
-  });
-  el.appendChild(figure);
-  el.dataset.counterValue = String(value);
-  el.dataset.component = "animated-counter";
-  el.classList.add("data-component-count");
-  if (previous !== undefined && previous !== String(value) && !matchMedia("(prefers-reduced-motion: reduce)").matches && el.animate) {
-    el.animate([{ opacity: 0.65, transform: "translateY(3px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 180, easing: "ease-out" });
-  }
-}
-
-function applyTouchTargets() {
-  document.querySelectorAll("[data-component] button, [data-component] input, [data-component] select, [data-component] textarea, [data-component] a[href], [data-component] summary, [data-component][tabindex='0']").forEach((control) => control.classList.add("touch-target"));
-}
-
-function setDynamicLabel(button, text, resetAfter = 0) {
-  if (!button) return;
-  const label = button.querySelector(".dynamic-label") || button;
-  const initial = button.dataset.dynamicInitial || label.textContent.trim();
-  button.dataset.dynamicInitial = initial;
-  clearTimeout(button._dynamicReset);
-  label.classList.add("is-changing");
-  const apply = (value) => { label.textContent = value; requestAnimationFrame(() => label.classList.remove("is-changing")); };
-  requestAnimationFrame(() => apply(text));
-  if (resetAfter > 0) button._dynamicReset = setTimeout(() => apply(initial), resetAfter);
-}
-
-// These summaries are calculated only from the selected UCD timetable rows.
-// Weekly activity means planned class meetings, not attendance tracking.
-function renderPlannerInsights() {
-  const selected = currentSelection();
-  const perSemester = { "1": 0, "2": 0 };
-  const semesterModules = { "1": new Set(), "2": new Set() };
-  const byDay = Object.fromEntries(["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => [d, 0]));
-  const classesByDay = Object.fromEntries(["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => [d, 0]));
-  const weekCounts = new Map();
-  for (const item of selected) {
-    const data = live.get(item.code);
-    const cls = data?.classes?.find((c) => offeringKey(c) === item.offeringKey);
-    if (!cls) continue;
-    for (const sem of classTerms(cls)) if (sem === "1" || sem === "2") semesterModules[sem].add(item.code);
-    const start = timeToMinutes(cls.startTime);
-    const end = timeToMinutes(cls.endTime);
-    if (byDay[cls.day] !== undefined && start !== null && end !== null && end > start) byDay[cls.day] += (end - start) / 60;
-    if (classesByDay[cls.day] !== undefined) classesByDay[cls.day]++;
-    for (const week of cls.weeks || []) weekCounts.set(week, (weekCounts.get(week) || 0) + 1);
-  }
-  for (const sem of ["1", "2"]) perSemester[sem] = [...semesterModules[sem]].reduce((sum, code) => sum + Number(moduleInfo(code)?.credits || 0), 0);
-  const fund = document.getElementById("semester-funds");
-  if (fund) {
-    const target = Math.max(1, Number(els.planTarget?.value) || 30);
-    fund.innerHTML = `<div class="insight-heading"><div><span class="eyebrow">Credit plan</span><h3>Semester progress</h3></div><span class="data-source">From selected UCD modules</span></div>` + ["1", "2"].map((sem) => {
-      const taken = perSemester[sem]; const delta = taken - target; const pct = Math.min(100, Math.round(taken / target * 100));
-      return `<article class="fund-card"><div class="fund-top"><strong>Semester ${sem}</strong><span>${taken} / ${target} cr</span></div><div class="fund-track"><span data-fund-progress="${pct}"></span></div><div class="fund-foot"><span>${delta >= 0 ? "+" : ""}${delta} cr ${delta >= 0 ? "over target" : "to target"}</span><button type="button" class="fund-select" data-fund-sem="${sem}">Plan semester ${sem}</button></div></article>`;
-    }).join("");
-    fund.querySelectorAll("[data-fund-progress]").forEach((bar) => bar.style.width = `${bar.dataset.fundProgress}%`);
-    fund.querySelectorAll("[data-fund-sem]").forEach((button) => button.addEventListener("click", () => {
-      const radio = document.querySelector(`input[name="plan-semester-choice"][value="${button.dataset.fundSem}"]`);
-      if (radio) { radio.checked = true; radio.dispatchEvent(new Event("change", { bubbles: true })); }
-      document.getElementById("plan-section")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
-    }));
-  }
-  const activity = document.getElementById("study-activity");
-  if (activity) {
-    const weeks = Array.from({ length: 14 }, (_, i) => i + 1);
-    const peak = Math.max(1, ...weeks.map((w) => weekCounts.get(w) || 0));
-    activity.innerHTML = `<div class="insight-heading"><div><span class="eyebrow">Published teaching weeks</span><h3>Planned class activity</h3></div><span class="data-source">Generated from selection</span></div><div class="activity-grid" role="group" aria-label="Planned classes per teaching week">${weeks.map((w) => { const count = weekCounts.get(w) || 0; const level = count ? Math.max(1, Math.ceil(count / peak * 4)) : 0; return `<button type="button" class="activity-cell level-${level}" data-activity-week="${w}" aria-label="Week ${w}, ${count} planned classes" title="Week ${w}: ${count} planned class${count === 1 ? "" : "es"}"></button>`; }).join("")}</div><button type="button" class="chart-link" data-open-timetable aria-label="Open the weekly timetable behind this activity grid">Open the weekly timetable →</button><div class="activity-legend"><span>Weeks 1–14 · ${selected.length} selected class offerings</span><span>Planned only · not attendance data</span></div>`;
-  }
-  const chart = document.getElementById("workload-chart");
-  if (chart) {
-    const vals = Object.values(workloadShowClasses ? classesByDay : byDay); const max = Math.max(1, ...vals);
-    const pts = vals.map((v, i) => `${24 + i * 63},${96 - (v / max) * 66}`).join(" ");
-    chart.innerHTML = `<div class="insight-heading"><div><span class="eyebrow">Live timetable rows</span><h3>${workloadShowClasses ? "Class count by day" : "Contact hours by day"}</h3></div><button type="button" id="workload-toggle" class="chart-mode-toggle">Show ${workloadShowClasses ? "hours" : "class count"}</button></div><svg viewBox="0 0 300 120" role="group" aria-label="${workloadShowClasses ? "Class count" : "Contact hours"} by weekday: ${Object.entries(workloadShowClasses ? classesByDay : byDay).map(([d, v]) => `${d} ${Number(v).toFixed(1)}`).join(", ")}"><path class="chart-grid" d="M15 30H285M15 63H285M15 96H285"/><polyline class="chart-line" points="${pts}"/>${vals.map((v, i) => `<circle class="chart-dot" cx="${24 + i * 63}" cy="${96 - (v / max) * 66}" r="4" tabindex="0" role="button" aria-label="${["Mon", "Tue", "Wed", "Thu", "Fri"][i]}: ${v.toFixed(1)} ${workloadShowClasses ? "classes" : "hours"}"><title>${["Mon", "Tue", "Wed", "Thu", "Fri"][i]}: ${v.toFixed(1)} ${workloadShowClasses ? "classes" : "hours"}</title></circle>`).join("")}${Object.keys(byDay).map((d, i) => `<text x="${24 + i * 63}" y="115" text-anchor="middle">${d}</text>`).join("")}</svg>`;
-    chart.querySelector("#workload-toggle")?.addEventListener("click", () => { workloadShowClasses = !workloadShowClasses; renderPlannerInsights(); });
-  }
-  const currentWeeks = selected.flatMap((item) => live.get(item.code)?.classes?.find((c) => offeringKey(c) === item.offeringKey)?.weeks || []);
-  const weekText = currentWeeks.length ? `Weeks ${Math.min(...currentWeeks)}–${Math.max(...currentWeeks)}` : "All published teaching weeks";
-  const weekLabel = document.getElementById("week-sticky-label");
-  if (weekLabel) weekLabel.textContent = viewTerm === "1" ? `Autumn · ${weekText}` : viewTerm === "2" ? `Spring · ${weekText}` : weekText;
-}
-
-function openTimetableGrid() {
-  const tab = document.querySelector('[data-workspace="timetable"]');
-  if (tab) tab.click();
-  const grid = document.getElementById("timetable-grid");
-  if (!grid) return;
-  if (!grid.hasAttribute("tabindex")) grid.setAttribute("tabindex", "-1");
-  grid.focus({ preventScroll: true });
-  grid.scrollIntoView({ block: "center" });
-}
-
-document.getElementById("week-sticky-open")?.addEventListener("click", openTimetableGrid);
-
-document.getElementById("study-activity")?.addEventListener("click", (e) => {
-  if (e.target.closest("[data-open-timetable]")) { openTimetableGrid(); return; }
-  const cell = e.target.closest("[data-activity-week]");
-  if (cell) showToast(`Week ${cell.dataset.activityWeek}: ${cell.getAttribute("aria-label")}.`);
-});
-document.getElementById("workload-chart")?.addEventListener("click", (e) => {
-  const dot = e.target.closest?.(".chart-dot");
-  if (!dot) return;
-  showToast(dot.getAttribute("aria-label") || dot.querySelector("title")?.textContent || "Workload point");
-});
-document.getElementById("workload-chart")?.addEventListener("keydown", (e) => {
-  if ((e.key === "Enter" || e.key === " ") && e.target.matches(".chart-dot")) { e.preventDefault(); showToast(e.target.getAttribute("aria-label")); }
-});
-
-function renderSavedSelectionRow() {
-  const el = document.getElementById("saved-selection-table");
-  if (!el) return;
-  const items = currentSelection();
-  const codes = new Set(items.map((item) => item.code));
-  const credits = [...codes].reduce((n, code) => n + Number(moduleInfo(code)?.credits || 0), 0);
-  el.innerHTML = `<div class="saved-row"><label for="saved-selection-name">Name</label><input id="saved-selection-name" class="input" aria-label="Rename saved selection" value="${esc(activeTimetable)}" maxlength="48"><span>${codes.size} module${codes.size === 1 ? "" : "s"} · ${credits} credits</span><button type="button" class="btn btn-ghost" id="rename-selection">Save name</button></div>`;
-  el.querySelector("#rename-selection").addEventListener("click", () => {
-    const next = el.querySelector("#saved-selection-name").value.trim();
-    if (!next || (next !== activeTimetable && selection[next])) { showToast("Choose a non-empty, unused selection name."); return; }
-    if (next !== activeTimetable) { selection[next] = selection[activeTimetable]; delete selection[activeTimetable]; activeTimetable = next; saveState(); refreshUI(); syncUrl(); }
-  });
 }
 
 // "How live is this data?" — one quiet line under the timetable footnote:
@@ -1347,7 +1204,7 @@ function render() {
       list.innerHTML = `<p class="empty">No modules found matching “${esc(term)}”.</p>`;
     }
   }
-  setAnimatedCounter(els.moduleCount, shownCodes.size, `${shownCodes.size} modules`);
+  els.moduleCount.textContent = `${shownCodes.size} modules`;
 }
 
 function liveTitle(code) {
@@ -1466,7 +1323,6 @@ function renderCourseCard(c, over) {
         <span class="badge">${esc(c.code)}</span>
         <label class="cmp-pick" title="Add to module comparison"><input type="checkbox" class="cmp-toggle" data-code="${esc(c.code)}" ${comparePick.has(c.code) ? "checked" : ""} /> cmp</label>
         ${reportLink}
-        <button type="button" class="module-detail-trigger" data-module-detail="${esc(c.code)}" aria-label="Open details for ${esc(liveTitle(c.code))}">Details</button>
       </div>
     </div>
     ${c.description ? `<p class="card-desc">${esc(scrubNonCsnl(c.description))}</p>` : ""}
@@ -1605,13 +1461,11 @@ function renderSummary() {
       })
       .join(", ");
     const item = document.createElement("div");
-    item.className = "summary-item swipe-row";
-    item.dataset.component = "swipe-row";
-    item.dataset.code = code;
+    item.className = "summary-item";
     item.innerHTML = `
       <div>
-        <div class="s-code">${esc(code)} <span>${esc(liveTitle(code))}</span></div>
-        <div class="s-detail">${esc(detail)} · ${Number(moduleInfo(code)?.credits || 0)} credits</div>
+        <div class="s-code">${esc(liveTitle(code))}</div>
+        <div class="s-detail">${esc(detail)}</div>
       </div>
       <button class="s-x" data-code="${esc(code)}" title="Remove from selection" aria-label="Remove ${esc(liveTitle(code))} from selection">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -1621,26 +1475,11 @@ function renderSummary() {
   }
 
   if (sel.length === 0) {
-    list.innerHTML = `<p class="muted sel-empty">Nothing selected yet. Tick classes in the module list.</p><button type="button" class="btn btn-ghost" data-browse-modules>Browse modules</button>`;
+    list.innerHTML = `<p class="muted sel-empty">Nothing selected yet. Tick classes in the module list.</p>`;
   }
-  setAnimatedCounter(els.totalCredits, credits, `${credits} credits`);
+  els.totalCredits.textContent = `${credits} credits`;
   renderCreditsBreakdown();
   renderCreditProgress(credits);
-  renderOrbit(byCode, credits);
-}
-
-// The selection figure: one orbiter per selected module, fed the same codes and
-// credits the summary above renders. It is illustrative, not a second control —
-// the summary list remains the keyboard way to remove or inspect a module.
-function renderOrbit(byCode, credits) {
-  if (!window.mountHairline) return;
-  const modules = [...byCode.keys()].map((code) => ({
-    code,
-    title: liveTitle(code),
-    credits: Number(moduleInfo(code)?.credits || 0),
-  }));
-  if (!orbitHandle) orbitHandle = window.mountHairline("module-orbit", { modules, credits });
-  else if (orbitHandle.set) orbitHandle.set({ modules, credits });
 }
 
 // Progress toward the ~90-credit CSNL year, shown as a bar next to the
@@ -1806,12 +1645,10 @@ function semTag(cls) {
 
 function renderSemSelector() {
   if (!els.semSelector) return;
-  const chips = [...els.semSelector.querySelectorAll("[data-sem]")];
-  for (const [index, chip] of chips.entries()) {
+  for (const chip of els.semSelector.querySelectorAll("[data-sem]")) {
     const active = chip.dataset.sem === viewTerm;
     chip.classList.toggle("active", active);
-    chip.setAttribute("aria-checked", String(active));
-    if (active) els.semSelector.style.setProperty("--segment-index", index);
+    chip.setAttribute("aria-pressed", String(active));
   }
 }
 
@@ -2791,18 +2628,13 @@ function applyPlan(codes) {
   els.planResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-els.planBtn.addEventListener("click", () => {
-  setDynamicLabel(els.planBtn, "Finding plans…", 1400);
-  renderPlans(false);
-});
+els.planBtn.addEventListener("click", () => renderPlans(false));
 els.planNoExamBtn.addEventListener("click", async () => {
-  setDynamicLabel(els.planNoExamBtn, "Checking exams…");
   if (!examMapLoaded) {
     els.planResults.innerHTML = `<p class="muted">Checking UCD module pages for final exams…</p>`;
     await loadAssessments();
   }
   renderPlans(true);
-  setDynamicLabel(els.planNoExamBtn, "No-exam plans ready", 1400);
 });
 
 // Preference filters re-run the current plan search with the new constraints
@@ -2825,22 +2657,7 @@ for (const el of [els.prefNoEarly, els.prefNoFriday, els.prefMaxPerDay]) {
     }
   });
 }
-document.querySelectorAll(".stepper-control [data-step]").forEach((button) => button.addEventListener("click", () => {
-  const input = els.prefMaxPerDay;
-  input.value = String(Math.max(Number(input.min), Math.min(Number(input.max), Number(input.value || 0) + Number(button.dataset.step))));
-  input.dispatchEvent(new Event("input", { bubbles: true }));
-  input.dispatchEvent(new Event("change", { bubbles: true }));
-  input.focus();
-}));
 readPlanPrefs();
-document.querySelectorAll('input[name="plan-semester-choice"]').forEach((radio) => {
-  radio.addEventListener("change", () => {
-    if (!radio.checked) return;
-    els.planSemester.value = radio.value;
-    renderPlannerInsights();
-  });
-});
-els.planTarget.addEventListener("input", renderPlannerInsights);
 els.planResults.addEventListener("click", (e) => {
   const more = e.target.closest(".plan-more");
   if (more) {
@@ -2897,63 +2714,6 @@ els.semSelector.addEventListener("click", (e) => {
   syncUrl();
   refreshUI();
 });
-els.semSelector.addEventListener("keydown", (e) => {
-  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-  const chips = [...els.semSelector.querySelectorAll('[role="radio"]')];
-  const active = chips.indexOf(document.activeElement);
-  if (active < 0) return;
-  e.preventDefault();
-  const next = chips[(active + (e.key === "ArrowRight" ? 1 : chips.length - 1)) % chips.length];
-  next.focus(); next.click();
-});
-
-// The workspace pills keep the single-page planner's established URL intact
-// while making its three working surfaces reachable with a predictable tab bar.
-const workspaceTargets = { picker: "module-section", plan: "plan-section", timetable: "timetable-section", compare: "compare-section" };
-
-// The shared accessibility contract asks for focus on the page heading after a
-// client-side navigation. Switching workspace IS the navigation here (the URL
-// code restores the same state), so the heading is where a keyboard user is put
-// back after the view changes — the same place a page load announces.
-function focusPageHeading() {
-  const heading = document.querySelector(".topbar h1") || document.querySelector("h1");
-  if (!heading) return;
-  if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
-  try {
-    heading.focus({ preventScroll: true });
-  } catch (err) {
-    heading.focus();
-  }
-}
-
-document.querySelectorAll("[data-workspace]").forEach((tab) => tab.addEventListener("click", (event) => {
-  document.querySelectorAll("[data-workspace]").forEach((item) => item.setAttribute("aria-selected", String(item === tab)));
-  const workspace = document.getElementById("picker-view");
-  if (workspace) workspace.dataset.workspaceMode = tab.dataset.workspace;
-  document.getElementById(workspaceTargets[tab.dataset.workspace])?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" });
-  // A pointer activation is a navigation: put the user on the heading with the
-  // new view's context. A keyboard activation (detail === 0, including the
-  // ArrowLeft/ArrowRight path below) must keep focus on the tab — moving it to
-  // the heading would break the roving tablist it just navigated.
-  if (event && event.detail > 0) focusPageHeading();
-}));
-document.querySelector(".fluid-tabs")?.addEventListener("keydown", (e) => {
-  if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-  const tabs = [...document.querySelectorAll("[data-workspace]")];
-  const current = tabs.indexOf(document.activeElement);
-  if (current < 0) return;
-  e.preventDefault();
-  const next = tabs[(current + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
-  next.focus(); next.click();
-});
-document.querySelectorAll(".gooey-nav a").forEach((link) => link.addEventListener("click", () => {
-  document.querySelectorAll(".gooey-nav a").forEach((item) => item.classList.toggle("is-active", item === link));
-}));
-
-// Mirror the built-in select into the Jelly Radio semester picker.
-const semesterRadios = [...document.querySelectorAll('input[name="plan-semester-choice"]')];
-const initialSemesterRadio = semesterRadios.find((radio) => radio.value === els.planSemester.value);
-if (initialSemesterRadio) initialSemesterRadio.checked = true;
 
 // Timing-summary chips double as list filters: click to show only modules
 // with a timetable / without one / that failed; click again to clear.
@@ -2981,7 +2741,7 @@ els.courseList.addEventListener("change", (e) => {
   }
 });
 
-document.addEventListener("click", (e) => {
+els.courseList.addEventListener("click", (e) => {
   const toggle = e.target.closest(".theme-toggle");
   if (toggle) {
     const body = toggle.nextElementSibling;
@@ -3000,7 +2760,6 @@ document.addEventListener("click", (e) => {
 });
 
 els.summaryList.addEventListener("click", (e) => {
-  if (e.target.closest("[data-browse-modules]")) { document.getElementById("search")?.focus(); document.getElementById("module-section")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "start" }); return; }
   const btn = e.target.closest(".s-x");
   if (!btn) return;
   const code = btn.dataset.code;
@@ -3009,19 +2768,6 @@ els.summaryList.addEventListener("click", (e) => {
   refreshUI();
   syncUrl();
 });
-
-// Touch swipe is an alternate path to the always-visible, keyboard-accessible
-// remove button. The change is immediate and the toast restores the snapshot.
-let swipeStartX = 0;
-els.summaryList.addEventListener("touchstart", (e) => { swipeStartX = e.changedTouches[0]?.clientX || 0; }, { passive: true });
-els.summaryList.addEventListener("touchend", (e) => {
-  const row = e.target.closest(".swipe-row");
-  if (!row || swipeStartX - (e.changedTouches[0]?.clientX || 0) < 72) return;
-  const code = row.dataset.code; const snapshot = snapshotSelection();
-  selection[activeTimetable] = currentSelection().filter((item) => item.code !== code);
-  saveState(); refreshUI(); syncUrl();
-  showToast(`Removed ${code} from this selection.`, () => restoreSelection(snapshot, "Previous selection"));
-}, { passive: true });
 
 els.addTimetableBtn.addEventListener("click", () => {
   const name = els.newTimetableName.value.trim();
@@ -3044,22 +2790,12 @@ els.timetableSwitcher.addEventListener("change", (e) => {
 
 els.deleteTimetableBtn.addEventListener("click", () => {
   if (Object.keys(selection).length <= 1) return;
-  if (els.deleteTimetableBtn.dataset.deleteStep !== "confirm") {
-    els.deleteTimetableBtn.dataset.deleteStep = "confirm";
-    els.deleteTimetableBtn.textContent = `Delete “${activeTimetable}”? Confirm`;
-    els.deleteTimetableBtn.setAttribute("aria-label", `Confirm delete ${activeTimetable}`);
-    clearTimeout(els.deleteTimetableBtn._confirmTimer);
-    els.deleteTimetableBtn._confirmTimer = setTimeout(() => { els.deleteTimetableBtn.dataset.deleteStep = "idle"; els.deleteTimetableBtn.textContent = "Delete Timetable"; }, 4000);
-    return;
-  }
-  clearTimeout(els.deleteTimetableBtn._confirmTimer);
+  if (!confirm(`Delete “${activeTimetable}” and its selection? This can't be undone.`)) return;
   delete selection[activeTimetable];
   activeTimetable = Object.keys(selection)[0];
   saveState();
   refreshUI();
   syncUrl();
-  els.deleteTimetableBtn.dataset.deleteStep = "idle";
-  els.deleteTimetableBtn.textContent = "Delete Timetable";
 });
 
 els.clearBtn.addEventListener("click", () => {
@@ -3067,73 +2803,19 @@ els.clearBtn.addEventListener("click", () => {
   if (n === 0) return;
   // No confirm dialog — an undo toast is faster to act on and just as safe.
   const snapshot = snapshotSelection();
-  const undoRecord = { timetable: activeTimetable, snapshot, expiresAt: Date.now() + 8000 };
-  try { sessionStorage.setItem(SESSION_CLEAR_UNDO, JSON.stringify(undoRecord)); } catch (err) { /* private mode: current-tab undo still works */ }
   selection[activeTimetable] = [];
   saveState();
   refreshUI();
   syncUrl();
-  showToast(`Cleared ${n} selected class${n > 1 ? "es" : ""}.`, () => {
-    try { sessionStorage.removeItem(SESSION_CLEAR_UNDO); } catch (err) { /* ignore */ }
-    restoreSelection(snapshot, "Selection");
-  }, 8000);
+  showToast(`Cleared ${n} selected class${n > 1 ? "es" : ""}.`, () => restoreSelection(snapshot, "Selection"));
 });
 
 els.refreshBtn.addEventListener("click", () => {
-  setDynamicLabel(els.refreshBtn, "Refreshing…");
-  els.refreshBtn.setAttribute("aria-busy", "true");
   setLoadingStatus("Refreshing timings from UCD…");
-  fetchAllTimings(true).then(() => setDynamicLabel(els.refreshBtn, "Timings refreshed", 1400)).catch((e) => {
-    setErrorStatus(`Refresh failed: ${e.message}`);
-    setDynamicLabel(els.refreshBtn, "Refresh failed", 1400);
-  }).finally(() => {
-    els.refreshBtn.removeAttribute("aria-busy");
-  });
+  fetchAllTimings(true).catch((e) => setErrorStatus(`Refresh failed: ${e.message}`));
 });
 
 els.printBtn.addEventListener("click", () => window.print());
-document.getElementById("menu-export-ics")?.addEventListener("click", downloadIcs);
-document.getElementById("menu-share")?.addEventListener("click", copyShareLink);
-document.getElementById("menu-print")?.addEventListener("click", () => window.print());
-document.getElementById("menu-export-selection")?.addEventListener("click", exportSelectionFile);
-document.getElementById("menu-import-selection")?.addEventListener("change", (e) => { if (e.target.files?.[0]) importSelectionFile(e.target.files[0]); e.target.value = ""; });
-document.getElementById("menu-export-ics")?.closest("details")?.addEventListener("toggle", (e) => e.currentTarget.setAttribute("aria-expanded", String(e.currentTarget.open)));
-
-const detailDialog = document.getElementById("module-detail-dialog");
-const detailContent = document.getElementById("module-detail-content");
-let detailOpener = null;
-document.addEventListener("click", (e) => {
-  const trigger = e.target.closest("[data-module-detail]");
-  if (!trigger || !detailDialog) return;
-  const code = trigger.dataset.moduleDetail; const info = moduleInfo(code); const data = live.get(code); const assessments = moduleAssessments(code);
-  detailOpener = trigger;
-  document.getElementById("module-detail-title").textContent = `${code} · ${liveTitle(code)}`;
-  const classes = (data?.classes || []).map((cls) => `<li><strong>${esc(cls.typeLabel || cls.type || "Class")}</strong> · ${esc(cls.day)} ${esc(cls.startTime)}–${esc(cls.endTime)} · Weeks ${esc((cls.weeks || []).join(", ") || "not published")}</li>`).join("") || "<li>UCD has not published timetable details for this module.</li>";
-  const assess = assessments?.length ? assessments.map((row) => `<li>${esc(row.description || "Assessment")}${row.timing ? ` · ${esc(row.timing)}` : ""}${row.weight == null ? "" : ` · ${esc(String(row.weight))}%`}</li>`).join("") : "<li>Assessment breakdown is not available in the current UCD data feed.</li>";
-  detailContent.innerHTML = `<p>${Number(info.credits || 0)} credits · ${esc(info.semester || data?.semester || "Semester not specified")}</p><h3>Prerequisites and notes</h3><p>${esc(info.comments || "No prerequisite note is published in the CSNL catalogue.")}</p><h3>Assessment split</h3><ul>${assess}</ul><h3>Published timetable</h3><ul>${classes}</ul><a class="btn btn-secondary" href="${UCD_MODULE_BASE}${encodeURIComponent(code)}" target="_blank" rel="noopener">Open UCD module page</a>`;
-  applyTouchTargets();
-  detailDialog.showModal();
-});
-document.getElementById("module-detail-close")?.addEventListener("click", () => detailDialog?.close());
-detailDialog?.addEventListener("click", (e) => { if (e.target === detailDialog) detailDialog.close(); });
-detailDialog?.addEventListener("close", () => detailOpener?.focus());
-
-document.getElementById("pref-csnl-only")?.addEventListener("change", (e) => {
-  document.documentElement.dataset.csnlOnly = String(e.target.checked);
-  render();
-  showToast(e.target.checked ? "Showing the official CSNL catalogue." : "Showing all modules currently available in the CSNL catalogue.");
-});
-els.csnlBadge?.addEventListener("click", () => {
-  const tip = document.getElementById("csnl-tooltip");
-  const open = tip && tip.hidden;
-  if (tip) tip.hidden = !open;
-  els.csnlBadge.setAttribute("aria-expanded", String(!!open));
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape") return;
-  const tip = document.getElementById("csnl-tooltip");
-  if (tip && !tip.hidden) { tip.hidden = true; els.csnlBadge?.setAttribute("aria-expanded", "false"); els.csnlBadge?.focus(); }
-});
 
 // --- shareable link ---------------------------------------------------------
 // The selection is already encoded in the URL (?s=CODE:key,...) by syncUrl —
@@ -3162,13 +2844,8 @@ async function copyShareLink() {
   }
   if (ok) showToast("Link copied — it opens this exact selection.", null, 3500);
   else showToast("Couldn't copy automatically — copy the address bar link instead.", null, 5000);
-  return ok;
 }
-els.shareBtn.addEventListener("click", async () => {
-  setDynamicLabel(els.shareBtn, "Copying link…");
-  const ok = await copyShareLink();
-  setDynamicLabel(els.shareBtn, ok ? "Link copied" : "Copy address bar", 1700);
-});
+els.shareBtn.addEventListener("click", copyShareLink);
 
 // --- ICS calendar export -----------------------------------------------------
 // One-click .ics of the selected classes so they land in Google Calendar /
@@ -3585,30 +3262,7 @@ function registerServiceWorker() {
   // Absolute path: a deep link such as /?s=COMP30960 must resolve sw.js at the
   // site root, not relative to the current directory. The ?v= is what carries
   // the app's version into sw.js, which names its cache after it.
-  navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then((registration) => {
-    const banner = document.getElementById("sw-update-banner");
-    const prompt = () => {
-      if (registration.waiting && navigator.serviceWorker.controller && banner) {
-        banner.hidden = false;
-        document.getElementById("sw-update-reload").dataset.component = "dynamic-button";
-        applyTouchTargets();
-      }
-    };
-    prompt();
-    registration.addEventListener("updatefound", () => {
-      const worker = registration.installing;
-      worker?.addEventListener("statechange", () => { if (worker.state === "installed") prompt(); });
-    });
-    document.getElementById("sw-update-reload")?.addEventListener("click", () => {
-      registration.waiting?.postMessage("SKIP_WAITING");
-    });
-    let reloading = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloading) return;
-      reloading = true;
-      location.reload();
-    });
-  }).catch(() => {});
+  navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).catch(() => {});
 }
 
 function startAutoRefresh() {
@@ -3671,9 +3325,6 @@ function startAutoRefresh() {
   const cachedCount = loadTimingsCache();
   purgeNonCsnl();
   refreshUI();
-  // Replace the static crawl/no-script list only after the interactive catalogue
-  // has loaded and rendered successfully.
-  document.documentElement.classList.add("catalogue-ready");
   // Pull the module-page exam map without blocking first paint; when it
   // arrives (or a cached copy exists) refreshUI() adds the Final Exam badges.
   loadAssessments().then(() => refreshUI()).catch(() => {});
@@ -3699,22 +3350,6 @@ function startAutoRefresh() {
       failBoot(`Could not load timings: ${e.message}`);
     }
   }
-
-  // Clearing is immediate; an eight-second sessionStorage journal also lets
-  // the visitor undo it after a reload during the recovery window.
-  try {
-    const pendingUndo = JSON.parse(sessionStorage.getItem(SESSION_CLEAR_UNDO) || "null");
-    if (pendingUndo && pendingUndo.expiresAt > Date.now() && Array.isArray(pendingUndo.snapshot)) {
-      const remaining = pendingUndo.expiresAt - Date.now();
-      showToast("Selection cleared. You can still undo it.", () => {
-        selection[pendingUndo.timetable] = pendingUndo.snapshot;
-        activeTimetable = pendingUndo.timetable;
-        sessionStorage.removeItem(SESSION_CLEAR_UNDO);
-        saveState(); refreshUI(); syncUrl();
-      }, remaining);
-      setTimeout(() => { try { sessionStorage.removeItem(SESSION_CLEAR_UNDO); } catch (err) { /* ignore */ } }, remaining);
-    } else sessionStorage.removeItem(SESSION_CLEAR_UNDO);
-  } catch (err) { /* private mode or corrupt undo record */ }
 
   // Keep timings current from here on; also self-heals a failed initial load.
   lastAutoRefresh = Date.now();

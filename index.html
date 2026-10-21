@@ -1,101 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- One theme-colour, not a media pair: the page opens light and only the
-         toggle changes that, so chrome should follow the page rather than the
-         operating system. app.js re-points this on every theme change. -->
-    <meta name="theme-color" content="#f4f5f7" />
-    <title>CSNL Module Picker | UCD Timetable Planner (Unofficial)</title>
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#101216" />
     <meta
       name="description"
-      content="An unofficial UCD CSNL timetable planner. Browse module codes from the published CSNL catalogue, explore live schedules, avoid class clashes and understand exam-free assessment options. Not an official UCD service; verify details with UCD."
+      content="Plan your UCD Computer Science (NL) masters year: browse every CSNL module with live clash-free timetables, exam-free filters and a no-exam plan builder. Not an official UCD service."
     />
-    <link rel="canonical" href="https://ucdcsnlmodulepicker.pages.dev/" />
-    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="CSNL Module Picker (Unofficial)" />
-    <meta property="og:title" content="CSNL Module Picker | UCD Timetable Planner (Unofficial)" />
+    <meta property="og:title" content="CSNL Module Picker — live UCD timetables" />
     <meta
       property="og:description"
-      content="An unofficial planner for exploring CSNL modules, live timetable clashes, and assessment options. Verify modules and requirements with UCD."
+      content="Browse every UCD CSNL module with live clash-free timetables, filter exam-free modules and build a clash-free plan toward the 90-credit year."
     />
-    <meta property="og:url" content="https://ucdcsnlmodulepicker.pages.dev/" />
-    <meta property="og:image" content="https://ucdcsnlmodulepicker.pages.dev/icon-512.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
-    <meta property="og:image:alt" content="CSNL Module Picker app icon; unofficial student planning tool" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CSNL Module Picker | UCD Timetable Planner (Unofficial)" />
-    <meta name="twitter:description" content="An unofficial UCD CSNL timetable planner. Verify all offerings and requirements with UCD." />
-    <meta name="twitter:image" content="https://ucdcsnlmodulepicker.pages.dev/icon-512.png" />
-    <meta name="twitter:image:alt" content="CSNL Module Picker app icon; unofficial student planning tool" />
-    <script type="application/ld+json" id="site-schema">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "WebSite",
-            "@id": "https://ucdcsnlmodulepicker.pages.dev/#website",
-            "url": "https://ucdcsnlmodulepicker.pages.dev/",
-            "name": "CSNL Module Picker (Unofficial)",
-            "inLanguage": "en"
-          },
-          {
-            "@type": "WebApplication",
-            "@id": "https://ucdcsnlmodulepicker.pages.dev/#application",
-            "url": "https://ucdcsnlmodulepicker.pages.dev/",
-            "name": "CSNL Module Picker",
-            "applicationCategory": "EducationalApplication",
-            "operatingSystem": "Any",
-            "browserRequirements": "Requires JavaScript for live timetable lookups and interactive planning.",
-            "isPartOf": { "@id": "https://ucdcsnlmodulepicker.pages.dev/#website" },
-            "description": "An unofficial planning tool for exploring UCD Computer Science Negotiated Learning modules, timetables and assessments. Not affiliated with or endorsed by University College Dublin.",
-            "featureList": [
-              "Browse the CSNL module catalogue by stream",
-              "Check published timetable clashes",
-              "Explore module assessment and final-exam information",
-              "Build credit-targeted timetable plans"
-            ]
-          }
-        ]
-      }
-    </script>
-    <script type="application/ld+json" id="faq-schema">
-      {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-          {
-            "@type": "Question",
-            "name": "How does timetable planning work?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Choose modules and class offerings to build a weekly timetable. The planner compares class days, times and teaching weeks, and searches for combinations that avoid overlapping scheduled classes. Always confirm your final choices with UCD." }
-          },
-          {
-            "@type": "Question",
-            "name": "What does exam-free mean?",
-            "acceptedAnswer": { "@type": "Answer", "text": "It means the currently available assessment information does not show a final examination component. It is not a guarantee that a module has no exam; check the current UCD module page before choosing." }
-          },
-          {
-            "@type": "Question",
-            "name": "Where does the module and timetable information come from?",
-            "acceptedAnswer": { "@type": "Answer", "text": "The module list comes from UCD’s CSNL streams page, timetable details from UCD’s General Reference Timetable, and assessment information from UCD module pages. Data can be incomplete or change; verify it with the source." }
-          },
-          {
-            "@type": "Question",
-            "name": "Is this an official UCD service?",
-            "acceptedAnswer": { "@type": "Answer", "text": "No. This is an independent, unofficial student planning tool. It is not affiliated with, endorsed by or operated by University College Dublin." }
-          }
-        ]
-      }
-    </script>
+    <meta property="og:type" content="website" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
     <!-- iOS ignores the manifest's icons and SVG entirely, so without this it
          falls back to a screenshot of the page for the home-screen icon. -->
     <link rel="apple-touch-icon" href="icon-180.png" />
+    <title>CSNL Module Picker - Live UCD Timings</title>
     <link rel="preload" href="fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="styles.css" />
@@ -104,7 +30,7 @@
     <a class="skip-link" href="#main-content">Skip to content</a>
 
     <!-- Full-screen loader: visible from first paint until live timings arrive -->
-    <div id="boot-screen" class="boot-screen" aria-busy="true" hidden>
+    <div id="boot-screen" class="boot-screen" aria-busy="true">
       <div class="boot-card">
         <div class="boot-mark" aria-hidden="true">CS</div>
         <h1 class="boot-title">CSNL Module Picker</h1>
@@ -117,12 +43,6 @@
         <button id="boot-retry" class="btn btn-primary hidden" type="button">Retry</button>
       </div>
     </div>
-
-    <noscript>
-      <div class="no-js-notice" role="note">
-        <strong>JavaScript is off:</strong> interactive timetables and clash checking need JavaScript. The module names and codes, planning guide, data sources, and FAQ below remain available.
-      </div>
-    </noscript>
 
     <header class="topbar">
       <div class="topbar-inner">
@@ -150,7 +70,6 @@
             title="Toggle light and dark mode"
             aria-label="Toggle light and dark mode"
             aria-pressed="false"
-            data-component="switch-mode"
           >
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -160,7 +79,7 @@
               <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
             </svg>
           </button>
-          <button id="refresh-btn" class="btn btn-secondary dynamic-button" title="Fetch the latest timings from UCD right now" data-component="dynamic-button">
+          <button id="refresh-btn" class="btn btn-secondary" title="Fetch the latest timings from UCD right now">
             <span class="refresh-btn-glyph" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
@@ -169,7 +88,7 @@
                 <path d="M8 16H3v5"></path>
               </svg>
             </span>
-            <span class="dynamic-label">Refresh Timings</span>
+            Refresh Timings
           </button>
         </div>
       </div>
@@ -181,22 +100,6 @@
     </div>
 
     <main class="layout" id="main-content">
-      <nav class="gooey-nav site-nav" aria-label="Module Picker pages" data-component="gooey-nav" data-layout-group="module-picker-nav">
-        <a class="site-nav-link is-active" href="#picker-view" aria-current="page">Picker</a>
-        <a class="site-nav-link" href="#planning-guide">Policy</a>
-        <a class="site-nav-link" href="#faq-title">About</a>
-      </nav>
-      <nav class="scroll-island" aria-label="Jump to planner section" data-component="scroll-island">
-        <span class="scroll-island-label">Jump to</span>
-        <a href="#preferences">Preferences</a><a href="#module-section">Modules</a><a href="#plan-section">Plan</a><a href="#timetable-section">Timetable</a>
-      </nav>
-      <div class="fluid-tabs" role="tablist" aria-label="Planner workspace" data-component="fluid-tabs" data-layout-group="module-picker-workspace">
-        <button type="button" role="tab" aria-selected="true" aria-controls="picker-view" id="tab-picker" data-workspace="picker">Picker</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="plan-section" id="tab-plan" data-workspace="plan">Plan</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="timetable-section" id="tab-timetable" data-workspace="timetable">Timetable</button>
-        <button type="button" role="tab" aria-selected="false" aria-controls="compare-panel" id="tab-compare" data-workspace="compare">Compare</button>
-      </div>
-      <div id="picker-view" class="workspace-view" role="tabpanel" aria-labelledby="tab-picker" data-workspace-mode="picker">
       <!-- Discord community banner -->
       <a
         class="discord-cta"
@@ -212,7 +115,7 @@
         </span>
         <span class="discord-cta-copy">
           <strong>Join the UCD CS NL Discord</strong>
-          <span aria-hidden="true">Module channels for every CSNL module, study rooms &amp; team-finding — pick your modules here, then say hi in #lounge.</span>
+          <span>Module channels for every CSNL module, study rooms &amp; team-finding — pick your modules here, then say hi in #lounge.</span>
         </span>
         <span class="discord-cta-pill" aria-hidden="true">Free to join</span>
         <span class="discord-cta-arrow" aria-hidden="true">
@@ -227,23 +130,19 @@
       <!-- Module comparison staging bar (appears when 1+ modules ticked) -->
       <div id="compare-bar" class="compare-bar hidden" role="status"></div>
       <!-- Module catalogue -->
-      <section class="col-modules" id="module-section">
+      <section class="col-modules">
         <div class="panel">
           <div class="panel-head">
             <h2>Available Modules</h2>
             <div class="panel-head-meta">
-              <span id="module-count" class="muted" aria-live="polite">69 catalogue modules</span>
-              <button type="button"
+              <span id="module-count" class="muted" aria-live="polite">0 modules</span>
+              <span
                 id="csnl-badge"
                 class="csnl-badge"
                 title="Only modules from UCD's CSNL streams page are offered."
-                data-component="warm-tooltip"
-                aria-expanded="false"
-                aria-describedby="csnl-tooltip"
               >
                 CSNL only
-              </button>
-              <span id="csnl-tooltip" class="warm-tooltip" role="tooltip" hidden>The catalogue is sourced from UCD’s official CSNL streams page. Unlisted module codes cannot be selected.</span>
+              </span>
               <a
                 class="csnl-source"
                 href="https://www.ucd.ie/cs/study/postgraduate/nlstreams/"
@@ -254,7 +153,6 @@
                 UCD CSNL page
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
               </a>
-              <button type="button" id="module-detail-featured" class="module-detail-trigger" data-component="expandable-profile-card" data-module-detail="COMP30960" aria-label="Details: COMP30960 - open module details">Details: COMP30960</button>
             </div>
           </div>
           <input
@@ -283,8 +181,6 @@
           </div>
           <p id="add-code-error" class="add-code-error" role="alert" hidden></p>
           <p class="add-code-hint">Only modules on UCD's CSNL list are offered. Everything is fetched live from UCD on every load.</p>
-          <details class="filter-disclosure" data-component="filter-disclosure" open>
-            <summary>Filter modules <span class="filter-hint">Choose one status</span></summary>
           <div id="timing-summary" class="timing-summary" role="group" aria-label="Timetable status">
             <button type="button" class="ts-chip ts-live" data-ts="live" aria-pressed="false" title="Modules with a published timetable (click to show only these)">With timetable <strong class="ts-count">0</strong></button>
             <button type="button" class="ts-chip ts-none" data-ts="none" aria-pressed="false" title="Modules UCD hasn't published a timetable for yet (click to show only these)">Not published yet <strong class="ts-count">0</strong></button>
@@ -292,143 +188,30 @@
             <button type="button" class="ts-chip ts-examfree hidden" data-ts="examfree" aria-pressed="false" title="Modules with no final exam on their UCD module page (click to show only these)">Exam-free <strong class="ts-count">0</strong></button>
             <button type="button" class="ts-chip ts-all active" data-ts="all" aria-pressed="true" title="All modules">All <strong class="ts-count">0</strong></button>
           </div>
-          </details>
-          <div id="course-list" class="course-list" aria-label="Interactive live module catalogue"></div>
-          <div class="module-fallback" aria-label="Static CSNL module catalogue">
-        <section class="fallback-stream" aria-label="Artificial Intelligence modules">
-          <h3>Artificial Intelligence</h3>
-          <ul>
-            <li><a href="https://www.ucd.ie/modules/COMP41730" target="_blank" rel="noopener">Text Analytics <span class="fallback-code">(COMP41730)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41760" target="_blank" rel="noopener">Artificial / Human Intelligence <span class="fallback-code">(COMP41760)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41740" target="_blank" rel="noopener">Human-Centred Artificial Intelligence <span class="fallback-code">(COMP41740)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41400" target="_blank" rel="noopener">Multi-Agent Systems <span class="fallback-code">(COMP41400)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47980" target="_blank" rel="noopener">Generative AI: Language Models <span class="fallback-code">(COMP47980)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47700" target="_blank" rel="noopener">Speech and Audio <span class="fallback-code">(COMP47700)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30960" target="_blank" rel="noopener">Human Computer Interaction <span class="fallback-code">(COMP30960)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/IS40970" target="_blank" rel="noopener">Artificial Intelligence &amp; Ethics <span class="fallback-code">(IS40970)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/SOC41130" target="_blank" rel="noopener">AI and Society <span class="fallback-code">(SOC41130)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/MIS30010" target="_blank" rel="noopener">Decision Analytics <span class="fallback-code">(MIS30010)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41990" target="_blank" rel="noopener">Foundations of Cognitive Psychology <span class="fallback-code">(COMP41990)</span></a></li>
-          </ul>
-        </section>
-        <section class="fallback-stream" aria-label="Machine Learning and Data Science modules">
-          <h3>Machine Learning and Data Science</h3>
-          <ul>
-            <li><a href="https://www.ucd.ie/modules/COMP47750" target="_blank" rel="noopener">Machine Learning w/ Python <span class="fallback-code">(COMP47750)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47460" target="_blank" rel="noopener">Machine Learning (blended delivery) <span class="fallback-code">(COMP47460)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47670" target="_blank" rel="noopener">Data Science in Python (mixed delivery) <span class="fallback-code">(COMP47670)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47470" target="_blank" rel="noopener">Big Data Programming <span class="fallback-code">(COMP47470)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47790" target="_blank" rel="noopener">Optimisation <span class="fallback-code">(COMP47790)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47990" target="_blank" rel="noopener">Machine Learning w/ Python (online) <span class="fallback-code">(COMP47990)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47590" target="_blank" rel="noopener">Advanced Machine Learning <span class="fallback-code">(COMP47590)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47650" target="_blank" rel="noopener">Deep Learning <span class="fallback-code">(COMP47650)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/EEEN40680" target="_blank" rel="noopener">Intro. to Quantum Computing <span class="fallback-code">(EEEN40680)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40610" target="_blank" rel="noopener">Information Visualisation <span class="fallback-code">(COMP40610)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40370" target="_blank" rel="noopener">Data Mining <span class="fallback-code">(COMP40370)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41390" target="_blank" rel="noopener">Connectionist Computing <span class="fallback-code">(COMP41390)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/GEOG40820" target="_blank" rel="noopener">GIS Principles and Applications <span class="fallback-code">(GEOG40820)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40400" target="_blank" rel="noopener">Monte Carlo Inference <span class="fallback-code">(STAT40400)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40700" target="_blank" rel="noopener">Time Series Analysis <span class="fallback-code">(STAT40700)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT30340" target="_blank" rel="noopener">Data Programming with R <span class="fallback-code">(STAT30340)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40720" target="_blank" rel="noopener">Introduction to Data Analytics (online) <span class="fallback-code">(STAT40720)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40730" target="_blank" rel="noopener">Data Programming with R (online) <span class="fallback-code">(STAT40730)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40800" target="_blank" rel="noopener">Data Programming with Python (online) <span class="fallback-code">(STAT40800)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40690" target="_blank" rel="noopener">Quantitative Methods for Engineers <span class="fallback-code">(STAT40690)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30110" target="_blank" rel="noopener">Spatial Information Systems <span class="fallback-code">(COMP30110)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47950" target="_blank" rel="noopener">Quantum Machine Learning <span class="fallback-code">(COMP47950)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47970" target="_blank" rel="noopener">Information Visualisation (blended delivery) <span class="fallback-code">(COMP47970)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40725" target="_blank" rel="noopener">Introduction to Relational Databases and SQL Programming <span class="fallback-code">(COMP40725)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40400" target="_blank" rel="noopener">Bioinformatics <span class="fallback-code">(COMP40400)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40150" target="_blank" rel="noopener">Multivariate Analysis <span class="fallback-code">(STAT40150)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT30270" target="_blank" rel="noopener">Statistical Machine Learning <span class="fallback-code">(STAT30270)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/STAT40750" target="_blank" rel="noopener">Statistical Machine Learning (online) <span class="fallback-code">(STAT40750)</span></a></li>
-          </ul>
-        </section>
-        <section class="fallback-stream" aria-label="Networks and Distributed Computing modules">
-          <h3>Networks and Distributed Computing</h3>
-          <ul>
-            <li><a href="https://www.ucd.ie/modules/COMP41770" target="_blank" rel="noopener">Blockchain &amp; Decentralisation <span class="fallback-code">(COMP41770)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47780" target="_blank" rel="noopener">Cloud Computing <span class="fallback-code">(COMP47780)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41720" target="_blank" rel="noopener">Distributed Systems <span class="fallback-code">(COMP41720)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40010" target="_blank" rel="noopener">Performance of Computer Systems <span class="fallback-code">(COMP40010)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP40660" target="_blank" rel="noopener">Advances in Wireless Networking <span class="fallback-code">(COMP40660)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30040" target="_blank" rel="noopener">Networks and Internet Systems <span class="fallback-code">(COMP30040)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30250" target="_blank" rel="noopener">Parallel Computing <span class="fallback-code">(COMP30250)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/ACM40290" target="_blank" rel="noopener">Numerical Algorithms <span class="fallback-code">(ACM40290)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/EEEN40050" target="_blank" rel="noopener">Wireless Systems <span class="fallback-code">(EEEN40050)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/EEEN40060" target="_blank" rel="noopener">Digital Communications <span class="fallback-code">(EEEN40060)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/IS41510" target="_blank" rel="noopener">Social Networks Online and Off <span class="fallback-code">(IS41510)</span></a></li>
-          </ul>
-        </section>
-        <section class="fallback-stream" aria-label="Software Engineering modules">
-          <h3>Software Engineering</h3>
-          <ul>
-            <li><a href="https://www.ucd.ie/modules/COMP41670" target="_blank" rel="noopener">Software Engineering <span class="fallback-code">(COMP41670)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47530" target="_blank" rel="noopener">Exploring Ruby <span class="fallback-code">(COMP47530)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47860" target="_blank" rel="noopener">Ethical Hacking <span class="fallback-code">(COMP47860)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47500" target="_blank" rel="noopener">Advanced Data Structures in Java (online) <span class="fallback-code">(COMP47500)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP47930" target="_blank" rel="noopener">Augmented and Virtual Reality <span class="fallback-code">(COMP47930)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP20350" target="_blank" rel="noopener">Object-Oriented Programming <span class="fallback-code">(COMP20350)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP31010" target="_blank" rel="noopener">Recommender Systems <span class="fallback-code">(COMP31010)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30540" target="_blank" rel="noopener">Game Development <span class="fallback-code">(COMP30540)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/EEEN40280" target="_blank" rel="noopener">Digital &amp; Embedded Systems <span class="fallback-code">(EEEN40280)</span></a></li>
-          </ul>
-        </section>
-        <section class="fallback-stream" aria-label="Information and Communication Sciences, and Languages modules">
-          <h3>Information and Communication Sciences, and Languages</h3>
-          <ul>
-            <li><a href="https://www.ucd.ie/modules/COMP30940" target="_blank" rel="noopener">Information Security <span class="fallback-code">(COMP30940)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30690" target="_blank" rel="noopener">Information Theory <span class="fallback-code">(COMP30690)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP30390" target="_blank" rel="noopener">Enterprise, Innovation &amp; Entrepreneurship <span class="fallback-code">(COMP30390)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/MEEN40820" target="_blank" rel="noopener">Technical Communication (online) <span class="fallback-code">(MEEN40820)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/SOC40640" target="_blank" rel="noopener">Social Simulation: Methods and Models <span class="fallback-code">(SOC40640)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/COMP41960" target="_blank" rel="noopener">Advanced Information Security <span class="fallback-code">(COMP41960)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/MEEN40670" target="_blank" rel="noopener">Technical Communication <span class="fallback-code">(MEEN40670)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/IS30370" target="_blank" rel="noopener">Digital Media Ethics <span class="fallback-code">(IS30370)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/IS30380" target="_blank" rel="noopener">Digital Storytelling <span class="fallback-code">(IS30380)</span></a></li>
-            <li><a href="https://www.ucd.ie/modules/IS40560" target="_blank" rel="noopener">Digital Libraries <span class="fallback-code">(IS40560)</span></a></li>
-          </ul>
-        </section>
-          </div>
+          <div id="course-list" class="course-list"></div>
         </div>
       </section>
 
       <!-- Sidebar -->
       <aside class="col-side">
         <!-- Selection summary -->
-        <div class="panel" id="selection-panel" data-component="transaction-list">
+        <div class="panel">
           <div class="panel-head">
             <h2>Selection</h2>
             <span id="total-credits" class="credits-badge" aria-live="polite">0 credits</span>
           </div>
           <div id="credits-breakdown" class="credits-breakdown" aria-live="polite"></div>
           <div id="credit-progress" class="credit-progress" aria-live="polite"></div>
-          <div class="hairline-card" aria-label="Selection orbit">
-            <div class="hairline-figure" id="module-orbit"></div>
-            <p class="hairline-read" data-hairline-read aria-live="polite">No modules selected</p>
-          </div>
-          <div id="summary-list" class="summary-list transaction-list" aria-live="polite" data-component="swipe-row"></div>
+          <div id="summary-list" class="summary-list" aria-live="polite"></div>
           <div class="timetable-tools">
-            <label class="field-label" for="timetable-switcher">Saved selection</label>
-            <select id="timetable-switcher" class="input glide-select" aria-label="Current timetable" data-component="glide-select"></select>
-            <div id="saved-selection-table" class="saved-selection-table" data-component="inline-table-control" aria-live="polite"></div>
-            <details class="inline-disclosure" data-component="inline-disclosure-menu">
-              <summary>Selection actions</summary>
-              <div class="inline-menu-items">
-                <button id="menu-export-ics" type="button" class="btn btn-ghost">Export .ics</button>
-                <button id="menu-share" type="button" class="btn btn-ghost">Share link</button>
-                <button id="menu-print" type="button" class="btn btn-ghost">Print / PDF</button>
-                <button id="menu-export-selection" type="button" class="btn btn-ghost">Export selection</button>
-                <label class="btn btn-ghost import-label">Import selection<input type="file" id="menu-import-selection" accept="application/json,.json" hidden /></label>
-                <button id="delete-timetable-btn" class="btn btn-danger" type="button" data-delete-step="idle">Delete Timetable</button>
-              </div>
-            </details>
+            <select id="timetable-switcher" class="input" aria-label="Current timetable"></select>
             <div class="row">
               <input id="new-timetable-name" name="timetable-name" class="input grow" placeholder="New timetable name…" autocomplete="off" spellcheck="false" aria-label="New timetable name" />
               <button id="add-timetable-btn" class="btn btn-primary" title="Add timetable" aria-label="Add timetable">+</button>
             </div>
             <div class="row">
-                <span class="undo-component"><button id="clear-btn" class="btn btn-ghost grow dynamic-button" data-component="time-undo-action"><span class="dynamic-label">Clear Selection</span></button></span>
+              <button id="clear-btn" class="btn btn-ghost grow">Clear Selection</button>
+              <button id="delete-timetable-btn" class="btn btn-danger grow">Delete Timetable</button>
             </div>
             <div class="row">
               <button id="export-sel-btn" class="btn btn-ghost grow" title="Download every timetable's selection as a JSON file">Export</button>
@@ -438,7 +221,7 @@
         </div>
 
         <!-- Clash-free plan builder -->
-        <div class="panel" id="plan-section">
+        <div class="panel">
           <div class="panel-head">
             <h2>Clash-Free Plans</h2>
           </div>
@@ -448,7 +231,6 @@
               id="plan-target"
               name="plan-target"
               class="input plan-target"
-              data-component="skiper68"
               type="number"
               inputmode="numeric"
               min="5"
@@ -458,42 +240,31 @@
               autocomplete="off"
               aria-label="Target credit total"
             />
-            <select id="plan-semester" class="input plan-sem sr-only" aria-label="Semester for plan">
+            <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan">
               <option value="current">Current sem.</option>
               <option value="1">Semester 1</option>
               <option value="2">Semester 2</option>
               <option value="all">Both</option>
             </select>
-            <fieldset class="jelly-radio" data-component="jelly-radio" aria-label="Semester for plan">
-              <legend>Plan semester</legend>
-              <label><input type="radio" name="plan-semester-choice" value="current" checked /> <span>Current</span></label>
-              <label><input type="radio" name="plan-semester-choice" value="1" /> <span>Semester 1</span></label>
-              <label><input type="radio" name="plan-semester-choice" value="2" /> <span>Semester 2</span></label>
-              <label><input type="radio" name="plan-semester-choice" value="all" /> <span>Both</span></label>
-            </fieldset>
           </div>
           <div class="row">
-            <button id="plan-btn" class="btn btn-primary grow dynamic-button" data-component="dynamic-button"><span class="dynamic-label">Find Clash-Free Plans</span></button>
+            <button id="plan-btn" class="btn btn-primary grow">Find Clash-Free Plans</button>
           </div>
-          <div class="row plan-prefs" id="preferences" role="group" aria-label="Plan preferences">
-            <label class="pref squish-switch" data-component="squish-switch"><span>No 9am</span><input type="checkbox" id="pref-no-early" role="switch" /></label>
-            <label class="pref squish-switch" data-component="squish-switch"><span>No Friday</span><input type="checkbox" id="pref-no-friday" role="switch" /></label>
-            <label class="pref squish-switch" data-component="squish-switch"><span>CSNL only</span><input type="checkbox" id="pref-csnl-only" role="switch" checked /></label>
-            <div class="pref stepper-control" data-component="stepper">
-              <label for="pref-max-per-day">Max/day</label>
-              <button type="button" class="stepper-button" data-step="-1" aria-label="Decrease maximum classes per day">−</button>
+          <div class="row plan-prefs" role="group" aria-label="Plan preferences">
+            <label class="pref"><input type="checkbox" id="pref-no-early" /> no 9am</label>
+            <label class="pref"><input type="checkbox" id="pref-no-friday" /> no Friday</label>
+            <label class="pref">max/day
               <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit" />
-              <button type="button" class="stepper-button" data-step="1" aria-label="Increase maximum classes per day">+</button>
-            </div>
+            </label>
           </div>
           <div class="row">
-            <button id="plan-noexam-btn" class="btn btn-ghost grow dynamic-button" title="Only modules with no final exam" data-component="dynamic-button"><span class="dynamic-label">Build No-Exam Plan</span></button>
+            <button id="plan-noexam-btn" class="btn btn-ghost grow" title="Only modules with no final exam">Build No-Exam Plan</button>
           </div>
           <div id="plan-results" class="plan-results" aria-live="polite"></div>
         </div>
 
         <!-- Compare plans -->
-        <div class="panel" id="compare-section">
+        <div class="panel">
           <div class="panel-head">
             <h2>Compare Plans</h2>
             <span id="compare-sel" class="muted">0 selected</span>
@@ -526,7 +297,6 @@
           <form
             id="suggest-form"
             class="suggest-form"
-            data-component="feedback"
             name="suggestions"
             method="POST"
             action="/.netlify/functions/suggestions"
@@ -575,30 +345,26 @@
       <section id="compare-table" class="compare-table hidden" aria-label="Module comparison"></section>
 
       <!-- Weekly timetable -->
-      <section class="col-timetable" id="timetable-section">
-        <div class="semester-funds" id="semester-funds" data-component="fund-widget" aria-label="Credits by semester"></div>
-        <div id="study-activity" class="study-activity" data-component="github-activity" aria-label="Planned classes per teaching week"></div>
-        <div id="workload-chart" class="workload-chart" data-component="analytics-chart" aria-label="Weekly class hours by weekday"></div>
+      <section class="col-timetable">
         <div class="panel">
           <div class="panel-head">
             <h2>Weekly Timetable</h2>
             <div class="tt-actions">
               <button
                 id="ics-btn"
-              class="btn btn-secondary dynamic-button"
+                class="btn btn-secondary"
                 type="button"
                 title="Download the selected classes as an .ics calendar file for Google Calendar / Outlook"
               >Export .ics</button>
               <button
                 id="share-btn"
-              class="btn btn-secondary dynamic-button"
+                class="btn btn-secondary"
                 type="button"
                 title="Copy a link that opens this exact selection"
-                data-component="dynamic-button"
-              ><span class="dynamic-label">Share link</span></button>
+              >Share link</button>
               <button
                 id="print-btn"
-              class="btn btn-secondary dynamic-button"
+                class="btn btn-secondary"
                 type="button"
                 title="Print or save this timetable as a PDF"
               >
@@ -614,19 +380,17 @@
             </div>
           </div>
           <div id="print-header" class="print-only"></div>
-          <div id="week-sticky" class="week-sticky" data-component="skiper74" aria-live="polite">Weekly timetable <span id="week-sticky-label">All published teaching weeks</span><button id="week-sticky-open" class="week-sticky-open" type="button" aria-label="Open the weekly timetable grid">Grid ↓</button></div>
-          <div id="sem-selector" class="sem-selector rubber-segment" role="radiogroup" aria-label="Which semester the timetable shows" data-component="rubber-segment" data-layout-group="module-picker-semester-view">
-            <span id="sem-indicator" class="rubber-indicator" aria-hidden="true"></span>
-            <button type="button" role="radio" class="sem-chip active" data-sem="all" aria-checked="true" title="Show classes from both semesters">All</button>
-            <button type="button" role="radio" class="sem-chip" data-sem="1" aria-checked="false" title="Show only Semester 1 (Autumn) classes">Autumn</button>
-            <button type="button" role="radio" class="sem-chip" data-sem="2" aria-checked="false" title="Show only Semester 2 (Spring) classes">Spring</button>
+          <div id="sem-selector" class="sem-selector" role="group" aria-label="Which semester the timetable shows">
+            <button type="button" class="sem-chip active" data-sem="all" aria-pressed="true" title="Show classes from both semesters">All</button>
+            <button type="button" class="sem-chip" data-sem="1" aria-pressed="false" title="Show only Semester 1 (Autumn) classes">Autumn</button>
+            <button type="button" class="sem-chip" data-sem="2" aria-pressed="false" title="Show only Semester 2 (Spring) classes">Spring</button>
           </div>
           <div id="clash-warning" class="clash-warning hidden" aria-live="polite">
             Warning: you have timetable clashes. Clashing slots are highlighted in red.
           </div>
           <div id="policy-warning" class="policy-warning hidden" role="alert" aria-live="polite"></div>
           <div id="total-warning" class="total-warning hidden" role="alert" aria-live="polite"></div>
-          <div class="timetable-wrap" role="region" aria-label="Weekly timetable grid" tabindex="0">
+          <div class="timetable-wrap">
             <div id="timetable-grid" class="timetable-grid">
               <div id="timetable-events" class="timetable-events"></div>
             </div>
@@ -647,70 +411,12 @@
         </div>
       </section>
       </div>
-      </div>
-
-      <section class="planning-guide panel" aria-labelledby="planning-guide-title">
-        <p class="unofficial-label">Independent student planning tool · Not an official UCD service</p>
-        <h2 id="planning-guide-title">How to use this timetable planner</h2>
-        <div class="planning-guide-grid">
-          <div>
-            <h3>How clashes are detected</h3>
-            <p>Choose a module and one of its published class offerings. The timetable compares day, start and end times, and teaching weeks; classes that overlap in time and run in a shared week are flagged. Autumn and Spring weeks are kept separate. The plan finder uses the same clash rules to suggest compatible choices.</p>
-          </div>
-          <div>
-            <h3>What “exam-free” means</h3>
-            <p>“Exam-free” means the assessment information currently available does not show a final-exam component. It is not a promise that a module has no exams: assessment details may be incomplete or change, so check the current UCD module page before planning around it.</p>
-          </div>
-          <div>
-            <h3>Data sources and limits</h3>
-            <p>The fallback list below is derived from the <a href="https://www.ucd.ie/cs/study/postgraduate/nlstreams/" target="_blank" rel="noopener">UCD CSNL streams page</a>. Timetable data comes from UCD’s <a href="https://www.ucd.ie/students/course_search/generalreferencetimetable/" target="_blank" rel="noopener">General Reference Timetable</a>; assessment details are read from <a href="https://www.ucd.ie/modules/" target="_blank" rel="noopener">UCD module pages</a>. This is an independent student tool, not an official UCD service; verify offerings, times and requirements with UCD.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="faq-section panel" aria-labelledby="faq-title">
-        <h2 id="faq-title">Frequently asked questions</h2>
-        <details>
-          <summary>How does timetable planning work?</summary>
-          <p>Choose modules and class offerings to build a weekly timetable. The planner compares class days, times and teaching weeks, and searches for combinations that avoid overlapping scheduled classes. Always confirm your final choices with UCD.</p>
-        </details>
-        <details>
-          <summary>What does exam-free mean?</summary>
-          <p>It means the currently available assessment information does not show a final examination component. It is not a guarantee that a module has no exam; check the current UCD module page before choosing.</p>
-        </details>
-        <details>
-          <summary>Where does the module and timetable information come from?</summary>
-          <p>The module list comes from UCD’s CSNL streams page, timetable details from UCD’s General Reference Timetable, and assessment information from UCD module pages. Data can be incomplete or change; verify it with the source.</p>
-        </details>
-        <details>
-          <summary>Is this an official UCD service?</summary>
-          <p>No. This is an independent, unofficial student planning tool. It is not affiliated with, endorsed by or operated by University College Dublin.</p>
-        </details>
-      </section>
-
-      <p class="site-disclaimer"><strong>Disclaimer:</strong> Not an official UCD service. This independent planner is not affiliated with, endorsed by or operated by University College Dublin. Module availability, timetables and assessment details can change; always verify them with UCD before making decisions.</p>
     </main>
 
-    <dialog id="module-detail-dialog" class="module-dialog" aria-labelledby="module-detail-title" data-layout-group="module-detail">
-      <div class="module-dialog-head"><div><p class="eyebrow">UCD module detail</p><h2 id="module-detail-title">Module</h2></div><button type="button" class="icon-btn" id="module-detail-close" aria-label="Close module details">×</button></div>
-      <div id="module-detail-content"></div>
-    </dialog>
-
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <div id="sw-update-banner" class="sw-update-banner" role="status" aria-live="polite" hidden>
-      <span>A newer version is ready.</span>
-      <button id="sw-update-reload" class="btn btn-primary dynamic-button" type="button"><span class="dynamic-label">Update available → Reload</span></button>
-    </div>
     <!-- Only one script, and it is same-origin: the deployed CSP is
          script-src 'self'. The service worker is registered from app.js — an
          inline registration here would be blocked by that policy. -->
-    <!-- Hairline: the engine, its mount adapter and this site's figure. Three
-         external same-origin scripts, nothing inline: the deployed CSP is
-         script-src 'self'. The palette lives in styles.css, so the engine's
-         inject() is never called. -->
-    <script src="hairline/kernel.js"></script>
-    <script src="hairline/mount.js"></script>
-    <script src="hairline/orbit.js"></script>
-    <script src="app.js?v=orbit2"></script>
+    <script src="app.js?v=6"></script>
   </body>
 </html>

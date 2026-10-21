@@ -19,16 +19,3 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  X-Robots-Tag: index, follow, max-image-preview:large
-
-# Self-hosted webfonts. These are the files a returning visitor otherwise
-# re-requests on every visit: unversioned names, a few hundred KB together, and
-# content that changes only when the typeface does. A week plus
-# stale-while-revalidate trades that round trip for a copy that can still be
-# replaced within a week — deliberately not `immutable`, because a promise made
-# on a stable URL cannot be revoked. The catch-all above sets no Cache-Control on
-# purpose: Cloudflare joins the Cache-Control of every matching rule, so a
-# `no-store` there would silently cancel this one. Same rule RBI and the Content
-# Tracker already carry.
-/fonts/*
-  Cache-Control: public, max-age=604800, stale-while-revalidate=86400

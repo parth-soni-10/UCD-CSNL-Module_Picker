@@ -14,12 +14,7 @@ node_modules/
 netlify/
 tools/
 
-# Agent instructions, on the same footing as the README: a development file,
-# and the staging step is what keeps it off the site. This one was missing here
-# (measured 16 Oct 2026: `CLAUDE.md` was in the staged upload, so it was served)
-# while every sibling repository listed it.
 README.md
-CLAUDE.md
 LICENSE
 package.json
 server.js
