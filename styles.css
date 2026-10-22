@@ -127,6 +127,22 @@
   --sc-sheet-rail: var(--surface-2);
   --sc-sheet-accent: var(--danger);
   --sc-sheet-on-accent: var(--accent-text);
+
+  /* Swipe Row — the selection rows' actions live behind the row. */
+  --sr-surface-bg: var(--surface);
+  --sr-pane-bg: var(--surface-2);
+  --sr-ink: var(--text);
+  --sr-line: var(--border);
+  --sr-danger-bg: var(--danger);
+  --sr-danger-ink: var(--accent-text);
+  --sr-accent: var(--accent);
+  --sr-radius: 0px;
+}
+
+/* The wrapper is now the last child, so the row that ends the list needs its
+   hairline removed there instead. */
+.summary-list .sr-row:last-child .summary-item {
+  border-bottom: none;
 }
 
 /* no-JS fallback: honour the OS preference */

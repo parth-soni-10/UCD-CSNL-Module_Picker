@@ -1458,12 +1458,16 @@ function renderSummary() {
       .join(", ");
     const item = document.createElement("div");
     item.className = "summary-item";
+    // Swipe left for the remove action. The button keeps its handler; the
+    // component mirrors it into the pane and leaves the row itself alone.
+    item.setAttribute("data-swipe-row", "");
+    item.setAttribute("data-swipe-label", "Selection actions");
     item.innerHTML = `
       <div>
         <div class="s-code">${esc(liveTitle(code))}</div>
         <div class="s-detail">${esc(detail)}</div>
       </div>
-      <button class="s-x" data-code="${esc(code)}" title="Remove from selection" aria-label="Remove ${esc(liveTitle(code))} from selection">
+      <button class="s-x" data-code="${esc(code)}" title="Remove from selection" aria-label="Remove ${esc(liveTitle(code))} from selection" data-swipe-action data-swipe-label="Remove" data-swipe-tone="danger">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     `;
