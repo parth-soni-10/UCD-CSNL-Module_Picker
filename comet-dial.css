@@ -1,0 +1,122 @@
+/* Comet Dial — the ring, its ticks, the trail and the head.
+ *
+ * Colour hooks, all optional:
+ *   --cd-size, --cd-track, --cd-tick, --cd-trail, --cd-head, --cd-ink,
+ *   --cd-muted, --cd-accent
+ * Defaults are ink-on-paper; a site sets the six hooks in its own palette the
+ * way it sets --sr-* for Swipe Row.
+ *
+ * The input in the middle is the value and the accessible control; the ring is
+ * aria-hidden and pointer-only, so nothing here duplicates a keyboard path.
+ */
+
+.cd-field {
+  position: relative;
+  width: var(--cd-size, 148px);
+  height: var(--cd-size, 148px);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.cd-dial {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cd-field.is-dragging .cd-dial { cursor: grabbing; }
+.cd-field.is-dragging { user-select: none; }
+
+.cd-dial svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cd-track {
+  stroke: var(--cd-track, rgba(24, 22, 18, 0.12));
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.cd-tick {
+  stroke: var(--cd-tick, rgba(24, 22, 18, 0.34));
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-opacity 140ms linear;
+}
+
+.cd-trail {
+  stroke: var(--cd-trail, #1f6f52);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.cd-glow { fill: var(--cd-head, #1f6f52); }
+
+.cd-head {
+  fill: var(--cd-head, #1f6f52);
+  transition: r 160ms ease;
+}
+
+.cd-field.is-dragging .cd-head { r: 6; }
+
+/* The number is the same input the host shipped, restyled as the dial's face.
+   `input.cd-input` is two classes and a type, so a host rule as broad as
+   `.row .input` — the shape most of these sites use — still loses to it. */
+.cd-field input.cd-input {
+  position: relative;
+  z-index: 1;
+  width: 84px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  color: var(--cd-ink, #1c1915);
+  font: 650 25px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: -0.02em;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.cd-field input.cd-input::-webkit-outer-spin-button,
+.cd-field input.cd-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.cd-field input.cd-input:focus-visible {
+  outline: 2px solid var(--cd-accent, #1f6f52);
+  outline-offset: 3px;
+}
+
+.cd-unit {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cd-muted, #6d655a);
+  pointer-events: none;
+}
+
+/* Nothing chosen yet: the head waits at the minimum, faded, and the trail is
+   hidden — there is no distance travelled to draw. */
+.cd-field.is-empty .cd-head { opacity: 0.4; }
+.cd-field.is-empty .cd-glow { opacity: 0; }
+.cd-field.is-empty .cd-trail { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-tick { transition: none; }
+  .cd-head { transition: none; }
+}

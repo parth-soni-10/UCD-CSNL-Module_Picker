@@ -143,6 +143,7 @@
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="slide-commit.css" />
     <link rel="stylesheet" href="swipe-row.css" />
+    <link rel="stylesheet" href="comet-dial.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -352,19 +353,23 @@
           </div>
           <p class="plan-hint">Find module combinations that hit a credit target without timetable clashes (uses live UCD timings).</p>
           <div class="row plan-controls">
-            <input
-              id="plan-target"
-              name="plan-target"
-              class="input plan-target"
-              type="number"
-              inputmode="numeric"
-              min="5"
-              max="120"
-              step="5"
-              placeholder="e.g. 60…"
-              autocomplete="off"
-              aria-label="Target credit total"
-            />
+            <!-- The target is set by flicking the dial; the input inside is the
+                 value and the keyboard path, so typing still works. -->
+            <div class="plan-dial" data-comet-dial data-dial-unit="credits">
+              <input
+                id="plan-target"
+                name="plan-target"
+                class="input plan-target"
+                type="number"
+                inputmode="numeric"
+                min="5"
+                max="120"
+                step="5"
+                placeholder="—"
+                autocomplete="off"
+                aria-label="Target credit total"
+              />
+            </div>
             <select id="plan-semester" class="input plan-sem" aria-label="Semester for plan" data-glide data-glide-size="sm">
               <option value="current">Current sem.</option>
               <option value="1">Semester 1</option>
@@ -560,6 +565,7 @@
     <script src="squish-switch.js" defer></script>
     <script src="slide-commit.js" defer></script>
     <script src="swipe-row.js" defer></script>
+    <script src="comet-dial.js" defer></script>
     <script src="app.js?v=7"></script>
   </body>
 </html>

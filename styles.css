@@ -137,6 +137,16 @@
   --sr-danger-ink: var(--accent-text);
   --sr-accent: var(--accent);
   --sr-radius: 0px;
+
+  /* Comet Dial — the plan builder's credit target. The hooks read the theme
+     tokens, so only the palette names change between light and dark. */
+  --cd-track: var(--border);
+  --cd-tick: var(--text-3);
+  --cd-trail: var(--accent);
+  --cd-head: var(--accent);
+  --cd-ink: var(--text);
+  --cd-muted: var(--text-2);
+  --cd-accent: var(--accent);
 }
 
 /* The wrapper is now the last child, so the row that ends the list needs its
@@ -1407,6 +1417,14 @@ body {
 
 .plan-controls {
   margin-bottom: 8px;
+  align-items: center;
+}
+
+/* The dial is 148px of ring around the number, so it takes the first slot and
+   the semester picker keeps the rest of the row. */
+.plan-dial {
+  flex: 0 0 auto;
+  margin: 2px 6px 2px 0;
 }
 
 .plan-target {
@@ -2697,6 +2715,10 @@ body {
   }
   .plan-target {
     width: 100%;
+  }
+  .plan-dial {
+    margin-left: auto;
+    margin-right: auto;
   }
   .plan-sem {
     flex: 1;
