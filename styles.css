@@ -2321,6 +2321,16 @@ body {
 .pref input[type="checkbox"] {
   accent-color: var(--accent, #2563eb);
 }
+/* The two plan preferences are switches; the native checkbox still holds the
+   value the planner reads, so only the paint changed. */
+.pref.squish-switch {
+  gap: 7px;
+  --ss-font: 12px;
+  --ss-track: var(--border);
+  --ss-track-on: var(--accent);
+  --ss-thumb-color: #fff;
+}
+[data-theme="dark"] .pref.squish-switch { --ss-track: #333a46; }
 .pref input[type="number"] {
   width: 46px;
   padding: 3px 6px;

@@ -140,6 +140,7 @@
     <link rel="stylesheet" href="glide-select.css" />
     <link rel="stylesheet" href="jelly-radio.css" />
     <link rel="stylesheet" href="rubber-segment.css" />
+    <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -373,8 +374,8 @@
             <button id="plan-btn" class="btn btn-primary grow">Find Clash-Free Plans</button>
           </div>
           <div class="row plan-prefs" role="group" aria-label="Plan preferences">
-            <label class="pref"><input type="checkbox" id="pref-no-early" /> no 9am</label>
-            <label class="pref"><input type="checkbox" id="pref-no-friday" /> no Friday</label>
+            <label class="pref"><input type="checkbox" id="pref-no-early" data-squish-switch data-ss-size="sm" /> no 9am</label>
+            <label class="pref"><input type="checkbox" id="pref-no-friday" data-squish-switch data-ss-size="sm" /> no Friday</label>
             <label class="pref">max/day
               <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit" />
             </label>
@@ -554,6 +555,7 @@
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>
     <script src="rubber-segment.js" defer></script>
+    <script src="squish-switch.js" defer></script>
     <script src="app.js?v=7"></script>
   </body>
 </html>
