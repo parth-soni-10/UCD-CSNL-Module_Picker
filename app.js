@@ -2784,9 +2784,20 @@ els.timetableSwitcher.addEventListener("change", (e) => {
   syncUrl();
 });
 
-els.deleteTimetableBtn.addEventListener("click", () => {
+els.deleteTimetableBtn.addEventListener("click", async () => {
   if (Object.keys(selection).length <= 1) return;
-  if (!confirm(`Delete “${activeTimetable}” and its selection? This can't be undone.`)) return;
+  // A slide instead of window.confirm: the timetable and its whole selection
+  // are the one thing on this page that cannot be rebuilt from the URL.
+  const n = currentSelection().length;
+  const ok = await SlideCommit.ask({
+    title: `Delete “${activeTimetable}”?`,
+    text: `Its ${n} selected class${n === 1 ? "" : "es"} go with it. This can't be undone.`,
+    label: "Slide to delete",
+    busy: "Deleting…",
+    done: "Deleted",
+    doneText: "Timetable deleted.",
+  });
+  if (!ok) return;
   delete selection[activeTimetable];
   activeTimetable = Object.keys(selection)[0];
   saveState();

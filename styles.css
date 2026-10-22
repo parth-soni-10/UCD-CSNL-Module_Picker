@@ -116,6 +116,19 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
+/* Slide Commit — the confirm sheet for deletions, in this palette. The hooks
+   read the theme tokens, so only the ink on a filled control needs its own
+   value in dark: --accent-text is this app's "text on a solid fill". */
+:root {
+  --sc-sheet-bg: var(--surface);
+  --sc-sheet-ink: var(--text);
+  --sc-sheet-muted: var(--text-2);
+  --sc-sheet-line: var(--border);
+  --sc-sheet-rail: var(--surface-2);
+  --sc-sheet-accent: var(--danger);
+  --sc-sheet-on-accent: var(--accent-text);
+}
+
 /* no-JS fallback: honour the OS preference */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
@@ -144,10 +157,10 @@
     --ok: #34d399;
     --ok-soft: rgba(52, 211, 153, 0.1);
     --ok-border: rgba(52, 211, 153, 0.35);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
-  }
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
+}
 
-  /* Component-level dark styles for the OS-preference case (no data-theme).
+/* Component-level dark styles for the OS-preference case (no data-theme).
      Mirrors the explicit [data-theme="dark"] rules below so colours that are
      hard-coded (not tokens) still flip when the user follows their OS theme. */
   :root:not([data-theme]) .timetable-event {
