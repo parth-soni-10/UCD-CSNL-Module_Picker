@@ -1,0 +1,86 @@
+/* Animated Counter — the reels, the digits and the fixed glyphs between them.
+ *
+ * Shape hooks, all optional:
+ *   --ac-duration, --ac-ease, --ac-digit (numeric width), --ac-ink
+ *
+ * The number keeps the host's own font, size and weight: the kit only takes over
+ * the layout of the characters. Every reel is exactly one line high, so a
+ * counter sits in a line of text without changing the line's height.
+ */
+
+.ac {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ac-ink, inherit);
+}
+
+/* The real number, for whoever is listening rather than looking. */
+.ac-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ac-stage {
+  display: inline-flex;
+  align-items: baseline;
+  /* A reel is one line tall and clipped, so the digits below must not add
+     descender space of their own. */
+  line-height: 1;
+}
+
+.ac-reel {
+  display: inline-block;
+  position: relative;
+  height: 1em;
+  width: 1ch;
+  text-align: center;
+  overflow: hidden;
+  line-height: 1;
+  /* A tabular figure is wider than 1ch in most faces; the extra weight keeps
+     the glyph from being clipped on the sides. */
+  width: 1.02ch;
+}
+
+.ac-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+
+.ac-col > span {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+
+.ac-fix {
+  display: inline-block;
+  line-height: 1;
+  /* Separators and currency marks ride on the same baseline as the reels. */
+  align-self: baseline;
+  /* An inline-block throws away a leading or trailing collapsible space, and
+     "0 credits" keeps its gap inside the suffix, so the space has to be
+     preserved rather than collapsed. */
+  white-space: pre;
+}
+
+/* A counter inside running prose: the stage is one line tall, so give it the
+   line box the surrounding text already has and it will not fight the baseline
+   algorithm. Flex boxes align on their first line, which is the digit row. */
+.ac-pre { margin-right: 0.02em; }
+.ac-post { margin-left: 0.02em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-col { transition: none !important; }
+}

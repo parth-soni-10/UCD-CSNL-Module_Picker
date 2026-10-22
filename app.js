@@ -1478,6 +1478,12 @@ function renderSummary() {
     list.innerHTML = `<p class="muted sel-empty">Nothing selected yet. Tick classes in the module list.</p>`;
   }
   els.totalCredits.textContent = `${credits} credits`;
+  // The badge is an Animated Counter when the kit is present: it rolls from the
+  // digit on screen to this one. Without the kit the line above is the whole
+  // behaviour, which is also what a reduced-motion visitor gets.
+  if (window.AnimatedCounter) {
+    try { AnimatedCounter.set(els.totalCredits, credits); } catch (err) { /* the badge still shows the number */ }
+  }
   renderCreditsBreakdown();
   renderCreditProgress(credits);
 }

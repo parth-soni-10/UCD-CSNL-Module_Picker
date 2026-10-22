@@ -143,6 +143,7 @@
     <link rel="stylesheet" href="squish-switch.css" />
     <link rel="stylesheet" href="slide-commit.css" />
     <link rel="stylesheet" href="swipe-row.css" />
+    <link rel="stylesheet" href="animated-counter.css" />
     <link rel="stylesheet" href="comet-dial.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -324,7 +325,9 @@
         <div class="panel">
           <div class="panel-head">
             <h2>Selection</h2>
-            <span id="total-credits" class="credits-badge" aria-live="polite">0 credits</span>
+            <!-- The badge is the odometer: app.js still writes the number where it
+                 always wrote it, and the counter rolls the digits to meet it. -->
+            <span id="total-credits" class="credits-badge" aria-live="polite" data-animated-counter>0 credits</span>
           </div>
           <div id="credits-breakdown" class="credits-breakdown" aria-live="polite"></div>
           <div id="credit-progress" class="credit-progress" aria-live="polite"></div>
@@ -565,6 +568,7 @@
     <script src="squish-switch.js" defer></script>
     <script src="slide-commit.js" defer></script>
     <script src="swipe-row.js" defer></script>
+    <script src="animated-counter.js" defer></script>
     <script src="comet-dial.js" defer></script>
     <script src="app.js?v=7"></script>
   </body>
