@@ -2645,10 +2645,18 @@ els.planNoExamBtn.addEventListener("click", async () => {
 
 // Preference filters re-run the current plan search with the new constraints
 function readPlanPrefs() {
+  const field = els.prefMaxPerDay;
+  // The kit keeps every character typed, so a word can reach this field where a
+  // native number input refused it. Put back the last whole number instead of
+  // quietly reading 0, which here means "no limit".
+  if (field && field.value.trim() && !/^-?\d+(\.\d+)?$/.test(field.value.trim())) {
+    field.value = String(planPrefs.maxPerDay);
+    if (field.__numberInput) field.__numberInput.refresh();
+  }
   planPrefs = {
     noEarly: !!(els.prefNoEarly && els.prefNoEarly.checked),
     noFriday: !!(els.prefNoFriday && els.prefNoFriday.checked),
-    maxPerDay: els.prefMaxPerDay ? parseInt(els.prefMaxPerDay.value, 10) || 0 : 0,
+    maxPerDay: field ? parseInt(field.value, 10) || 0 : 0,
   };
 }
 for (const el of [els.prefNoEarly, els.prefNoFriday, els.prefMaxPerDay]) {
