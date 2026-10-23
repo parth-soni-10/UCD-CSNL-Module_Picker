@@ -2378,10 +2378,18 @@ body {
   --ss-thumb-color: #fff;
 }
 [data-theme="dark"] .pref.squish-switch { --ss-track: #333a46; }
-.pref input[type="number"] {
+/* Number field: the kit turns it into a text field to keep half-typed values
+   ("1.", "-") alive, so the host styles its class rather than its type. */
+.pref input[type="number"],
+.pref .ni-field {
   width: 46px;
   padding: 3px 6px;
   font-size: 12px;
+  /* inputs do not inherit text colour from their label */
+  color: var(--text);
+}
+.pref .ni {
+  --ni-selection: color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
 }
 
 /* Theme completion meter */

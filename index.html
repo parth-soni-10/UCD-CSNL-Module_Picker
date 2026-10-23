@@ -145,6 +145,7 @@
     <link rel="stylesheet" href="swipe-row.css" />
     <link rel="stylesheet" href="animated-counter.css" />
     <link rel="stylesheet" href="comet-dial.css" />
+    <link rel="stylesheet" href="number-input.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -387,7 +388,8 @@
             <label class="pref"><input type="checkbox" id="pref-no-early" data-squish-switch data-ss-size="sm" /> no 9am</label>
             <label class="pref"><input type="checkbox" id="pref-no-friday" data-squish-switch data-ss-size="sm" /> no Friday</label>
             <label class="pref">max/day
-              <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit" />
+              <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit"
+                     data-number-input />
             </label>
           </div>
           <div class="row">
@@ -570,6 +572,7 @@
     <script src="swipe-row.js" defer></script>
     <script src="animated-counter.js" defer></script>
     <script src="comet-dial.js" defer></script>
+    <script src="number-input.js" defer></script>
     <script src="app.js?v=7"></script>
   </body>
 </html>
