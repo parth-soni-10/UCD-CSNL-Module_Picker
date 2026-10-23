@@ -1486,6 +1486,39 @@ function renderSummary() {
   }
   renderCreditsBreakdown();
   renderCreditProgress(credits);
+  renderLevelChart();
+}
+
+/* Credits by module level, in the Selection panel, as the design system's
+   analytics-chart. moduleLevel() is the picker's own rule, so this cannot
+   disagree with the policy warning the breakdown above already shows. */
+function renderLevelChart() {
+  const host = document.getElementById("level-chart");
+  if (!host || !window.AnalyticsChart) return;
+  const seen = new Set();
+  const credits = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  let any = false;
+  for (const s of currentSelection()) {
+    if (seen.has(s.code)) continue;
+    seen.add(s.code);
+    const info = moduleInfo(s.code);
+    if (!info || !info.credits) continue;
+    const lvl = moduleLevel(s.code);
+    if (!lvl) continue;
+    credits[lvl] = (credits[lvl] || 0) + info.credits;
+    any = true;
+  }
+  if (!any) {
+    AnalyticsChart.render(host, [], { label: "credits by level", empty: "Pick a few modules and their level mix appears here." });
+    return;
+  }
+  AnalyticsChart.render(host, [1, 2, 3, 4].map(l => ({
+    label: "Level " + l,
+    value: credits[l] || 0,
+  })), {
+    label: "credits by level",
+    format: v => v + " cr",
+  });
 }
 
 // Progress toward the ~90-credit CSNL year, shown as a bar next to the

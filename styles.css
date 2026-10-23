@@ -2134,6 +2134,19 @@ body {
 }
 
 /* Credit progress bar (Selection panel) */
+/* Credits by level, under the Selection breakdown: the analytics-chart kit.
+   The card names the height and the paper; the kit draws the rest. */
+.level-chart {
+  --ac-height: 128px;
+  --ac-accent: var(--accent);
+  --ac-area: var(--accent-soft);
+  --ac-grid: var(--border);
+  --ac-ink: var(--text-3);
+  --ac-tip-bg: var(--surface);
+  --ac-tip-ink: var(--text);
+  margin: 10px 0 4px;
+}
+
 .credit-progress {
   margin: 10px 2px 4px;
 }
