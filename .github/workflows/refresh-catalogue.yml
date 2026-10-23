@@ -1,0 +1,74 @@
+name: Refresh the catalogue
+
+# The catalogue refresh — twice a month, on the 1st and the 15th at 03:00 UTC,
+# which is every 14 days across a month and 14-17 days from the 15th to the next
+# 1st (the gap is the month's length).
+#
+# It was a DAILY schedule until 14 Oct 2026 — three cron triggers, one per pass,
+# at 00:00 / 00:20 / 00:40 UTC. UCD publishes the CSNL module list once a year
+# and stamps the page, so a daily check was ~365 scrapes a year to catch one
+# change; the passes now share a single run, twice a month. `0 3 1,15 * *` is the
+# closest a cron comes to "once every 14 days": a day-of-month step (`*/14`)
+# resets at the month boundary and would leave a two-day gap there.
+#
+# It ran on the Worker (`[triggers]` in what was then a Workers config → the
+# handler's `scheduled` →
+# netlify/functions/refresh-catalogue.js) because a Cloudflare deploy had no
+# scheduler of its own to keep UCD's module list current. This site is served
+# from Cloudflare Pages now, which has no cron triggers either, so the schedule
+# lives here and calls the very same handler over the site's own host.
+#
+# Three passes rather than one: a free-plan invocation may make only 50
+# subrequests and a module page costs two of them, so one pass covers about 22 of
+# the ~68 modules and the three rotate through the whole list (see
+# MAX_SUBREQUESTS in functions/_router.js). A visitor's own catalogue request
+# refreshes page-by-page too, so a missed pass is a delay rather than an outage —
+# catalogue.js self-heals on every request. The 20-second gap between passes is
+# the spacing the three crons had, kept so UCD is not fetched three times in the
+# same second; the passes rotate by last-fetched, so the spacing is courtesy
+# rather than correctness.
+
+on:
+  schedule:
+    # 03:00 UTC on the 1st and the 15th.
+    - cron: "0 3 1,15 * *"
+  workflow_dispatch: {} # manual "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read
+
+# Serialize runs: two passes at once would spend the same subrequest budget on
+# the same modules instead of covering more of the list.
+concurrency:
+  group: refresh-catalogue
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh the catalogue and the assessment map
+        run: |
+          set -euo pipefail
+          url="https://ucdcsnlmodulepicker.pages.dev/.netlify/functions/refresh-catalogue"
+          failed=0
+          for pass in 1 2 3; do
+            # A pass spends its budget fetching module pages one after another,
+            # so the timeout is generous rather than tight.
+            code=$(curl -sS --max-time 300 -o "/tmp/refresh-$pass.out" -w '%{http_code}' "$url")
+            echo "pass $pass: HTTP $code - $(cat "/tmp/refresh-$pass.out")"
+            case "$code" in
+              # 200 = catalogue and assessments both refreshed; 207 = the
+              # catalogue is fine and the assessment pass was partial (it
+              # rotates, as a cron pass always did). Anything else is a real
+              # failure: the later passes still run, and the run fails at the end
+              # so the next scheduled check is what retries.
+              200|207) ;;
+              *) failed=1 ;;
+            esac
+            if [ "$pass" -lt 3 ]; then sleep 20; fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::a refresh pass did not return 200/207"
+            exit 1
+          fi
