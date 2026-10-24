@@ -148,6 +148,7 @@
     <link rel="stylesheet" href="comet-dial.css" />
     <link rel="stylesheet" href="number-input.css" />
     <link rel="stylesheet" href="time-undo.css" />
+    <link rel="stylesheet" href="stepper.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -390,10 +391,8 @@
           <div class="row plan-prefs" role="group" aria-label="Plan preferences">
             <label class="pref"><input type="checkbox" id="pref-no-early" data-squish-switch data-ss-size="sm" /> no 9am</label>
             <label class="pref"><input type="checkbox" id="pref-no-friday" data-squish-switch data-ss-size="sm" /> no Friday</label>
-            <label class="pref">max/day
-              <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit"
-                     data-number-input />
-            </label>
+            <label class="pref" for="pref-max-per-day">max/day</label>
+            <input type="number" id="pref-max-per-day" min="0" max="4" step="1" value="0" title="0 = no limit" />
           </div>
           <div class="row">
             <button id="plan-noexam-btn" class="btn btn-ghost grow" title="Only modules with no final exam">Build No-Exam Plan</button>
@@ -578,6 +577,7 @@
     <script src="number-input.js" defer></script>
     <script src="analytics-chart.js" defer></script>
     <script src="time-undo.js"></script>
-    <script src="app.js?v=9"></script>
+    <script src="stepper.js"></script>
+    <script src="app.js?v=10"></script>
   </body>
 </html>

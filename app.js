@@ -2704,6 +2704,17 @@ for (const el of [els.prefNoEarly, els.prefNoFriday, els.prefMaxPerDay]) {
     }
   });
 }
+// max/day is a four-value preference, not a number to type: the stepper keeps
+// it one gesture and leaves the hidden input as the value the planner reads.
+if (window.Stepper && els.prefMaxPerDay) {
+  Stepper.attach(els.prefMaxPerDay, {
+    min: 0,
+    max: 4,
+    label: "Max modules per day",
+    unit: "module",
+    size: "sm"
+  });
+}
 readPlanPrefs();
 els.planResults.addEventListener("click", (e) => {
   const more = e.target.closest(".plan-more");
