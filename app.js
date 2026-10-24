@@ -2835,25 +2835,42 @@ els.timetableSwitcher.addEventListener("change", (e) => {
   syncUrl();
 });
 
-els.deleteTimetableBtn.addEventListener("click", async () => {
-  if (Object.keys(selection).length <= 1) return;
-  // A slide instead of window.confirm: the timetable and its whole selection
-  // are the one thing on this page that cannot be rebuilt from the URL.
-  const n = currentSelection().length;
-  const ok = await SlideCommit.ask({
-    title: `Delete “${activeTimetable}”?`,
-    text: `Its ${n} selected class${n === 1 ? "" : "es"} go with it. This can't be undone.`,
-    label: "Slide to delete",
-    busy: "Deleting…",
-    done: "Deleted",
-    doneText: "Timetable deleted.",
-  });
-  if (!ok) return;
-  delete selection[activeTimetable];
-  activeTimetable = Object.keys(selection)[0];
-  saveState();
-  refreshUI();
-  syncUrl();
+// The timetable is deleted at once, and the button that deleted it becomes the
+// undo window. Six seconds is long enough to catch a wrong click and short
+// enough that the sidebar is not permanently in a half-deleted state. This
+// replaces the old slide-to-confirm: the action is no longer delayed, and the
+// restore is the same snapshot the clear-selection path already used.
+const deleteTimetableBtn = els.deleteTimetableBtn;
+TimeUndo.mount(deleteTimetableBtn, {
+  seconds: 6,
+  onStart: () => {
+    if (Object.keys(selection).length <= 1) {
+      showToast("Keep at least one timetable.", null, 3000);
+      return false;
+    }
+    const snapshot = { key: activeTimetable, picks: snapshotSelection() };
+    delete selection[activeTimetable];
+    activeTimetable = Object.keys(selection)[0];
+    saveState();
+    refreshUI();
+    syncUrl();
+    deleteTimetableBtn.__tuSnapshot = snapshot;
+    return true;
+  },
+  onCancel: () => {
+    const snapshot = deleteTimetableBtn.__tuSnapshot;
+    if (!snapshot) return;
+    selection[snapshot.key] = snapshot.picks;
+    activeTimetable = snapshot.key;
+    saveState();
+    refreshUI();
+    syncUrl();
+    showToast("Timetable restored.", null, 3000);
+  },
+  onCommit: () => {
+    delete deleteTimetableBtn.__tuSnapshot;
+    showToast("Timetable deleted.", null, 3000);
+  }
 });
 
 els.clearBtn.addEventListener("click", () => {

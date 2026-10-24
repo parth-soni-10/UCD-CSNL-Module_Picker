@@ -32,6 +32,8 @@ const SHELL = [
   "/index.html",
   `/app.js?v=${VERSION}`,
   "/styles.css",
+  "/time-undo.css",
+  "/time-undo.js",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

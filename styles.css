@@ -3214,3 +3214,13 @@ body {
   white-space: nowrap;
 }
 
+
+/* ── TIME UNDO — Delete Timetable ─────────────────────────────────────────
+   The delete button stays exactly where it was; during the undo window it
+   carries the site's danger tokens, and the progress line is the time left. */
+#delete-timetable-btn {
+  --tu-count-bg: var(--danger-soft);
+  --tu-count-ink: var(--danger);
+  --tu-count-line: var(--danger-border);
+  --tu-progress-ink: var(--danger);
+}
