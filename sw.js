@@ -36,6 +36,8 @@ const SHELL = [
   "/time-undo.js",
   "/stepper.css",
   "/stepper.js",
+  "/inline-menu.css",
+  "/inline-menu.js",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",

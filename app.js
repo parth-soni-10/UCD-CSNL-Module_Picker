@@ -1471,6 +1471,29 @@ function renderSummary() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     `;
+    // The ":" on the row: the swipe keeps its Remove source above (the component
+    // hides it), and this opens the same two choices for a pointer or a
+    // keyboard, where a sideways gesture is not available.
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = "im-trigger s-menu";
+    menuBtn.textContent = ":";
+    menuBtn.setAttribute("aria-label", `Actions for ${liveTitle(code)}`);
+    item.appendChild(menuBtn);
+    if (window.InlineMenu) {
+      InlineMenu.attach(menuBtn, {
+        label: `Actions for ${liveTitle(code)}`,
+        items: [
+          { id: "open", label: "Open on UCD", onSelect: () => window.open(UCD_MODULE_BASE + encodeURIComponent(code), "_blank", "noopener") },
+          { id: "remove", label: "Remove from selection", destructive: true, confirmLabel: "Remove again", onSelect: () => {
+            selection[activeTimetable] = currentSelection().filter((s) => s.code !== code);
+            saveState();
+            refreshUI();
+            syncUrl();
+          } },
+        ],
+      });
+    }
     list.appendChild(item);
   }
 
