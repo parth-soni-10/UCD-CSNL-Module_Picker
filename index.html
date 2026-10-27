@@ -150,6 +150,7 @@
     <link rel="stylesheet" href="time-undo.css" />
     <link rel="stylesheet" href="stepper.css" />
     <link rel="stylesheet" href="inline-menu.css" />
+    <link rel="stylesheet" href="switch-mode.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -196,6 +197,7 @@
             title="Toggle light and dark mode"
             aria-label="Toggle light and dark mode"
             aria-pressed="false"
+            data-switch-mode
           >
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -580,6 +582,7 @@
     <script src="time-undo.js"></script>
     <script src="stepper.js"></script>
     <script src="inline-menu.js"></script>
-    <script src="app.js?v=10"></script>
+    <script src="switch-mode.js" defer></script>
+    <script src="app.js?v=11"></script>
   </body>
 </html>

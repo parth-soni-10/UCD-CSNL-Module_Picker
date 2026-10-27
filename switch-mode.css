@@ -1,0 +1,62 @@
+/* Switch Mode — host-agnostic sun/moon swap.
+ *
+ * The host's button keeps its size, its border and its hover; the kit only
+ * takes over where its two glyphs sit. Both are centred in the button (so a
+ * 34px square, a 36px circle or a pill all work as they are) and the button
+ * gets a floor for a hit target if the host never set one.
+ *
+ * Set --sm-size to that floor and --sm-dur to the length of a swap. The
+ * movement is one transform per glyph: the resting one sits at 0, the parked
+ * one waits above or below, turned a little and smaller, so a swap is the two
+ * of them passing each other.
+ */
+
+.switch-mode {
+  position: relative;
+  min-width: var(--sm-size, 34px);
+  min-height: var(--sm-size, 34px);
+  /* A clipped circle would cut the glyph in half mid-swap; the movement is a
+     pass-by, so nothing needs hiding. */
+  overflow: visible;
+}
+
+/* Both glyphs are laid out by the script, which sets display:block inline on
+   each one — inline, not a rule here, because the host's own display flip is
+   what the kit reads to learn which glyph belongs to which state, and a rule
+   of the kit's could not be taken back off for that read. Which glyph is
+   visible is opacity and position now. */
+.switch-mode [data-sm-role] {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  will-change: transform, opacity;
+  transition:
+    transform var(--sm-dur, 320ms) cubic-bezier(.22, .92, .28, 1.06),
+    opacity var(--sm-dur, 320ms) ease;
+}
+
+/* Parked: waiting on the side it will come back from. */
+.switch-mode [data-sm-park='up'] {
+  transform: translateY(-115%) rotate(-80deg) scale(.5);
+  opacity: 0;
+}
+
+.switch-mode [data-sm-park='down'] {
+  transform: translateY(115%) rotate(80deg) scale(.5);
+  opacity: 0;
+}
+
+.switch-mode [data-sm-role].is-instant {
+  transition: none;
+}
+
+/* The resting glyph needs no rule of its own: it is the one the script leaves
+   without a parking attribute, so it keeps its default opacity and position,
+   and only the parked one is faded and moved. data-sm-state marks the host's
+   current theme for CSS hooks; it does not decide which glyph that is. */
+
+@media (prefers-reduced-motion: reduce) {
+  .switch-mode [data-sm-role] {
+    transition: none;
+  }
+}

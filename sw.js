@@ -38,6 +38,8 @@ const SHELL = [
   "/stepper.js",
   "/inline-menu.css",
   "/inline-menu.js",
+  "/switch-mode.css",
+  "/switch-mode.js",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",
