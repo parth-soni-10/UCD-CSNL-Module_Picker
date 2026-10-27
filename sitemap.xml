@@ -6,18 +6,24 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://ucdcsnlmodulepicker.pages.dev/</loc>
+    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://ucdcsnlmodulepicker.pages.dev/about</loc>
+    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://ucdcsnlmodulepicker.pages.dev/contact</loc>
+    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://ucdcsnlmodulepicker.pages.dev/privacy</loc>
+    <lastmod>2026-10-27T15:00:00+00:00</lastmod>
     <priority>0.5</priority>
   </url>
 </urlset>
+
+
