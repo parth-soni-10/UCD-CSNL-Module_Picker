@@ -1,4 +1,4 @@
-/* Comet Dial — a stepped number you set by flicking a ring.
+/* Comet Dial - a stepped number you set by flicking a ring.
  *
  *   <div data-comet-dial data-dial-unit="credits">
  *     <input type="number" min="5" max="120" step="5" aria-label="Target credit total">
@@ -6,7 +6,7 @@
  *
  * The input stays the value: the dial writes into it and dispatches a real
  * `input` event, so every listener the host already has keeps working and the
- * number can still be typed. The ring itself is aria-hidden — the input is the
+ * number can still be typed. The ring itself is aria-hidden - the input is the
  * accessible control, and the keyboard path is the input's own arrows.
  *
  * A drag sets the value; a flick coasts and settles on the nearest step. The

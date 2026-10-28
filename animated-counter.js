@@ -1,4 +1,4 @@
-/* Animated Counter — a number that rolls into place like an odometer.
+/* Animated Counter - a number that rolls into place like an odometer.
  *
  *   <span data-animated-counter>€1,732.93</span>
  *   <span data-animated-counter data-ac-style="plain">1,24,568</span>
@@ -8,8 +8,8 @@
  * and draws each digit as its own reel; the original string is kept for screen
  * readers, so assistive technology still hears one number and not eleven glyphs.
  *
- * It rolls the first time the number is seen on screen — a counter below the
- * fold should not finish before anyone looks at it — and any later write through
+ * It rolls the first time the number is seen on screen - a counter below the
+ * fold should not finish before anyone looks at it - and any later write through
  * AnimatedCounter.set() rolls from the digit that is showing to the new one
  * instead of restarting from zero.
  */
@@ -103,7 +103,7 @@
     if (index > 9) {
       // Indices past nine are a roll that travelled through the bottom of the
       // column (9 -> 0, or the first spin-up). It rests on that digit's own
-      // cell, so put the column there with no transition — the two cells look
+      // cell, so put the column there with no transition - the two cells look
       // alike, so nobody sees the swap.
       var rest = index % 10;
       setTimeout(function () {

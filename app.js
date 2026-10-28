@@ -1,9 +1,9 @@
-// CSNL Module Picker — live timings from UCD, refreshed on every page load.
+// CSNL Module Picker - live timings from UCD, refreshed on every page load.
 
 "use strict";
 
 // Cache-busting version, read from this script's own <script src="app.js?v=…">
-// tag while it is still executing — document.currentScript is null once the
+// tag while it is still executing - document.currentScript is null once the
 // script has finished, and the service worker is registered from inside an
 // async init that runs later. It names the worker's URL below, so bumping the
 // one query in index.html installs a new worker *and* renames the cache it uses:
@@ -62,9 +62,9 @@ const catalogue = []; // [{ theme, courses: [{ title, code, credits, kind, semes
 const live = new Map(); // code -> timetable payload from the function
 let selection = {}; // timetableName -> [{ code, offeringKey }]
 let activeTimetable = "Default Timetable";
-let timingFilter = "all"; // "all" | "live" | "none" | "failed" | "examfree" — module-list filter
-let viewTerm = "all"; // "all" | "1" | "2" — which semester the weekly grid shows
-let examInfo = {}; // code -> { hasExam, label } — why a module is (not) exam-free
+let timingFilter = "all"; // "all" | "live" | "none" | "failed" | "examfree" - module-list filter
+let viewTerm = "all"; // "all" | "1" | "2" - which semester the weekly grid shows
+let examInfo = {}; // code -> { hasExam, label } - why a module is (not) exam-free
 let lastTimingsAt = null; // when the live timetable payload was generated (freshness stamp)
 let lastAssessAt = null; // when the exam map was generated (freshness stamp)
 // Plan-builder preference filters ("avoid 9am", "no Friday", max modules/day)
@@ -263,7 +263,7 @@ function restoreSelection(snapshot, label) {
 // The full `live` payloads are cached in localStorage so a returning visit
 // renders instantly from the saved timetables, then refreshes in the
 // background from UCD (stale-while-revalidate). Nothing here ever replaces
-// the live fetch — the cache only makes the first paint immediate, and a
+// the live fetch - the cache only makes the first paint immediate, and a
 // cached timetable from any OTHER academic year is never restored (it would
 // be stale).
 
@@ -313,7 +313,7 @@ function loadTimingsCache() {
     }
     return n;
   } catch (e) {
-    return 0; // private mode / quota — just fetch live as before
+    return 0; // private mode / quota - just fetch live as before
   }
 }
 
@@ -328,7 +328,7 @@ function normDate(s) {
 // A module can have several classes sharing one offeringKey but differing by
 // term code (e.g. a full-year module whose lecture runs in both Autumn and
 // Spring). The UI keys selections by offeringKey, so those rows must be
-// merged into a single offering whose weeks cover all terms — otherwise the
+// merged into a single offering whose weeks cover all terms - otherwise the
 // renderer picks only the first row (wrong weeks, false clashes).
 function normalizeTimetable(data) {
   if (!data || !Array.isArray(data.classes) || data.classes.length < 2) return data;
@@ -368,7 +368,7 @@ function saveTimingsCache() {
       JSON.stringify({ savedAt: Date.now(), results })
     );
   } catch (e) {
-    /* quota exceeded / private mode — cache is best-effort */
+    /* quota exceeded / private mode - cache is best-effort */
   }
 }
 
@@ -476,7 +476,7 @@ function classTerms(cls) {
 // times + overlapping weeks. If either side lacks week data, fall back to
 // treating an overlapping time as a clash. Shared by the timetable renderer
 // and the clash-free plan builder, so both use identical rules.
-// UCD publishes final sittings as timetable rows typed EXAM or EXM — but only
+// UCD publishes final sittings as timetable rows typed EXAM or EXM - but only
 // for some modules. Others (e.g. GEOG40820) schedule the final exam outside the
 // weekly timetable entirely, so this signal alone under-counts; the module
 // page's Assessment Strategy table is the authoritative one (see isExamModule).
@@ -486,8 +486,8 @@ const EXAM_CLASS_TYPES = new Set(["EXAM", "EXM"]);
 function classesClash(a, b) {
   if (!a || !b || a.day !== b.day) return false;
   // A sitting is not a teaching session. Two rows can share a slot and never
-  // conflict in practice — COMP47790 carries both a TUT and an EXAM at
-  // Fri 11:00 — so an exam row must never be reported as clashing with a class
+  // conflict in practice - COMP47790 carries both a TUT and an EXAM at
+  // Fri 11:00 - so an exam row must never be reported as clashing with a class
   // or with another sitting. Without this the module looked incompatible with
   // itself and the harness reported it as an internal clash.
   if (
@@ -497,7 +497,7 @@ function classesClash(a, b) {
     return false;
   }
   // Classes in disjoint trimesters can never run at the same time (Autumn
-  // weeks 1-12 vs Spring weeks 20-33 share no week), so they never clash —
+  // weeks 1-12 vs Spring weeks 20-33 share no week), so they never clash -
   // this also covers the case where one side has no week data to compare.
   const ta = classTerms(a);
   const tb = classTerms(b);
@@ -517,7 +517,7 @@ function classesClash(a, b) {
 // they share the same day, time slot and type and only differ by offering
 // group (e.g. a practical with two parallel groups, COMP40725 PRA Fri 13:00
 // in two rooms). Students pick one group at registration, so these are
-// mutually-exclusive alternatives, not two sessions to attend together — the
+// mutually-exclusive alternatives, not two sessions to attend together - the
 // weekly grid must never red-flag them as a conflict, or a course looks like
 // it clashes with itself. A genuine same-course conflict differs in day, time
 // or type, so it is never mistaken for an alternative.
@@ -628,7 +628,7 @@ async function fetchAllTimings(fresh, refreshAll) {
           live.set(code, {
             found: false,
             reason: `Fetch error: ${e.message}`,
-            failed: true, // network/proxy error — distinct from "no timetable"
+            failed: true, // network/proxy error - distinct from "no timetable"
           });
         }
       } finally {
@@ -807,7 +807,7 @@ function scrubNonCsnl(text) {
 function moduleInfo(code) {
   for (const t of catalogue)
     for (const c of t.courses) if (c.code === code) return c;
-  // defensive fallback — the picker only offers CSNL modules
+  // defensive fallback - the picker only offers CSNL modules
   return { code, title: (live.get(code) || {}).title || code, credits: null };
 }
 
@@ -824,7 +824,7 @@ function refreshUI() {
   renderDataFreshness();
 }
 
-// "How live is this data?" — one quiet line under the timetable footnote:
+// "How live is this data?" - one quiet line under the timetable footnote:
 // when UCD's payload was generated and when the exam map was last built.
 function renderDataFreshness() {
   const el = els.freshness;
@@ -976,9 +976,9 @@ function renderCompareTable() {
       .join("")}</tr>`
   );
   rows.push(`<tr><th>Title</th>${codes.map((c) => cell(esc(moduleInfo(c).title || c))).join("")}</tr>`);
-  rows.push(`<tr><th>Credits</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.credits ? i.credits + " cr" : "—"); }).join("")}</tr>`);
-  rows.push(`<tr><th>Semester</th>${codes.map((c) => { const i = moduleInfo(c); const s = i && (i.semester || (live.get(c) || {}).semester); return cell(s ? esc(String(s).replace(",", "+")) : "—"); }).join("")}</tr>`);
-  rows.push(`<tr><th>Kind</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.kind ? esc(i.kind) : "—"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Credits</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.credits ? i.credits + " cr" : "-"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Semester</th>${codes.map((c) => { const i = moduleInfo(c); const s = i && (i.semester || (live.get(c) || {}).semester); return cell(s ? esc(String(s).replace(",", "+")) : "-"); }).join("")}</tr>`);
+  rows.push(`<tr><th>Kind</th>${codes.map((c) => { const i = moduleInfo(c); return cell(i && i.kind ? esc(i.kind) : "-"); }).join("")}</tr>`);
   rows.push(`<tr><th>Final exam</th>${codes.map((c) => {
     const rows2 = moduleAssessments(c);
     const has = rows2 ? clientHasFinalExam(rows2) : isExamModule(c, live.get(c));
@@ -991,13 +991,13 @@ function renderCompareTable() {
       const d = String(a.description || "");
       const type = d.includes(":") ? d.slice(0, d.indexOf(":")).trim() : d.slice(0, 24).trim();
       return `<div class="cmp-assess">${esc(type)}<strong>${a.weight == null ? "" : " " + a.weight + "%"}</strong></div>`;
-    }).join("") : "—");
+    }).join("") : "-");
   }).join("")}</tr>`);
   rows.push(`<tr><th>Timetable</th>${codes.map((c) => {
     const d = live.get(c);
     if (!d || !d.classes || !d.classes.length) return cell('<span class="muted">not published</span>');
     const days = [...new Set(d.classes.map((x) => x.day).filter((x) => DAYS.includes(x)))];
-    return cell(days.length ? esc(days.join(" ")) : "—");
+    return cell(days.length ? esc(days.join(" ")) : "-");
   }).join("")}</tr>`);
   els.compareTable.innerHTML = `<table class="cmp-table">${rows.join("")}</table>`;
 }
@@ -1093,7 +1093,7 @@ function titleMatches(title, term) {
 }
 
 // Does this module match the search term? Checks the live title, the code,
-// the UCD description, and the stream page's comments — the same token+
+// the UCD description, and the stream page's comments - the same token+
 // acronym matching used for titles, so "machine learning" and "ml" both hit.
 function courseMatches(c, term) {
   if (titleMatches(liveTitle(c.code), term)) return true;
@@ -1136,11 +1136,11 @@ function render() {
 
     const section = document.createElement("div");
     section.className = "theme";
-    // a status filter is meant for scanning — show the matching themes expanded
+    // a status filter is meant for scanning - show the matching themes expanded
     const isExpanded = timingFilter !== "all" || expanded.has(themeObj.name);
     const coreCodes = themeObj.courses.filter((c) => c.kind === "core").map((c) => c.code);
     // "done" when every core module that UCD actually publishes a timetable
-    // for is selected — one with no timetable yet can't be added.
+    // for is selected - one with no timetable yet can't be added.
     const addableCores = coreCodes.filter((code) => {
       const d = live.get(code);
       return d && d.found && d.classes && d.classes.length;
@@ -1168,7 +1168,7 @@ function render() {
       body.appendChild(coreBtn);
     }
     // Theme completion meter: how much of this stream's teaching is already
-    // picked (cores + credits) — the picker acting as a degree tracker.
+    // picked (cores + credits) - the picker acting as a degree tracker.
     const selCodes = selectedCodeSet();
     const themeSel = themeObj.courses.filter((c) => selCodes.has(c.code));
     if (themeSel.length) {
@@ -1265,9 +1265,9 @@ function renderCourseCard(c, over) {
   if (failed) badges.push({ text: "Load failed", cls: "fail" });
   if (noTimetable) badges.push({ text: "No timetable yet", cls: "none" });
 
-  // "Final Exam" badge — same predicate the exam-free filter uses, so a
+  // "Final Exam" badge - same predicate the exam-free filter uses, so a
   // module flagged only via its timetable EXAM/EXM sitting (COMP47970) is
-  // badged too. Shown once the map has settled — cards render before the
+  // badged too. Shown once the map has settled - cards render before the
   // scrape returns, so late arrivals re-render via refreshUI.
   if (examMapLoaded && isExamModule(c.code, live.get(c.code))) {
     badges.push({ text: "Final Exam", cls: "exam" });
@@ -1281,7 +1281,7 @@ function renderCourseCard(c, over) {
   // Report-a-problem link (module-specific): prefills the suggestions form.
   const reportLink = `<a class="report-link" href="#suggest-text" data-report="${esc(c.code)}" title="Report a problem with this module's data">⚠ report</a>`;
 
-  // Assessment breakdown, e.g. "Essay 10% · Group work 30% · Exam 60%" —
+  // Assessment breakdown, e.g. "Essay 10% · Group work 30% · Exam 60%" -
   // shown once the catalogue exports the scraped rows (cheap chips so the
   // whole mix fits on a card; weights sum to the module's credits).
   const assessments = c.assessments || moduleAssessments(c.code);
@@ -1293,14 +1293,14 @@ function renderCourseCard(c, over) {
           const type = d.includes(":") ? d.slice(0, d.indexOf(":")).trim() : d.slice(0, 26).trim();
           const isExam = /^\s*exam/i.test(d) && /end\s+of\s+(the\s+)?(trimester|semester)/i.test(a.timing || "") || /\bfinal\s+exam/i.test(d);
           const isMidterm = /^\s*exam/i.test(d) && !isExam;
-          return `<span class="assess-chip${isExam ? " final" : ""}${isMidterm ? " midterm" : ""}" title="${esc(d)} — ${esc(a.timing)}${a.weight == null ? "" : " · " + a.weight + "%"}">` +
+          return `<span class="assess-chip${isExam ? " final" : ""}${isMidterm ? " midterm" : ""}" title="${esc(d)} - ${esc(a.timing)}${a.weight == null ? "" : " · " + a.weight + "%"}">` +
             `${esc(type)}<strong>${a.weight == null ? "" : " " + a.weight + "%"}</strong></span>`;
         })
         .join("") +
       `</div>`
     : "";
 
-  // Why is this module (not) exam-free — the exact question the exam filter
+  // Why is this module (not) exam-free - the exact question the exam filter
   // raises. Derived from the assessment scrape; "n/a" when data is pending.
   const examNote = examInfo[c.code]
     ? `<span class="exam-why">${esc(examInfo[c.code].label)}</span>`
@@ -1332,14 +1332,14 @@ function renderCourseCard(c, over) {
   if (!data) {
     offeringsEl.innerHTML = `<div class="note loading">Loading live timetable…</div>`;
   } else if (data.failed) {
-    // the fetch itself failed (network/UCD down) — explain why and offer a retry
+    // the fetch itself failed (network/UCD down) - explain why and offer a retry
     offeringsEl.innerHTML = `<div class="note warn fail">Couldn't load this timetable. ${esc(friendlyFailure(data.reason))} <button class="retry-module" data-code="${esc(c.code)}">Retry</button></div>`;
   } else if (data.found === false || !data.classes || data.classes.length === 0) {
     const note = data.scheduleNote || data.reason || "No classes scheduled";
     offeringsEl.innerHTML = `<div class="note warn">No timetable published${data.year ? ` for ${esc(data.year)}` : ""} yet. ${esc(note)}.</div>`;
   } else {
     // Which offerings clash with the CURRENT selection? Computed live so a
-    // conflicting pick is visible before it's made — the plan builder then
+    // conflicting pick is visible before it's made - the plan builder then
     // becomes the recovery tool, not the first line of defence.
     for (const cls of data.classes) {
       const key = offeringKey(cls);
@@ -1385,7 +1385,7 @@ function selectedCodeSet() {
 }
 
 // Adds the given codes to the current timetable, auto-picking one offering
-// per module (the first, since offerings are alternatives — the weekly grid
+// per module (the first, since offerings are alternatives - the weekly grid
 // makes swaps easy). Skips codes already selected. Undoable.
 function addThemeCores(themeName, codes) {
   const have = selectedCodeSet();
@@ -1409,7 +1409,7 @@ function addThemeCores(themeName, codes) {
   refreshUI();
   syncUrl();
   showToast(
-    `Added ${added.length} core module${added.length > 1 ? "s" : ""} — one offering each; swap offerings in the list if you prefer another group.`,
+    `Added ${added.length} core module${added.length > 1 ? "s" : ""} - one offering each; swap offerings in the list if you prefer another group.`,
     () => restoreSelection(snapshot, "Previous selection"),
     6000
   );
@@ -1555,9 +1555,9 @@ function renderCreditProgress(credits) {
     credits === 0
       ? `A full year is ~${TOTAL_YEAR_TARGET} credits (60 taught + 30 thesis)`
       : credits > TOTAL_WARN_HIGH
-        ? `${credits - TOTAL_YEAR_TARGET} over the ~${TOTAL_YEAR_TARGET}-credit year — consider trimming`
+        ? `${credits - TOTAL_YEAR_TARGET} over the ~${TOTAL_YEAR_TARGET}-credit year - consider trimming`
         : credits >= TOTAL_YEAR_TARGET
-          ? `Full-year target reached — thesis brings the total to ~90`
+          ? `Full-year target reached - thesis brings the total to ~90`
           : `${TOTAL_YEAR_TARGET - credits} credits to the ~${TOTAL_YEAR_TARGET}-credit year`;
   el.innerHTML = `
     <div class="cp-track"><div class="cp-fill zone-${zone}"></div></div>
@@ -1765,7 +1765,7 @@ function renderTimetable() {
         }
       };
       if (window.matchMedia("(pointer: coarse)").matches) {
-        // Touch has no hover — a tap toggles the tooltip (tap elsewhere closes).
+        // Touch has no hover - a tap toggles the tooltip (tap elsewhere closes).
         el.addEventListener("click", (e) => {
           e.stopPropagation();
           if (tip.classList.contains("show")) {
@@ -1795,7 +1795,7 @@ function renderTimetable() {
   // Same-slot events (same day + overlapping time) used to stack pixel-perfectly
   // on top of each other: only the topmost card was visible or tappable, so a
   // cross-semester pair sharing a slot read as a single broken or conflicting
-  // block — especially on a phone. Split every overlapping cluster into lanes
+  // block - especially on a phone. Split every overlapping cluster into lanes
   // so each class is separately visible, tappable and tagged (S1)/(S2).
   const m = gridMetrics();
   const colW = `((100% - ${m.timeW}px) / 5)`;
@@ -1863,7 +1863,7 @@ function renderTimetable() {
   // Same-module rows that overlap but are alternative groups of one session
   // (same day/time/type, differing only by offering group, e.g. two parallel
   // practical groups in different rooms) are mutually-exclusive alternatives,
-  // not a conflict — a course must never show as clashing with itself. Only
+  // not a conflict - a course must never show as clashing with itself. Only
   // flag a same-course pair when it is NOT such an alternative (i.e. two
   // genuinely different sessions that overlap).
   for (let i = 0; i < events.length; i++) {
@@ -2007,7 +2007,7 @@ function moduleLevel(code) {
 }
 
 // Which currently-selected modules push the selection over each CSNL rule.
-// Returns { level3: Set<code>, nonComp: Set<code> } — empty unless the rule
+// Returns { level3: Set<code>, nonComp: Set<code> } - empty unless the rule
 // is actually exceeded, so the module list can highlight exactly what to
 // swap out.
 function overLimitModules() {
@@ -2091,8 +2091,8 @@ function renderPolicyWarning() {
 }
 
 // Total-credit target: a full CSNL year is 90 credits (60 taught + 30
-// thesis). Warn when the selection sits far from it — under means not
-// enough modules picked, over means too many — so the banner reads like
+// thesis). Warn when the selection sits far from it - under means not
+// enough modules picked, over means too many - so the banner reads like
 // the clash and policy warnings.
 const TOTAL_YEAR_TARGET = 90;
 const TOTAL_WARN_LOW = 60; // below this: clearly under the year's need
@@ -2154,7 +2154,7 @@ function renderSwitcher() {
 // ---------------------------------------------------------------------------
 
 // Weak signal: UCD publishes final sittings as timetable rows typed EXAM or
-// EXM — but only for some modules. Others (e.g. GEOG40820) schedule the final
+// EXM - but only for some modules. Others (e.g. GEOG40820) schedule the final
 // exam outside the weekly timetable entirely, so this alone under-counts.
 // EXAM_CLASS_TYPES itself is declared next to classesClash, which reads it.
 
@@ -2170,7 +2170,7 @@ function moduleHasExam(data) {
 // count. The assessments function scrapes all module pages and returns the
 // map.
 const ASSESSMENTS_URL = "/.netlify/functions/assessments";
-// v3: the "end of trimester OR final exam" wording — invalidates older maps.
+// v3: the "end of trimester OR final exam" wording - invalidates older maps.
 const LS_ASSESS = "csnlPicker:assessments:v3";
 const ASSESS_TTL_MS = 24 * 60 * 60 * 1000;
 let examMap = null; // code -> true when the module page lists a final exam
@@ -2184,7 +2184,7 @@ function examReasonLabel(code) {
   if (examMap && examMap[code]) return "Has a final exam (per UCD module page)";
   if (moduleHasExam(data)) return "Has a final exam sitting (timetable EXAM/EXM row)";
   const info = moduleInfo(code);
-  return `Exam-free — assessed ${info && info.credits ? "across coursework (" + info.credits + " cr)" : "by coursework"}; no final-exam component listed`;
+  return `Exam-free - assessed ${info && info.credits ? "across coursework (" + info.credits + " cr)" : "by coursework"}; no final-exam component listed`;
 }
 
 function refreshExamInfo() {
@@ -2197,7 +2197,7 @@ function refreshExamInfo() {
 
 // Client-side exam verdict from the module's own assessment rows (exported
 // by the catalogue function): an exam-typed component counts when it is sat
-// "End of trimester" OR explicitly says "final exam" — the exact rule the
+// "End of trimester" OR explicitly says "final exam" - the exact rule the
 // server's hasFinalExam implements, so both always agree by construction.
 function clientHasFinalExam(assessments) {
   if (!Array.isArray(assessments)) return false;
@@ -2225,7 +2225,7 @@ function loadAssessmentsCache() {
     if (!savedAt || Date.now() - savedAt > ASSESS_TTL_MS) return null;
     // Yearly rollover: a map saved against last year's catalogue must not
     // survive into the new academic year (UCD publishes the new module set
-    // around 1 August — the same rule currentCatalogueYear() encodes).
+    // around 1 August - the same rule currentCatalogueYear() encodes).
     if (catalogueYear && catalogueYear !== currentCatalogueYear()) return null;
     return map;
   } catch (e) {
@@ -2234,7 +2234,7 @@ function loadAssessmentsCache() {
 }
 
 // Loads the exam map: blob-cached server side, localStorage-cached client
-// side. If UCD's module pages are unreachable, degrades gracefully — codes
+// side. If UCD's module pages are unreachable, degrades gracefully - codes
 // the scraper couldn't answer keep the weaker timetable-row heuristic.
 async function loadAssessments() {
   const cached = loadAssessmentsCache();
@@ -2254,7 +2254,7 @@ async function loadAssessments() {
       if (r && r.status === "ok") {
         if (r.hasFinalExam) map[code] = true;
       } else if (moduleHasExam(live.get(code))) {
-        map[code] = true; // scraper couldn't read the page — keep the weak signal
+        map[code] = true; // scraper couldn't read the page - keep the weak signal
       }
     }
     examMap = map;
@@ -2266,7 +2266,7 @@ async function loadAssessments() {
         JSON.stringify({ savedAt: Date.now(), map, catalogueYear: currentCatalogueYear() })
       );
     } catch (e) {
-      /* private mode / quota — cache is best-effort */
+      /* private mode / quota - cache is best-effort */
     }
   } catch (e) {
     // Service unavailable: fall back to the timetable-row heuristic so the
@@ -2360,7 +2360,7 @@ function modulesCompatible(a, b) {
 }
 
 // Picks one class per module so that no two clash, or null if impossible.
-// Backtracking over each module's offerings — pairwise compatibility is not
+// Backtracking over each module's offerings - pairwise compatibility is not
 // enough: a set of modules can be pairwise-compatible yet have no single
 // clash-free assignment (e.g. two modules whose only classes both land at
 // Thu 10:00), which would make "Use this plan" produce a clashing timetable.
@@ -2401,7 +2401,7 @@ function planViolatesPolicy(modules) {
 }
 
 // Workload ranking: plans with equal credit fit are compared by how they'd
-// actually feel — fewer distinct days on campus first (a 4-day week beats a
+// actually feel - fewer distinct days on campus first (a 4-day week beats a
 // 5-day week at the same credits), then a lighter total of back-to-back
 // sessions. Computed on the module set (offerings may still change).
 function planWorkload(modules) {
@@ -2434,7 +2434,7 @@ function shuffle(arr) {
 // within its node budget. Every returned plan is verified clash-free via
 // clashFreeAssignment (the same check "Use this plan" relies on).
 // limit caps how many NEW plans one call returns; skip holds plan keys
-// (sorted code lists) that must not be returned again — the "Show more"
+// (sorted code lists) that must not be returned again - the "Show more"
 // button re-searches with the already-shown keys so every click surfaces
 // genuinely different combinations until the search space runs dry.
 function findPlans(target, sem, noExam, limit, skip) {
@@ -2484,7 +2484,7 @@ function findPlans(target, sem, noExam, limit, skip) {
   const useDfs = target <= 45;
 
   for (let r = 0; r < PLAN_RESTARTS; r++) {
-    if (found.size >= limit) break; // enough plans — stop searching
+    if (found.size >= limit) break; // enough plans - stop searching
     // The first pass keeps the credit-descending order (deterministic and
     // well-pruned); later passes shuffle so different regions of the search
     // space get explored and hard-to-reach plans are found.
@@ -2526,7 +2526,7 @@ function findPlans(target, sem, noExam, limit, skip) {
       search(0, 0);
     }
 
-    // 2) randomized greedy constructions — keeps adding compatible modules in
+    // 2) randomized greedy constructions - keeps adding compatible modules in
     //    a shuffled order, which reliably builds the big full-year plans.
     //    The fill cap is jittered between the target and target+tolerance so
     //    some attempts land exactly on the target (diff 0) rather than always
@@ -2618,7 +2618,7 @@ function renderPlans(noExam, append) {
   if (append && planSession.shown.size >= PLAN_MAX_SHOWN) {
     resultsEl.insertAdjacentHTML(
       "beforeend",
-      `<p class="muted plan-exhausted">You've seen ${planSession.shown.size} plans — that's plenty. Change the target or semester for different suggestions.</p>`
+      `<p class="muted plan-exhausted">You've seen ${planSession.shown.size} plans - that's plenty. Change the target or semester for different suggestions.</p>`
     );
     return;
   }
@@ -2686,7 +2686,7 @@ function applyPlan(codes) {
   saveState();
   refreshUI();
   syncUrl();
-  showToast(`Plan applied — ${sel.length} class${sel.length === 1 ? "" : "es"}.`, () => restoreSelection(snapshot, "Previous selection"));
+  showToast(`Plan applied - ${sel.length} class${sel.length === 1 ? "" : "es"}.`, () => restoreSelection(snapshot, "Previous selection"));
   els.planResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -2910,7 +2910,7 @@ TimeUndo.mount(deleteTimetableBtn, {
 els.clearBtn.addEventListener("click", () => {
   const n = currentSelection().length;
   if (n === 0) return;
-  // No confirm dialog — an undo toast is faster to act on and just as safe.
+  // No confirm dialog - an undo toast is faster to act on and just as safe.
   const snapshot = snapshotSelection();
   selection[activeTimetable] = [];
   saveState();
@@ -2927,7 +2927,7 @@ els.refreshBtn.addEventListener("click", () => {
 els.printBtn.addEventListener("click", () => window.print());
 
 // --- shareable link ---------------------------------------------------------
-// The selection is already encoded in the URL (?s=CODE:key,...) by syncUrl —
+// The selection is already encoded in the URL (?s=CODE:key,...) by syncUrl -
 // this just copies the current link so it can be pasted anywhere.
 async function copyShareLink() {
   syncUrl();
@@ -2951,8 +2951,8 @@ async function copyShareLink() {
       ok = false;
     }
   }
-  if (ok) showToast("Link copied — it opens this exact selection.", null, 3500);
-  else showToast("Couldn't copy automatically — copy the address bar link instead.", null, 5000);
+  if (ok) showToast("Link copied - it opens this exact selection.", null, 3500);
+  else showToast("Couldn't copy automatically - copy the address bar link instead.", null, 5000);
 }
 els.shareBtn.addEventListener("click", copyShareLink);
 
@@ -3015,7 +3015,7 @@ function downloadIcs() {
     events.push(lines.join("\r\n"));
   }
   if (!events.length) {
-    showToast("Nothing to export — select some classes first.", null, 4000);
+    showToast("Nothing to export - select some classes first.", null, 4000);
     return;
   }
   const ics = [
@@ -3063,7 +3063,7 @@ function saveCompare() {
   try {
     localStorage.setItem(LS_COMPARE, JSON.stringify(compareData));
   } catch (e) {
-    /* quota / private mode — best-effort */
+    /* quota / private mode - best-effort */
   }
 }
 
@@ -3096,7 +3096,7 @@ function renderCompare() {
       <div class="cmp-row" data-slot="${slot}">
         <span class="cmp-slot">${slot}</span>
         <span class="cmp-info" title="${v ? esc(v.codes.join(", ")) : "Empty slot"}">${
-          v ? `${esc(v.label || `Plan ${slot}`)} · ${n} modules · ${v.credits || 0} cr${diff ? ` · <em>${esc(diff)}</em>` : ""}` : "Empty — save the current selection here"
+          v ? `${esc(v.label || `Plan ${slot}`)} · ${n} modules · ${v.credits || 0} cr${diff ? ` · <em>${esc(diff)}</em>` : ""}` : "Empty - save the current selection here"
         }</span>
         <span class="cmp-actions">
           <button class="cmp-save btn btn-ghost" data-slot="${slot}" title="Overwrite slot ${slot} with the current selection">Save</button>
@@ -3106,7 +3106,7 @@ function renderCompare() {
       </div>`;
   });
   els.comparePanel.innerHTML =
-    `<div class="cmp-head">Compare plans — park the current selection in a slot, build another, compare.</div>` +
+    `<div class="cmp-head">Compare plans - park the current selection in a slot, build another, compare.</div>` +
     rows.join("");
   els.compareSel.textContent = `${activeCodes.length} selected`;
 }
@@ -3114,7 +3114,7 @@ function renderCompare() {
 function saveComparison(slot) {
   const sel = currentSelection();
   if (!sel.length) {
-    showToast("Nothing to save — select some classes first.", null, 3500);
+    showToast("Nothing to save - select some classes first.", null, 3500);
     return;
   }
   const codes = [...new Set(sel.map((s) => s.code))];
@@ -3148,7 +3148,7 @@ function loadComparison(slot) {
   saveState();
   refreshUI();
   syncUrl();
-  showToast(`Loaded plan ${slot} — offering picks re-solved clash-free.`, () => restoreSelection(snapshot, "Previous selection"), 5000);
+  showToast(`Loaded plan ${slot} - offering picks re-solved clash-free.`, () => restoreSelection(snapshot, "Previous selection"), 5000);
 }
 
 function clearComparison(slot) {
@@ -3228,14 +3228,14 @@ function revealModule(code) {
 
 function addModuleByCode(rawCode) {
   const code = String(rawCode || "").trim().toUpperCase();
-  if (!code) return; // empty field — nothing to do
+  if (!code) return; // empty field - nothing to do
   if (!/^[A-Z]{2,5}\d{3,6}$/.test(code)) {
     showAddCodeError(`“${esc(rawCode || "")}” doesn't look like a module code. Try e.g. COMP30960`);
     els.addCodeInput.focus();
     return;
   }
   if (!curatedCodes().includes(code)) {
-    // the picker only offers — and only fetches — modules from the CSNL list
+    // the picker only offers - and only fetches - modules from the CSNL list
     showAddCodeError(
       `${code} isn't on the CSNL module list. Only modules from UCD's CSNL streams page can be added.`
     );
@@ -3270,7 +3270,7 @@ els.courseList.addEventListener("click", (e) => {
   }
 });
 
-// Suggestions — posts to this repo's own endpoint via AJAX (no page reload).
+// Suggestions - posts to this repo's own endpoint via AJAX (no page reload).
 // It used to be posted to "/" for the platform to intercept; nothing intercepts
 // "/" now, so the same URL is used by the deployed Worker and by
 // `node server.js` locally, and neither needs a form to be "detected" first.
@@ -3318,7 +3318,7 @@ els.suggestForm.addEventListener("submit", async (e) => {
 // hide the success note again once the visitor starts typing a new one
 els.suggestForm.addEventListener("input", () => els.suggestDone.classList.add("hidden"));
 
-// The picker only offers modules from the CSNL streams list — drop anything
+// The picker only offers modules from the CSNL streams list - drop anything
 // else (codes added before this restriction, stale cache entries, selections)
 // so no non-CSNL module is ever fetched or shown.
 function purgeNonCsnl() {
@@ -3363,8 +3363,8 @@ async function autoRefresh() {
 //
 // This lives here rather than in an inline <script> in index.html because the
 // deployed CSP is `script-src 'self'`, which blocks inline scripts outright.
-// The registration used to be inline, so it never ran in production — the
-// trailing .catch() hid the violation — and the offline shell in sw.js was dead
+// The registration used to be inline, so it never ran in production - the
+// trailing .catch() hid the violation - and the offline shell in sw.js was dead
 // on the deployed site while working locally, where server.js sends no CSP.
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
@@ -3413,7 +3413,7 @@ function startAutoRefresh() {
       const res = await fetch("modules.json");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       data = await res.json();
-      // committed fallback — CSNL-only but not live-verified this load
+      // committed fallback - CSNL-only but not live-verified this load
       catalogueMeta = { verified: false, pageUpdated: null, year: null };
     }
     for (const t of data) {
@@ -3473,7 +3473,7 @@ function startAutoRefresh() {
     new ResizeObserver(setH).observe(topbar);
   }
 
-  // Service health (catalogue + assessment freshness) for the data line —
+  // Service health (catalogue + assessment freshness) for the data line -
   // non-critical: the page works fine without it.
   fetch("/.netlify/functions/catalogue?action=health")
     .then((r) => (r.ok ? r.json() : null))

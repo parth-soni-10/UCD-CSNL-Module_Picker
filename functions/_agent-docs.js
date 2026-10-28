@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------
- * UCD CSNL Module Picker — the agent-facing documents.
+ * UCD CSNL Module Picker - the agent-facing documents.
  *
  * `_router.js` serves these. Nothing here scrapes UCD, touches the catalogue or
  * changes the app: the browser app stays the source of truth for live timings,
@@ -75,19 +75,19 @@ export const HOME_MARKDOWN = lines(
   "",
   "### JSON endpoints",
   "",
-  "- `GET /.netlify/functions/catalogue` — the current CSNL list. Shape:",
+  "- `GET /.netlify/functions/catalogue` - the current CSNL list. Shape:",
   "  `{ source, pageUpdated, generatedAt, verified, themes: [{ theme, courses: [{ name, credits,",
   "  kind, semester, comments }] }] }`. `name` includes the module code in parentheses.",
   "  `GET .../catalogue?action=health` returns freshness and counts only, never the full payload.",
-  "- `GET /.netlify/functions/timetable?codes=COMP30960,COMP30030` — live timings for up to 80",
+  "- `GET /.netlify/functions/timetable?codes=COMP30960,COMP30030` - live timings for up to 80",
   "  comma-separated codes. Shape: `{ generatedAt, source, cacheTTLMinutes, results: { CODE: {",
   "  found, title, year, semester, trimesters, classes: [{ day, startTime, endTime, room, weeks,",
   "  term }] } }, errors }`. A code UCD has not timetabled answers `found: true` with a `reason`",
   "  and no classes. Codes that are not on the current CSNL list answer `found: false` with a",
   "  reason; a request with no codes answers HTTP 400.",
-  "- `GET /.netlify/functions/assessments` — the assessment map read from UCD module pages,",
+  "- `GET /.netlify/functions/assessments` - the assessment map read from UCD module pages,",
   "  cached for 5 minutes, with an optional `?force=1` refresh.",
-  "- `POST /.netlify/functions/suggestions` — the suggestion form's endpoint, form-encoded fields",
+  "- `POST /.netlify/functions/suggestions` - the suggestion form's endpoint, form-encoded fields",
   "  `name`, `email`, `suggestion`. It stores a suggestion for the maintainer; it is not a",
   "  general-purpose API.",
   "",

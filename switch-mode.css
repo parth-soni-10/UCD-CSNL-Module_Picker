@@ -1,4 +1,4 @@
-/* Switch Mode — host-agnostic sun/moon swap.
+/* Switch Mode - host-agnostic sun/moon swap.
  *
  * The host's button keeps its size, its border and its hover; the kit only
  * takes over where its two glyphs sit. Both are centred in the button (so a
@@ -21,7 +21,7 @@
 }
 
 /* Both glyphs are laid out by the script, which sets display:block inline on
-   each one — inline, not a rule here, because the host's own display flip is
+   each one - inline, not a rule here, because the host's own display flip is
    what the kit reads to learn which glyph belongs to which state, and a rule
    of the kit's could not be taken back off for that read. Which glyph is
    visible is opacity and position now. */

@@ -1,13 +1,13 @@
-// Module assessment service — UCD-first.
+// Module assessment service - UCD-first.
 //
 // The timetable feed alone can't tell which modules have a FINAL exam: UCD
 // publishes exam sittings as timetable rows (EXAM/EXM) for only some modules,
 // while others (e.g. GEOG40820) schedule the final exam outside the weekly
-// timetable entirely. The authoritative source is each module's own page —
+// timetable entirely. The authoritative source is each module's own page -
 //
 //     https://www.ucd.ie/modules/<CODE>
 //
-// — which carries an "Assessment Strategy" table (report id CB100-30Q) whose
+// - which carries an "Assessment Strategy" table (report id CB100-30Q) whose
 // rows look like:
 //
 //   Description                                | Timing                     | ... | % of Final Grade
@@ -18,8 +18,8 @@
 // A module "has a final exam" when any row's description starts with "Exam"
 // AND either its timing says "End of trimester" (or semester), or its own
 // description says "final exam". Mid-terms ("Week 9") and other exam-typed
-// in-term tests do NOT count — COMP40725's week-9 mid-term and MIS30010's
-// week-8 in-class test stay exam-free — but UCD does not always time the
+// in-term tests do NOT count - COMP40725's week-9 mid-term and MIS30010's
+// week-8 in-class test stay exam-free - but UCD does not always time the
 // final sitting "End of trimester": COMP41740 holds a 60% "final exam" in
 // week 12, so the description wording catches it without sweeping in
 // unlabelled week-12 in-class tests (COMP31010, COMP40610) or the exam-
@@ -35,7 +35,7 @@
 // The storage backend is injected by whichever host runs this module. The
 // Netlify runtime used to supply @netlify/blobs automatically; the Cloudflare
 // functions/_router.js now calls setStore() with a KV-backed reader/writer of
-// the same shape — get(store, key) / set(store, key, value). With no backend
+// the same shape - get(store, key) / set(store, key, value). With no backend
 // the long-lived memory cache serves the instance, which is what the local
 // dev server (server.js) relies on.
 let storeBackend = null;
@@ -43,7 +43,7 @@ let storeBackend = null;
 // How many outbound subrequests one invocation of this module may make. Local
 // Node runs are unbudgeted; the Cloudflare Worker injects its platform ceiling
 // through setStore(), because a Workers free-plan invocation may make only 50
-// subrequests — and each module page costs two of them (www.ucd.ie redirects
+// subrequests - and each module page costs two of them (www.ucd.ie redirects
 // to hub.ucd.ie). A pass that reaches the ceiling stops early and the next
 // pass rotates to the codes it did not get to.
 let subrequestBudget = Infinity;
@@ -119,7 +119,7 @@ function parseAssessment(html) {
   return components;
 }
 
-// A final exam = an exam-typed component sat at the end of the trimester —
+// A final exam = an exam-typed component sat at the end of the trimester -
 // timed "End of trimester/semester", or explicitly described as a "final
 // exam" regardless of timing. Mid-terms ("Week 9") and other in-term exam
 // components never match. The timetable feed's EXAM/EXM rows are OR-ed in by
@@ -231,7 +231,7 @@ async function writeStored(value) {
 
 /** One refresh pass: fetch the codes that are missing from the stored map or
     least recently fetched, merge them over it, and hand back the merged map.
-    A pass is not obliged to reach the whole code list — see subrequestBudget —
+    A pass is not obliged to reach the whole code list - see subrequestBudget -
     so successive passes (the three of one scheduled run, plus any
     visitor-triggered one) rotate through the map.
 
@@ -246,7 +246,7 @@ async function refreshPass(codes, stored) {
 
   const budget = { left: subrequestBudget };
   const { results } = await fetchAll(ordered, budget);
-  if (!Object.keys(results).length) return null; // nothing learned — don't rewrite
+  if (!Object.keys(results).length) return null; // nothing learned - don't rewrite
 
   const merged = { ...previous };
   const now = new Date().toISOString();
@@ -265,7 +265,7 @@ async function refreshPass(codes, stored) {
 
   const okInMerged = codes.filter((code) => merged[code] && merged[code].status === "ok").length;
   // Never store a map with nothing good in it. A total outage should leave the
-  // previous map — or the honest "ucd unreachable" response — in place and let
+  // previous map - or the honest "ucd unreachable" response - in place and let
   // the next request try again at once, rather than freezing an all-error map
   // for the length of the retry cooldown below.
   if (!okInMerged) return null;
@@ -324,7 +324,7 @@ async function getAssessments(opts) {
   // Catalogue drift check: when UCD's module list changes (mid-year edits,
   // or the yearly rollover each 1 August), a stored map can cover the wrong
   // set of modules. Detect by comparing the map's total with the live
-  // catalogue's — a mismatch counts as stale even inside the TTL.
+  // catalogue's - a mismatch counts as stale even inside the TTL.
   let drift = false;
   let incomplete = false;
   let liveCodes = null;
@@ -339,7 +339,7 @@ async function getAssessments(opts) {
       // the TTL.
       incomplete = needsAnotherPass(stored, codes);
     } catch (e) {
-      /* catalogue unreachable — treat stored as still valid */
+      /* catalogue unreachable - treat stored as still valid */
     }
   }
 
@@ -354,7 +354,7 @@ async function getAssessments(opts) {
     return stored;
   }
   if (!force && stored && stored.v === VERSION) {
-    // Stored map is stale (TTL passed, or the catalogue changed) but usable —
+    // Stored map is stale (TTL passed, or the catalogue changed) but usable -
     // refresh opportunistically for the next visitor, but serve the stored
     // map now so responses stay fast.
     if (!inflight) {
@@ -372,7 +372,7 @@ async function getAssessments(opts) {
       // The response is already on its way, so tell the host the refresh has
       // to survive it. Without this a Worker cancels the in-flight fetches the
       // moment the response is sent and the stored map silently stops
-      // advancing — the map looks fine but never gains another module.
+      // advancing - the map looks fine but never gains another module.
       keepAlive(inflight);
     }
     return { ...stored, stale: true };
@@ -420,7 +420,7 @@ exports.handler = async (event) => {
 exports.getAssessments = getAssessments;
 exports.hasFinalExam = hasFinalExam;
 exports.parseAssessment = parseAssessment;
-// Non-building peek at the stored map (or null) — lets the catalogue attach
+// Non-building peek at the stored map (or null) - lets the catalogue attach
 // assessment rows when they already exist without ever triggering the
 // ~10-30s scrape inside a catalogue request.
 exports.peekStored = readStored;

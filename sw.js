@@ -1,7 +1,7 @@
-// CSNL Module Picker service worker — offline support.
+// CSNL Module Picker service worker - offline support.
 //
 // Strategy:
-//   • App shell (HTML/CSS/JS/fonts/icons/manifest): stale-while-revalidate —
+//   • App shell (HTML/CSS/JS/fonts/icons/manifest): stale-while-revalidate -
 //     the cache answers instantly, the network refreshes it in the
 //     background. The picker keeps its own data caches in localStorage, so
 //     this only has to make repeat visits and offline loads instant.
@@ -14,7 +14,7 @@
 // URL, which app.js copies from its own <script> tag in index.html. Bumping
 // that one query therefore installs a new worker AND renames this cache, so
 // `activate` drops the previous shell instead of serving it stale for one load
-// after every deploy — which is what a fixed cache name plus a pathname-only
+// after every deploy - which is what a fixed cache name plus a pathname-only
 // key used to do.
 
 const VERSION = (() => {

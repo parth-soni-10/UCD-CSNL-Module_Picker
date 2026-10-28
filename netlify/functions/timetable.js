@@ -33,7 +33,7 @@ const TYPE_LABELS = {
 
 // The academic year the site targets (matches catalogue.js): it advances on
 // 1 August, when UCD publishes the next year's module set. Only timetables
-// for THIS year are ever served — a module whose newest published schedule
+// for THIS year are ever served - a module whose newest published schedule
 // is older is reported as "not timetabled" rather than showing stale times.
 function currentCatalogueYear() {
   const now = new Date();
@@ -46,7 +46,7 @@ function targetYearString() {
 
 // Offline fallback for the allowlist: the committed modules.json. The live
 // allowlist is rebuilt from the current catalogue (csnlCodes below) so that
-// modules UCD adds to the NL page are fetchable immediately — this frozen
+// modules UCD adds to the NL page are fetchable immediately - this frozen
 // copy only serves when the catalogue can't be reached.
 const FALLBACK_CSNL_CODES = new Set(
   require("../../modules.json")
@@ -64,7 +64,7 @@ function codeFromName(name) {
 // streams page, AS THE SITE CURRENTLY SERVES THEM (same getCatalogue the
 // /catalogue endpoint uses). UCD edits that list every year and mid-year, so
 // the allowlist is rebuilt from the live catalogue (cached in-memory for a
-// few minutes) rather than frozen to the committed fallback — a module UCD
+// few minutes) rather than frozen to the committed fallback - a module UCD
 // just added appears on the site AND becomes fetchable without any code
 // change. Defense in depth: the frontend already restricts; this closes the
 // API for direct callers.
@@ -320,7 +320,7 @@ async function fetchModuleTimetable(code) {
   }
 
   // 2. pick the row for our exact code. The search can return near matches
-  //    ("IS41510" returns a HIS41510 row), so never accept a different code —
+  //    ("IS41510" returns a HIS41510 row), so never accept a different code -
   //    a module that exists but has no row is simply not timetabled.
   const row = parsed.rows.find(
     (r) => r.code && r.code.toUpperCase() === code.toUpperCase()
@@ -337,7 +337,7 @@ async function fetchModuleTimetable(code) {
 
   // 3. Serve ONLY the target academic year's timetable. UCD creates a year
   //    entry before publishing its schedule, so an empty (or missing) target
-  //    year is reported as-is — falling back to an older year would show
+  //    year is reported as-is - falling back to an older year would show
   //    stale times that may no longer apply.
   const year = targetYearString();
   const yearIdx = parsed.years.indexOf(year);
@@ -366,7 +366,7 @@ async function fetchModuleTimetable(code) {
   return tt;
 }
 
-// Which trimester(s) a class runs in, as "1", "2" or "1, 2" — derived from
+// Which trimester(s) a class runs in, as "1", "2" or "1, 2" - derived from
 // its week numbers (UCD numbers Autumn weeks 1-12 and Spring weeks 20-33).
 // Falls back to the module's own trimesters when a class has no usable week
 // data. Same-time classes in disjoint trimesters can never actually run at

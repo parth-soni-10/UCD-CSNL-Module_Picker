@@ -1,10 +1,10 @@
 name: Refresh the catalogue
 
-# The catalogue refresh — twice a month, on the 1st and the 15th at 03:00 UTC,
+# The catalogue refresh - twice a month, on the 1st and the 15th at 03:00 UTC,
 # which is every 14 days across a month and 14-17 days from the 15th to the next
 # 1st (the gap is the month's length).
 #
-# It was a DAILY schedule until 14 Oct 2026 — three cron triggers, one per pass,
+# It was a DAILY schedule until 14 Oct 2026 - three cron triggers, one per pass,
 # at 00:00 / 00:20 / 00:40 UTC. UCD publishes the CSNL module list once a year
 # and stamps the page, so a daily check was ~365 scrapes a year to catch one
 # change; the passes now share a single run, twice a month. `0 3 1,15 * *` is the
@@ -22,7 +22,7 @@ name: Refresh the catalogue
 # subrequests and a module page costs two of them, so one pass covers about 22 of
 # the ~68 modules and the three rotate through the whole list (see
 # MAX_SUBREQUESTS in functions/_router.js). A visitor's own catalogue request
-# refreshes page-by-page too, so a missed pass is a delay rather than an outage —
+# refreshes page-by-page too, so a missed pass is a delay rather than an outage -
 # catalogue.js self-heals on every request. The 20-second gap between passes is
 # the spacing the three crons had, kept so UCD is not fetched three times in the
 # same second; the passes rotate by last-fetched, so the spacing is courtesy

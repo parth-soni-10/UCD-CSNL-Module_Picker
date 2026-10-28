@@ -1,4 +1,4 @@
-/* Comet Dial — the ring, its ticks, the trail and the head.
+/* Comet Dial - the ring, its ticks, the trail and the head.
  *
  * Colour hooks, all optional:
  *   --cd-size, --cd-track, --cd-tick, --cd-trail, --cd-head, --cd-ink,
@@ -67,7 +67,7 @@
 
 /* The number is the same input the host shipped, restyled as the dial's face.
    `input.cd-input` is two classes and a type, so a host rule as broad as
-   `.row .input` — the shape most of these sites use — still loses to it. */
+   `.row .input` - the shape most of these sites use - still loses to it. */
 .cd-field input.cd-input {
   position: relative;
   z-index: 1;
@@ -111,7 +111,7 @@
 }
 
 /* Nothing chosen yet: the head waits at the minimum, faded, and the trail is
-   hidden — there is no distance travelled to draw. */
+   hidden - there is no distance travelled to draw. */
 .cd-field.is-empty .cd-head { opacity: 0.4; }
 .cd-field.is-empty .cd-glow { opacity: 0; }
 .cd-field.is-empty .cd-trail { display: none; }

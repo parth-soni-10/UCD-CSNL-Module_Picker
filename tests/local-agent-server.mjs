@@ -4,7 +4,7 @@
  *   node tools/deploy-pages.mjs --assets . --out .pages-dist
  *   node tests/local-agent-server.mjs [port]
  *
- * This exists because `wrangler pages dev` does not start on every machine —
+ * This exists because `wrangler pages dev` does not start on every machine -
  * when workerd never answers, there is no way to check negotiation, 404s and
  * the trust pages against the files that will actually be uploaded. The pieces
  * that matter can be reproduced without workerd: the router is the same module

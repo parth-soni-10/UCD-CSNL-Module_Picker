@@ -1,7 +1,7 @@
-// Auto-refreshing module catalogue service — UCD-first.
+// Auto-refreshing module catalogue service - UCD-first.
 //
-// The module list comes from UCD's own CSNL page — "MSc Computer Science by
-// Negotiated Learning" — which lists every module CSNL students can take,
+// The module list comes from UCD's own CSNL page - "MSc Computer Science by
+// Negotiated Learning" - which lists every module CSNL students can take,
 // organized into the official streams with core/optional flags, semester,
 // credits and comments:
 //
@@ -11,13 +11,13 @@
 // to maintain and no auto-discovery to run: whatever UCD publishes there each
 // year is exactly what the site offers. The page carries a `page_last_update`
 // stamp, so the stored catalogue regenerates the moment UCD changes the list
-// (new modules appear, retired ones disappear — with zero code changes).
+// (new modules appear, retired ones disappear - with zero code changes).
 //
 // Fallback chain, in order:
 //   1. the nlstreams page (parsed into the official streams);
 //   2. UCD's generic current-year module catalogue (MODULESCURRENT), merged
-//      with the committed seed — used only if the streams page is unreachable;
-//   3. the committed modules.json (same data, frozen) — served if both are
+//      with the committed seed - used only if the streams page is unreachable;
+//   3. the committed modules.json (same data, frozen) - served if both are
 //      unreachable. Timings stay live regardless of which list is served.
 //
 // Persistence: Netlify Blobs in production (zero-config from functions);
@@ -31,7 +31,7 @@ const FALLBACK = require("../../modules.json");
 // The storage backend is injected by whichever host runs this module. The
 // Netlify runtime used to supply @netlify/blobs automatically; the Cloudflare
 // functions/_router.js now calls setStore() with a KV-backed reader/writer of
-// the same shape — get(store, key) / set(store, key, value). With no backend
+// the same shape - get(store, key) / set(store, key, value). With no backend
 // the long-lived memory cache serves the instance, which is what the local
 // dev server (server.js) relies on.
 let storeBackend = null;
@@ -377,7 +377,7 @@ async function getCatalogue(opts) {
       const html = await fetchText(NL_STREAMS_URL);
       const { streams, pageUpdated } = parseNlStreams(html);
       if (stored.pageUpdated === pageUpdated) {
-        // Page unchanged — but if this stored catalogue predates the
+        // Page unchanged - but if this stored catalogue predates the
         // assessment export (v8) it lacks c.assessments. Backfill from the
         // stored assessment map (peek only) instead of serving rows forever
         // without them.
@@ -398,7 +398,7 @@ async function getCatalogue(opts) {
       }
       let fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
       try {
-        // peek only — never trigger the multi-second assessment scrape here
+        // peek only - never trigger the multi-second assessment scrape here
         const { peekStored } = require("./assessments.js");
         fresh.themes = attachAssessments(fresh.themes, await peekStored());
       } catch (e) {
@@ -409,7 +409,7 @@ async function getCatalogue(opts) {
       await writeStored(fresh);
       return fresh;
     } catch (e) {
-      // streams page down — serve what we have (stored or fallback below)
+      // streams page down - serve what we have (stored or fallback below)
       if (stored) return stored;
     }
   }
@@ -419,18 +419,18 @@ async function getCatalogue(opts) {
     const { streams, pageUpdated } = parseNlStreams(html);
     let fresh = await withDescriptions(buildFromStreams(streams, pageUpdated));
     try {
-      // peek only — never trigger the multi-second assessment scrape here
+      // peek only - never trigger the multi-second assessment scrape here
       const { peekStored } = require("./assessments.js");
       fresh.themes = attachAssessments(fresh.themes, await peekStored());
     } catch (e) {
-      /* assessment data is a nice-to-have — the catalogue still serves */
+      /* assessment data is a nice-to-have - the catalogue still serves */
     }
     fresh.year = targetYear;
     fresh.v = VERSION;
     await writeStored(fresh);
     return fresh;
   } catch (e) {
-    // streams page unreachable or unparseable — try UCD's generic catalogue
+    // streams page unreachable or unparseable - try UCD's generic catalogue
     try {
       const ucd = await fetchUcdCatalogue();
       const merged = buildFromGenericCatalogue(FALLBACK, ucd);
@@ -440,7 +440,7 @@ async function getCatalogue(opts) {
       await writeStored(merged);
       return merged;
     } catch (e2) {
-      // both unreachable — serve the committed seed
+      // both unreachable - serve the committed seed
       return {
         v: VERSION,
         year: null,
@@ -454,15 +454,15 @@ async function getCatalogue(opts) {
 
 exports.handler = async (event) => {
   try {
-    // Health/action endpoint: ?action=health returns service metadata —
-    // catalogue and assessment freshness and counts — without the full
+    // Health/action endpoint: ?action=health returns service metadata -
+    // catalogue and assessment freshness and counts - without the full
     // payload, so the site can show a data-health line and tooling can
     // monitor the scraper without downloading the catalogue.
     const params = (event && event.queryStringParameters) || {};
     if (params.action === "health") {
-      // Health reads ONLY already-stored data — it never triggers a rebuild
+      // Health reads ONLY already-stored data - it never triggers a rebuild
       // (a cold health check would have to fetch the streams page, the UCD
-      // catalogue and up to 68 module pages, ~15-30s — no basis for a status
+      // catalogue and up to 68 module pages, ~15-30s - no basis for a status
       // line the page loads on every visit). Absence of stored data is the
       // signal itself; the first normal visit warms everything up.
       const stored = await readStored();

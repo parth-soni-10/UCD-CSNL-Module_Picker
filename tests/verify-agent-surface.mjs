@@ -15,10 +15,10 @@ const results = [];
 
 function check(name, condition, detail = "") {
   if (condition) {
-    results.push(`  PASS  ${name}${detail ? ` — ${detail}` : ""}`);
+    results.push(`  PASS  ${name}${detail ? ` - ${detail}` : ""}`);
   } else {
     failures += 1;
-    results.push(`  FAIL  ${name}${detail ? ` — ${detail}` : ""}`);
+    results.push(`  FAIL  ${name}${detail ? ` - ${detail}` : ""}`);
   }
 }
 

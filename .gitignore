@@ -4,7 +4,7 @@ node_modules/
 server.log
 
 # Local tooling scratch. Holds only a project id, but it is per-machine state,
-# not project source — the sibling repos ignore the same directory.
+# not project source - the sibling repos ignore the same directory.
 .freebuff/
 
 # Deploy staging output, written by tools/deploy-pages.mjs. Build output; also

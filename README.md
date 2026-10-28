@@ -6,12 +6,12 @@ A module picker for UCD Computer Science students that builds a clash-free weekl
 
 ## What it does
 
-- **Clash-free timetables** — pick modules and see a weekly grid with no overlaps, across Autumn, Spring or both
-- **Plan by credits** — the planner finds clash-free combinations for a 30, 60 or 90-credit target
-- **Live class times** — day, time, weeks and room come from UCD's General Reference Timetable for the target academic year, so a new year needs no code change
-- **Live module list** — streams, core/optional flags, semester, credits and comments come from UCD's own CSNL page; modules UCD adds appear by themselves
+- **Clash-free timetables** - pick modules and see a weekly grid with no overlaps, across Autumn, Spring or both
+- **Plan by credits** - the planner finds clash-free combinations for a 30, 60 or 90-credit target
+- **Live class times** - day, time, weeks and room come from UCD's General Reference Timetable for the target academic year, so a new year needs no code change
+- **Live module list** - streams, core/optional flags, semester, credits and comments come from UCD's own CSNL page; modules UCD adds appear by themselves
 - **Add any UCD module code**, even one outside the list
-- **Clear failure states** — a module with no published timetable says so, rather than showing last year's times
+- **Clear failure states** - a module with no published timetable says so, rather than showing last year's times
 - **All / Autumn / Spring filter** on the grid and in clash detection
 - **Suggestions** from a form that works with or without JavaScript
 

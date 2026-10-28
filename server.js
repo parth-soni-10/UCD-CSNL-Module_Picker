@@ -82,7 +82,7 @@ const server = http.createServer(async (req, res) => {
   }
   // The suggestions form posts here, exactly as it does in production. No store
   // backend is wired locally, so the handler logs the submission and accepts
-  // it — the flow is testable without a KV namespace on this machine.
+  // it - the flow is testable without a KV namespace on this machine.
   if (url.pathname === "/.netlify/functions/suggestions") {
     await serveFunction(suggestionsHandler);
     return;

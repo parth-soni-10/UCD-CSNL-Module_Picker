@@ -14,7 +14,7 @@
          /index.md always answers Markdown. See functions/_agent-docs.js. -->
     <link rel="canonical" href="https://ucdcsnlmodulepicker.pages.dev/" />
     <link rel="alternate" type="text/markdown" href="/index.md" />
-    <meta property="og:title" content="CSNL Module Picker — UCD CS timetable builder" />
+    <meta property="og:title" content="CSNL Module Picker - UCD CS timetable builder" />
     <meta
       property="og:description"
       content="Browse every UCD CSNL module with live clash-free timetables, filter exam-free modules and build a clash-free plan toward the 90-credit year."
@@ -29,30 +29,30 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="CSNL Module Picker — a clash-free weekly timetable built from UCD's live module timings"
+      content="CSNL Module Picker - a clash-free weekly timetable built from UCD's live module timings"
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="CSNL Module Picker — UCD CS timetable builder" />
+    <meta name="twitter:title" content="CSNL Module Picker - UCD CS timetable builder" />
     <meta
       name="twitter:description"
       content="Browse every UCD CSNL module with live clash-free timetables and build a plan toward the 90-credit year."
     />
     <meta name="twitter:image" content="https://ucdcsnlmodulepicker.pages.dev/og-image.png" />
-    <meta name="twitter:image:alt" content="CSNL Module Picker — a clash-free UCD timetable builder" />
+    <meta name="twitter:image:alt" content="CSNL Module Picker - a clash-free UCD timetable builder" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192" />
     <!-- iOS ignores the manifest's icons and SVG entirely, so without this it
          falls back to a screenshot of the page for the home-screen icon. -->
     <link rel="apple-touch-icon" href="icon-180.png" />
-    <title>CSNL Module Picker — UCD CS Timetable Builder</title>
+    <title>CSNL Module Picker - UCD CS Timetable Builder</title>
     <!-- Structured data: the product, the site and the person who runs it, in
          one @graph so an agent can resolve all three without crawling. Values
          are the same ones /about, /contact and /privacy publish; nothing here
          is invented, and the module list is deliberately absent because it
          changes every academic year (read the catalogue endpoint instead).
          A JSON-LD block is data, not a script, so the CSP does not apply to
-         it — tools/check-csp-inline.py is told so explicitly. -->
+         it - tools/check-csp-inline.py is told so explicitly. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -243,7 +243,7 @@
         </span>
         <span class="discord-cta-copy">
           <strong>Join the UCD CS NL Discord</strong>
-          <span>Module channels for every CSNL module, study rooms &amp; team-finding — pick your modules here, then say hi in #lounge.</span>
+          <span>Module channels for every CSNL module, study rooms &amp; team-finding - pick your modules here, then say hi in #lounge.</span>
         </span>
         <span class="discord-cta-pill" aria-hidden="true">Free to join</span>
         <span class="discord-cta-arrow" aria-hidden="true">
@@ -376,7 +376,7 @@
                 min="5"
                 max="120"
                 step="5"
-                placeholder="—"
+                placeholder="-"
                 autocomplete="off"
                 aria-label="Target credit total"
               />
@@ -419,15 +419,15 @@
           </div>
           <!-- The form posts to this repo's own endpoint (app.js sends it as an
                AJAX request, so nothing navigates). It used to carry the
-               platform's form attributes — a form-name field and a honeypot
-               declaration — because the old host scanned the markup and
+               platform's form attributes - a form-name field and a honeypot
+               declaration - because the old host scanned the markup and
                intercepted the POST at "/". Nothing does that here, and the
                bot-field is now read by the endpoint itself
                (netlify/functions/suggestions.js).
 
                `action` names that endpoint rather than being left off, which
                is what a form with no action does not have: it posts to the
-               page's own URL, and nothing accepts a POST on "/" — measured,
+               page's own URL, and nothing accepts a POST on "/" - measured,
                that answers 405 and the suggestion is lost. Leaving it off left
                the form dependent on app.js having already attached its submit
                handler, so any visitor whose script was blocked, still loading,
@@ -567,7 +567,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <!-- Only one script, and it is same-origin: the deployed CSP is
-         script-src 'self'. The service worker is registered from app.js — an
+         script-src 'self'. The service worker is registered from app.js - an
          inline registration here would be blocked by that policy. -->
     <script src="glide-select.js"></script>
     <script src="jelly-radio.js" defer></script>

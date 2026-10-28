@@ -1,5 +1,5 @@
 /**
- * UCD CSNL Module Picker — the routing half of this site's Pages Function.
+ * UCD CSNL Module Picker - the routing half of this site's Pages Function.
  *
  * This file only adapts how the four functions under netlify/functions/ are
  * hosted; Pages compiles this directory (see `functions/[[path]].js`, the
@@ -15,8 +15,8 @@
  *               Here each module is handed a KV-backed reader/writer through
  *               its own setStore() hook, with the same call shapes:
  *               get(store, key) / set(store, key, value). Keys keep their
- *               original store names — `csnl-catalogue/modules`,
- *               `csnl-assessments/map` and `csnl-suggestions/list` — in one KV
+ *               original store names - `csnl-catalogue/modules`,
+ *               `csnl-assessments/map` and `csnl-suggestions/list` - in one KV
  *               namespace.
  *
  *   forms       The suggestions form was handled by the platform, which
@@ -27,7 +27,7 @@
  *
  *   schedule    The refresh used to be declared in the host's config as
  *               [functions."refresh-catalogue"] schedule, then as three Workers
- *               cron triggers — daily, in both. Pages has no cron triggers, so
+ *               cron triggers - daily, in both. Pages has no cron triggers, so
  *               it is a GitHub Actions workflow now (.github/workflows/
  *               refresh-catalogue.yml), which calls the very same handler over
  *               this deployment's own route: twice a month, on the 1st and the
@@ -35,8 +35,8 @@
  *
  *   routing     The paths the frontend already calls, /.netlify/functions/*,
  *               are served from here. There is no _routes.json, so Pages runs
- *               this catch-all for every request — including plain asset
- *               requests — and everything that is not an API call is handed to
+ *               this catch-all for every request - including plain asset
+ *               requests - and everything that is not an API call is handed to
  *               env.ASSETS, which is what keeps the app's delivery unchanged.
  *
  * The handlers are called with the same minimal event the dev server passes
@@ -122,7 +122,7 @@ async function fetchDocument(env, request, document) {
 }
 
 /** Advertise the Markdown alternative on the HTML response, and make sure a
-    shared cache keys on Accept — without Vary it would hand one visitor's
+    shared cache keys on Accept - without Vary it would hand one visitor's
     representation to the next. */
 function withDocHeaders(response, document) {
   const headers = new Headers(response.headers);

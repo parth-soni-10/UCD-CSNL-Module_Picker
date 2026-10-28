@@ -5,8 +5,8 @@
  *
  * The router takes `env` as an argument, so the ASSETS stub below exercises the
  * real negotiation, alias, redirect and 404 contract without Wrangler or UCD.
- * Everything else here reads the files that actually get uploaded — metadata,
- * trust pages, sitemap, llms.txt, robots.txt and the social card — so a change
+ * Everything else here reads the files that actually get uploaded - metadata,
+ * trust pages, sitemap, llms.txt, robots.txt and the social card - so a change
  * that would only fail in production fails here instead.
  */
 import assert from "node:assert/strict";
@@ -275,7 +275,7 @@ test("the homepage carries every metadata signal an agent checks", async () => {
   assert.match(html, /<meta property="og:url" content="https:\/\/ucdcsnlmodulepicker\.pages\.dev\/" \/>/);
   assert.match(html, /<meta name="twitter:card" content="summary_large_image" \/>/);
   assert.match(html, /<link rel="alternate" type="text\/markdown" href="\/index\.md" \/>/);
-  assert.match(html, /<title>CSNL Module Picker — UCD CS Timetable Builder<\/title>/);
+  assert.match(html, /<title>CSNL Module Picker - UCD CS Timetable Builder<\/title>/);
 });
 
 test("the homepage JSON-LD is valid and complete", async () => {

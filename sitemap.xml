@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Four pages, no <lastmod>: nothing in the repo records a build date, and a
      guessed one is worse than an absent one. The .md aliases are deliberately
-     absent — they are alternates of these URLs, advertised by Link headers and
+     absent - they are alternates of these URLs, advertised by Link headers and
      <link rel="alternate">, not separate destinations. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>

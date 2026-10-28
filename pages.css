@@ -1,4 +1,4 @@
-/* CSNL Module Picker — the document pages (About, Contact, Privacy, 404).
+/* CSNL Module Picker - the document pages (About, Contact, Privacy, 404).
    Deliberately small: `styles.css` is loaded first and already supplies the
    tokens, the base type, the sticky header and the button, so this file only
    lays out a readable column inside that shell. No component here needs
@@ -225,7 +225,7 @@
 }
 
 /* Specific enough to beat `.doc-card a`, which colours every link in the card
-   with the accent — without this the button label is blue on blue. */
+   with the accent - without this the button label is blue on blue. */
 .doc-card a.doc-cta {
   display: inline-flex;
   align-items: center;

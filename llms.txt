@@ -6,7 +6,7 @@
 
 Live site: https://ucdcsnlmodulepicker.pages.dev/
 Source: https://github.com/parth-soni-10/UCD-CSNL-Module_Picker
-Maintainer: Parth Soni — soni.soni.parth@gmail.com
+Maintainer: Parth Soni - soni.soni.parth@gmail.com
 Cost: free, no account, no cookies, no analytics.
 
 ## When to use this
@@ -82,7 +82,7 @@ curl -sS 'https://ucdcsnlmodulepicker.pages.dev/.netlify/functions/timetable?cod
 - One academic year at a time (UCD advances it around 1 August).
 - UCD is the source of truth; when it is unreachable the site reports the failure instead of
   serving a stale timetable.
-- The module list changes yearly, so it is never repeated here — read the catalogue endpoint.
+- The module list changes yearly, so it is never repeated here - read the catalogue endpoint.
 
 ## Pages
 

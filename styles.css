@@ -116,7 +116,7 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
-/* Slide Commit — the confirm sheet for deletions, in this palette. The hooks
+/* Slide Commit - the confirm sheet for deletions, in this palette. The hooks
    read the theme tokens, so only the ink on a filled control needs its own
    value in dark: --accent-text is this app's "text on a solid fill". */
 :root {
@@ -128,7 +128,7 @@
   --sc-sheet-accent: var(--danger);
   --sc-sheet-on-accent: var(--accent-text);
 
-  /* Swipe Row — the selection rows' actions live behind the row. */
+  /* Swipe Row - the selection rows' actions live behind the row. */
   --sr-surface-bg: var(--surface);
   --sr-pane-bg: var(--surface-2);
   --sr-ink: var(--text);
@@ -138,7 +138,7 @@
   --sr-accent: var(--accent);
   --sr-radius: 0px;
 
-  /* Comet Dial — the plan builder's credit target. The hooks read the theme
+  /* Comet Dial - the plan builder's credit target. The hooks read the theme
      tokens, so only the palette names change between light and dark. */
   --cd-track: var(--border);
   --cd-tick: var(--text-3);
@@ -843,7 +843,7 @@ body {
  * thumb is the accent wash, so the chips give up their own fill and the thumb
  * can be seen crossing them; each chip keeps its border, its count colour and
  * its padding. The component's size preset would set a minimum height, which
- * this row does not need — it is measured from the chips themselves. */
+ * this row does not need - it is measured from the chips themselves. */
 .timing-summary[data-rubber-segment] {
   --rs-thumb: var(--accent-soft);
 }
@@ -1582,7 +1582,7 @@ body {
 }
 
 /* The receipt the endpoint answers a native form submit with, shown when
-   app.js never attached its handler — JavaScript blocked, failed, or still
+   app.js never attached its handler - JavaScript blocked, failed, or still
    loading. It is a document of its own rather than the app shell: no sidebar,
    no timetable, one card and two links. The policy on that response allows the
    stylesheet and nothing inline, so this rule lives here with the rest. */
@@ -1834,7 +1834,7 @@ body {
   margin-bottom: 10px;
 }
 
-/* CSNL credit-limit warning — amber to sit beside (and read differently
+/* CSNL credit-limit warning - amber to sit beside (and read differently
    from) the red clash warning */
 .policy-warning {
   background: #fffbeb;
@@ -1893,7 +1893,7 @@ body {
   color: #fcd34d;
 }
 
-/* total-credit target warning — amber when under the year's ~90 credits,
+/* total-credit target warning - amber when under the year's ~90 credits,
    red-tinted when clearly over-enrolled */
 .total-warning {
   background: #fffbeb;
@@ -2125,7 +2125,7 @@ body {
   cursor: help;
 }
 
-/* Why a module is (not) exam-free — one quiet line on the card */
+/* Why a module is (not) exam-free - one quiet line on the card */
 .exam-why {
   display: block;
   font-size: 11.5px;
@@ -2301,7 +2301,7 @@ body {
   opacity: 0.9;
 }
 .data-freshness::before {
-  content: "— ";
+  content: "- ";
 }
 
 /* Workload badge on plan cards */
@@ -2579,7 +2579,7 @@ body {
 }
 
 @media (max-width: 720px) {
-  /* Long theme labels must never force the panel wider than the phone —
+  /* Long theme labels must never force the panel wider than the phone -
      they were the source of a 60px horizontal scroll on 390px screens.
      The label span itself gets the same treatment (it is a flex item of
      .theme-toggle, whose min-content width is set by the longest name). */
@@ -3145,7 +3145,7 @@ body {
 
 /* Empty copy in the Selection panel. A class rather than a style="…" attribute
    on the generated <p>, because the deployed CSP is `style-src 'self'` with no
-   'unsafe-inline' — a style attribute parsed out of markup would be dropped. */
+   'unsafe-inline' - a style attribute parsed out of markup would be dropped. */
 .sel-empty {
   margin: 4px 2px 12px;
 }
@@ -3215,7 +3215,7 @@ body {
 }
 
 
-/* ── TIME UNDO — Delete Timetable ─────────────────────────────────────────
+/* ── TIME UNDO - Delete Timetable ─────────────────────────────────────────
    The delete button stays exactly where it was; during the undo window it
    carries the site's danger tokens, and the progress line is the time left. */
 #delete-timetable-btn {

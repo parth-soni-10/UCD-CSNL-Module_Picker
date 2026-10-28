@@ -1,4 +1,4 @@
-// Scheduled catalogue refresh — runs twice a month, on the 1st and the 15th
+// Scheduled catalogue refresh - runs twice a month, on the 1st and the 15th
 // (one run in the workflow at .github/workflows/refresh-catalogue.yml, which
 // calls this route on the deployed site three times with a short gap between
 // passes; Pages has no cron triggers of its own). It was a daily schedule until
@@ -38,7 +38,7 @@ exports.handler = async () => {
     // Force one refresh pass so exam-assessment data stays current even with
     // zero visitors. Module pages change rarely, and a pass covers as much of
     // the map as the host's subrequest ceiling allows (see subrequestBudget in
-    // assessments.js) — the three passes of one scheduled run together cover
+    // assessments.js) - the three passes of one scheduled run together cover
     // the whole module list.
     const assessments = await getAssessments({ force: true });
     console.log(
